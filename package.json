@@ -7,7 +7,7 @@
         "clean": "rm -rf .next",
         "build": "pnpm clean && next build",
         "start": "next start",
-        "postinstall": "prisma generate && prisma migrate deploy",
+        "postinstall": "prisma generate",
         "lint": "biome check",
         "format": "prettier --write --cache .",
         "format:check": "prettier --check ."
