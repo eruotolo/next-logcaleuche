@@ -40,17 +40,25 @@ export async function getResumenTesoreria() {
 
     // Excluir entradas del tesorero (username='270396356') con motivo=1 — idéntico al PHP
     const tesorero = await prisma.user.findUnique({
-        where: { username: process.env.TESORERO_RUT ?? '' },
+        where: { username: process.env.RUT_EXCLUIDO ?? '' },
         select: { id: true },
     });
 
     const whereEntrada = tesorero
-        ? { NOT: { AND: [{ userId: tesorero.id }, { motivoId: MOTIVO_ENTRADA.CUOTA_MENSUAL }] } }
-        : {};
+        ? {
+              NOT: [
+                  { AND: [{ userId: tesorero.id }, { motivoId: MOTIVO_ENTRADA.CUOTA_MENSUAL }] },
+                  { motivoId: MOTIVO_ENTRADA.CAJA_HOSPITALARIA },
+              ],
+          }
+        : { NOT: { motivoId: MOTIVO_ENTRADA.CAJA_HOSPITALARIA } };
 
     const [totalIngresos, totalEgresos, hospitalEntradas, hospitalSalidas] = await Promise.all([
         prisma.entradaDinero.aggregate({ where: whereEntrada, _sum: { monto: true } }),
-        prisma.salidaDinero.aggregate({ _sum: { monto: true } }),
+        prisma.salidaDinero.aggregate({
+            where: { NOT: { motivoId: MOTIVO_SALIDA.CAJA_HOSPITALARIA } },
+            _sum: { monto: true },
+        }),
         // Caja hospitalaria: entrada motivo=CAJA_HOSPITALARIA, salida motivo=CAJA_HOSPITALARIA
         prisma.entradaDinero.aggregate({
             where: { motivoId: MOTIVO_ENTRADA.CAJA_HOSPITALARIA },
@@ -491,7 +499,7 @@ export async function getInforme(
     }
 
     const tesorero = await prisma.user.findUnique({
-        where: { username: process.env.TESORERO_RUT ?? '' },
+        where: { username: process.env.RUT_EXCLUIDO ?? '' },
         select: { id: true },
     });
 

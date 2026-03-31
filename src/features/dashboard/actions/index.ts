@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation';
 
+import { MOTIVO_ENTRADA, MOTIVO_SALIDA } from '@/shared/constants/domain';
 import { auth } from '@/shared/lib/auth';
 import { prisma } from '@/shared/lib/db';
 
@@ -69,19 +70,31 @@ export async function getDashboardData() {
         where: { active: true },
     });
 
-    // 5. Resumen de tesorería del año en curso
+    // 5. Resumen de tesorería — misma lógica que getResumenTesoreria()
     const currentYear = today.getFullYear();
 
-    const currentYearStr = String(currentYear);
+    const tesorero = await prisma.user.findUnique({
+        where: { username: process.env.RUT_EXCLUIDO ?? '' },
+        select: { id: true },
+    });
+
+    const whereEntrada = tesorero
+        ? {
+              NOT: [
+                  { AND: [{ userId: tesorero.id }, { motivoId: MOTIVO_ENTRADA.CUOTA_MENSUAL }] },
+                  { motivoId: MOTIVO_ENTRADA.CAJA_HOSPITALARIA },
+              ],
+          }
+        : { NOT: { motivoId: MOTIVO_ENTRADA.CAJA_HOSPITALARIA } };
 
     const ingresos = await prisma.entradaDinero.aggregate({
         _sum: { monto: true },
-        where: { ano: currentYearStr },
+        where: whereEntrada,
     });
 
     const egresos = await prisma.salidaDinero.aggregate({
         _sum: { monto: true },
-        where: { ano: currentYearStr },
+        where: { NOT: { motivoId: MOTIVO_SALIDA.CAJA_HOSPITALARIA } },
     });
 
     // Últimos 6 meses de tesorería para mini charts
@@ -121,11 +134,15 @@ export async function getDashboardData() {
 
     const [ingresosRaw, egresosRaw] = await Promise.all([
         prisma.entradaDinero.findMany({
-            where: { ano: { in: anos }, mes: { in: mesStrs } },
+            where: { ano: { in: anos }, mes: { in: mesStrs }, ...whereEntrada },
             select: { mes: true, ano: true, monto: true },
         }),
         prisma.salidaDinero.findMany({
-            where: { ano: { in: anos }, mes: { in: mesStrs } },
+            where: {
+                ano: { in: anos },
+                mes: { in: mesStrs },
+                NOT: { motivoId: MOTIVO_SALIDA.CAJA_HOSPITALARIA },
+            },
             select: { mes: true, ano: true, monto: true },
         }),
     ]);
