@@ -1,36 +1,111 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Intranet Logia Caleuche 250
 
-## Getting Started
+Plataforma interna para la gestión administrativa de la Logia Caleuche 250. Incluye módulos de tesorería, feed, noticias, eventos, documentos por grado, mensajería interna y gestión de usuarios.
 
-First, run the development server:
+## Stack
+
+| Tecnología | Versión | Rol |
+|---|---|---|
+| Next.js | 16.2.0 | Framework (App Router + Server Actions) |
+| React | 19.2.4 | UI |
+| TailwindCSS | 4 | Estilos |
+| Prisma | 7.5.0 | ORM (PostgreSQL adapter) |
+| PostgreSQL | 16 | Base de datos |
+| NextAuth | v5 beta.30 | Autenticación (JWT + Credentials) |
+| Zod | 4.x | Validación |
+| React Hook Form | 7.x | Formularios |
+| TanStack Table | v8 | Tablas de datos |
+| Biome | 2.x | Linter + Formatter |
+| Cloudinary | — | Almacenamiento de archivos e imágenes |
+
+## Requisitos
+
+- Node.js 20+
+- pnpm
+- PostgreSQL 16
+
+## Instalación
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Copia el archivo de variables de entorno y completa los valores:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+cp .env.example .env
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Variables de entorno requeridas
 
-## Learn More
+```bash
+DATABASE_URL="postgresql://USER:PASS@HOST:5432/logiacaleuche?sslmode=verify-full"
+NEXTAUTH_SECRET="<openssl rand -base64 32>"
+NEXTAUTH_URL="https://tu-dominio.cl"
+AUTH_TRUST_HOST=true
 
-To learn more about Next.js, take a look at the following resources:
+# RUT del tesorero excluido del cálculo de cuotas
+RUT_EXCLUIDO="xxxxxxxxx"
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Cloudinary
+CLOUDINARY_CLOUD_NAME=""
+CLOUDINARY_API_KEY=""
+CLOUDINARY_API_SECRET=""
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Base de datos
 
-## Deploy on Vercel
+```bash
+pnpm prisma migrate dev
+pnpm prisma generate
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Desarrollo
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+pnpm dev       # Servidor de desarrollo (Turbopack)
+pnpm build     # Build de producción
+pnpm start     # Servidor de producción
+pnpm lint      # Verificar con Biome
+pnpm check     # Aplicar fixes de Biome automáticamente
+pnpm clean     # Eliminar directorio .next
+```
+
+## Módulos
+
+| Módulo | Ruta | Acceso |
+|---|---|---|
+| Dashboard | `/dashboard` | Todos |
+| Feed | `/feed` | Todos |
+| Noticias | `/noticias` | Todos (crear/editar: Admin+) |
+| Eventos | `/eventos` | Filtrado por grado |
+| Tesorería | `/tesoreria/ingresos`, `/egresos`, `/informe` | Tesorero+ |
+| Documentos | `/aprendiz`, `/companero`, `/maestro` | Filtrado por grado |
+| Mensajes | `/mensajes` | Todos |
+| Usuarios | `/usuarios` | Admin+ |
+
+## Arquitectura
+
+El proyecto sigue un patrón DDD por features:
+
+```
+src/
+├── app/(admin)/        # Rutas protegidas (App Router)
+├── app/(public)/       # Login y recuperación de contraseña
+├── features/           # Lógica de dominio por módulo
+│   ├── [feature]/
+│   │   ├── actions/    # Server Actions
+│   │   ├── components/ # Componentes del dominio
+│   │   └── schemas/    # Validación Zod
+├── shared/
+│   ├── components/ui/  # Primitivos de UI
+│   ├── lib/            # auth, db, utils, cloudinary
+│   └── constants/      # domain, roles
+└── generated/prisma/   # Cliente Prisma (no editar)
+```
+
+## Control de acceso
+
+- **SuperAdmin / Admin** (`categoryId` 1–2): acceso completo
+- **Tesorero** (`oficialidadId` 7): acceso a módulo de tesorería
+- **Grado** (1=Aprendiz, 2=Compañero, 3=Maestro): filtra documentos y eventos visibles
