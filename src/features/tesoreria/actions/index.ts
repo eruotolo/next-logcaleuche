@@ -506,9 +506,12 @@ export async function getInforme(
     const whereEntrada = tesorero
         ? {
               ...where,
-              NOT: { AND: [{ userId: tesorero.id }, { motivoId: MOTIVO_ENTRADA.CUOTA_MENSUAL }] },
+              NOT: [
+                  { AND: [{ userId: tesorero.id }, { motivoId: MOTIVO_ENTRADA.CUOTA_MENSUAL }] },
+                  { motivoId: MOTIVO_ENTRADA.CAJA_HOSPITALARIA },
+              ],
           }
-        : where;
+        : { ...where, NOT: { motivoId: MOTIVO_ENTRADA.CAJA_HOSPITALARIA } };
 
     const [entradasRaw, salidasRaw] = await Promise.all([
         prisma.entradaDinero.findMany({
@@ -520,7 +523,7 @@ export async function getInforme(
             orderBy: { fechaMov: 'asc' },
         }),
         prisma.salidaDinero.findMany({
-            where,
+            where: { ...where, NOT: { motivoId: MOTIVO_SALIDA.CAJA_HOSPITALARIA } },
             include: { user: { select: { name: true, lastName: true } }, motivo: true },
             orderBy: { fechaMov: 'asc' },
         }),
@@ -537,17 +540,23 @@ export async function getInforme(
         prisma.entradaDinero.aggregate({
             where: tesorero
                 ? {
-                      NOT: {
-                          AND: [
-                              { userId: tesorero.id },
-                              { motivoId: MOTIVO_ENTRADA.CUOTA_MENSUAL },
-                          ],
-                      },
+                      NOT: [
+                          {
+                              AND: [
+                                  { userId: tesorero.id },
+                                  { motivoId: MOTIVO_ENTRADA.CUOTA_MENSUAL },
+                              ],
+                          },
+                          { motivoId: MOTIVO_ENTRADA.CAJA_HOSPITALARIA },
+                      ],
                   }
-                : {},
+                : { NOT: { motivoId: MOTIVO_ENTRADA.CAJA_HOSPITALARIA } },
             _sum: { monto: true },
         }),
-        prisma.salidaDinero.aggregate({ _sum: { monto: true } }),
+        prisma.salidaDinero.aggregate({
+            where: { NOT: { motivoId: MOTIVO_SALIDA.CAJA_HOSPITALARIA } },
+            _sum: { monto: true },
+        }),
         prisma.entradaDinero.aggregate({
             where: { motivoId: MOTIVO_ENTRADA.CAJA_HOSPITALARIA },
             _sum: { monto: true },
@@ -584,13 +593,28 @@ export async function getInforme(
         const mesRows = await Promise.all(
             MESES_NOMBRE.map(async (mesNombre, i) => {
                 const mesNum = String(i + 1).padStart(2, '0');
+                const mesWhere = { mes: `${mesNum} - ${mesNombre}`, ano: params.ano };
+                const ingWhere = tesorero
+                    ? {
+                          ...mesWhere,
+                          NOT: [
+                              {
+                                  AND: [
+                                      { userId: tesorero.id },
+                                      { motivoId: MOTIVO_ENTRADA.CUOTA_MENSUAL },
+                                  ],
+                              },
+                              { motivoId: MOTIVO_ENTRADA.CAJA_HOSPITALARIA },
+                          ],
+                      }
+                    : { ...mesWhere, NOT: { motivoId: MOTIVO_ENTRADA.CAJA_HOSPITALARIA } };
                 const [ing, egr] = await Promise.all([
                     prisma.entradaDinero.aggregate({
-                        where: { mes: `${mesNum} - ${mesNombre}`, ano: params.ano },
+                        where: ingWhere,
                         _sum: { monto: true },
                     }),
                     prisma.salidaDinero.aggregate({
-                        where: { mes: `${mesNum} - ${mesNombre}`, ano: params.ano },
+                        where: { ...mesWhere, NOT: { motivoId: MOTIVO_SALIDA.CAJA_HOSPITALARIA } },
                         _sum: { monto: true },
                     }),
                 ]);
