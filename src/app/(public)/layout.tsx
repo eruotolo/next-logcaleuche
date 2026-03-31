@@ -1,0 +1,10 @@
+import { redirect } from 'next/navigation';
+
+import { auth } from '@/shared/lib/auth';
+
+export default async function PublicLayout({ children }: { children: React.ReactNode }) {
+    const session = await auth();
+    if (session) redirect('/dashboard');
+
+    return <>{children}</>;
+}

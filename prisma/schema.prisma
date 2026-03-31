@@ -1,0 +1,275 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+}
+
+// 1.1 Tabla: users
+model User {
+    id           Int       @id @default(autoincrement())
+    email        String    @unique @map("useremail")
+    username     String    @unique // RUT chileno
+    password     String
+    token        String?
+    tokenExpiry  DateTime? @map("token_expiry")
+    image        String?
+    name         String?
+    lastName     String?   @map("lastname")
+    slug         String?   @unique // Para perfiles públicos si fuera necesario
+    dateBirthday DateTime? @map("date_birthday") @db.Date
+    phone        String?
+    address      String?
+    city         String?
+
+    // Relations
+    categoryId Int?          @map("category")
+    category   UserCategory? @relation(fields: [categoryId], references: [id])
+
+    gradoId Int?   @map("grado")
+    grado   Grado? @relation(fields: [gradoId], references: [id])
+
+    oficialidadId Int?     @map("oficialidad")
+    oficialidad   Oficial? @relation(fields: [oficialidadId], references: [id])
+
+    cuotaId Int?         @map("cuota_id")
+    tarifa  TarifaCuota? @relation(fields: [cuotaId], references: [id])
+
+    dateInitiation DateTime? @map("date_initiation") @db.Date
+    dateSalary     DateTime? @map("date_salary") @db.Date
+    dateExalted    DateTime? @map("date_exalted") @db.Date
+
+    active    Boolean  @default(true) @map("estado")
+    createdAt DateTime @default(now()) @map("created_at")
+
+    // Back relations
+    feeds    Feed[]
+    comments CommentFeed[]
+    trazados Trazado[]
+    entradas EntradaDinero[]
+    salidas  SalidaDinero[]
+
+    @@map("users")
+}
+
+// 1.2 Tabla: tarifa_cuota
+model TarifaCuota {
+    id     Int    @id @default(autoincrement())
+    nombre String
+    monto  Int
+
+    users User[]
+
+    @@map("tarifa_cuota")
+}
+
+// 1.3 Tabla: grado
+model Grado {
+    id     Int    @id
+    nombre String @map("grado_nombre")
+
+    users       User[]
+    bibliotecas Biblioteca[]
+    trazados    Trazado[]
+    eventos     Evento[]
+
+    @@map("grado")
+}
+
+// 1.3 Tabla: user_category
+model UserCategory {
+    id     Int    @id @map("id_Cat")
+    nombre String @map("cat_Nombre")
+
+    users User[]
+
+    @@map("user_category")
+}
+
+// 1.4 Tabla: oficiales
+model Oficial {
+    id     Int    @id @map("id_Oficial")
+    nombre String @map("nombre_Oficial")
+
+    users User[]
+
+    @@map("oficiales")
+}
+
+// 1.5 Tabla: feed
+model Feed {
+    id     Int     @id @default(autoincrement()) @map("id_Feed")
+    titulo String? @map("titulo_Feed")
+    slug   String? @unique
+
+    categoryId Int?          @map("category_Feed")
+    category   CategoryFeed? @relation(fields: [categoryId], references: [id])
+
+    fileName  String? @map("file_name")
+    contenido String? @map("cont_Feed") @db.VarChar(3000)
+
+    userId Int?  @map("user_Feed")
+    user   User? @relation(fields: [userId], references: [id])
+
+    active    Int?     @map("estado_Feed") // 0=Inactivo, 1=Publicado
+    createdAt DateTime @default(now()) @map("created_at")
+
+    comments CommentFeed[]
+
+    @@map("feed")
+}
+
+// 1.6 Tabla: categoryfeed
+model CategoryFeed {
+    id     Int    @id @map("id_Category")
+    nombre String @map("nombre_Category")
+
+    feeds Feed[]
+
+    @@map("categoryfeed")
+}
+
+// 1.7 Tabla: commentsfeed
+model CommentFeed {
+    id Int @id @default(autoincrement()) @map("id_Comment")
+
+    userId Int?  @map("user_Comment")
+    user   User? @relation(fields: [userId], references: [id])
+
+    feedId Int?  @map("feed_Comment")
+    feed   Feed? @relation(fields: [feedId], references: [id])
+
+    message   String?  @map("message_Comment") @db.VarChar(300)
+    createdAt DateTime @default(now()) @map("created_at")
+
+    @@map("commentsfeed")
+}
+
+// 1.8 Tabla: evento
+model Evento {
+    id      Int       @id @default(autoincrement()) @map("id_Evento")
+    nombre  String    @map("nombre_Evento")
+    trabajo String    @map("trabajo_Evento")
+    autor   String?   @map("autor_Evento")
+    fecha   DateTime? @map("fecha_Evento") @db.Date
+    hora    String?   @map("hora_Evento")
+    lugar   String?   @map("lugar_Evento")
+
+    gradoId Int?   @map("cat_Evento")
+    grado   Grado? @relation(fields: [gradoId], references: [id])
+
+    active Int? @map("estado_Evento") // 0=Cancelado, 1=Activo
+
+    @@map("evento")
+}
+
+// 1.9 Tabla: categoryevent (reservada para otros usos)
+model CategoryEvent {
+    id     Int    @id @map("id_Category")
+    nombre String @map("nombre_Category")
+
+    @@map("categoryevent")
+}
+
+// 1.11 Tabla: biblioteca
+model Biblioteca {
+    id       Int     @id @default(autoincrement()) @map("id_Libro")
+    nombre   String? @map("nombre_Libro")
+    autor    String? @map("autor_Libro")
+    fileName String? @map("file_name")
+
+    gradoId Int?   @map("grado_Libro")
+    grado   Grado? @relation(fields: [gradoId], references: [id])
+
+    @@map("biblioteca")
+}
+
+// 1.13 Tabla: trazado
+model Trazado {
+    id       Int     @id @default(autoincrement()) @map("id_Trazado")
+    nombre   String? @map("name_Trazado")
+    fileName String  @map("file_name")
+
+    autorId Int?  @map("autor_Trazado")
+    autor   User? @relation(fields: [autorId], references: [id])
+
+    gradoId Int?   @map("grado_Trazado")
+    grado   Grado? @relation(fields: [gradoId], references: [id])
+
+    fecha DateTime? @map("fecha_Trazado") @db.Date
+
+    @@map("trazado")
+}
+
+// 1.16 Tabla: documents
+model Document {
+    id        Int       @id @default(autoincrement()) @map("id_Doc")
+    nombre    String?   @map("name_Doc")
+    fileName  String?   @map("file_name")
+    fechaDoc  DateTime? @map("date_Doc") @db.Date
+    createdAt DateTime  @default(now()) @map("created_at")
+
+    @@map("documents")
+}
+
+// 1.18 Tabla: entradadinero
+model EntradaDinero {
+    id Int @id @default(autoincrement()) @map("id_Entrada")
+
+    userId Int?  @map("id_User")
+    user   User? @relation(fields: [userId], references: [id])
+
+    mes String? @map("entrada_Mes") @db.VarChar(16)
+    ano String? @map("entrada_Ano") @db.VarChar(16)
+
+    motivoId Int?           @map("entrada_Motivo")
+    motivo   EntradaMotivo? @relation(fields: [motivoId], references: [id])
+
+    monto    Decimal? @map("entrada_Monto") @db.Decimal(10, 2)
+    fechaMov DateTime @map("entrada_MovimientoFecha") @db.Date
+
+    @@map("entradadinero")
+}
+
+// 1.19 Tabla: entradamotivo
+model EntradaMotivo {
+    id     Int    @id @map("id_Motivo")
+    nombre String @map("name_Motivo")
+
+    entradas EntradaDinero[]
+
+    @@map("entradamotivo")
+}
+
+// 1.20 Tabla: salidadinero
+model SalidaDinero {
+    id Int @id @default(autoincrement()) @map("id_Salida")
+
+    userId Int?  @map("id_User")
+    user   User? @relation(fields: [userId], references: [id])
+
+    mes String? @map("salida_Mes")
+    ano String  @map("salida_Ano") @db.VarChar(16)
+
+    motivoId Int?          @map("salida_Motivo")
+    motivo   SalidaMotivo? @relation(fields: [motivoId], references: [id])
+
+    monto    Decimal? @map("salida_Monto") @db.Decimal(10, 2)
+    fechaMov DateTime @map("salida_MovimientoFecha") @db.Date
+
+    @@map("salidadinero")
+}
+
+// 1.21 Tabla: salidamotivo
+model SalidaMotivo {
+    id     Int    @id @map("id_SalidaMotivo")
+    nombre String @map("name_SalidaMotivo")
+
+    salidas SalidaDinero[]
+
+    @@map("salidamotivo")
+}

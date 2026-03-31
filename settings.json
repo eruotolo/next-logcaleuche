@@ -1,0 +1,32 @@
+{
+    "model": "claude-sonnet-4-6",
+
+    "permissions": {
+        "allow": [
+            "mcp__pencil",
+            "Bash(pnpm lint)",
+            "Bash(pnpm build)",
+            "Bash(pnpm dev)",
+            "Bash(pnpm check)",
+            "Bash(pnpm format)",
+            "Bash(pnpm clean)",
+            "Bash(pnpm start)",
+            "Bash(git status)",
+            "Bash(git diff*)",
+            "Bash(git log*)",
+            "Bash(git add*)",
+            "Bash(git commit*)",
+            "Read(**)",
+            "Edit(**)",
+            "Write(**)"
+        ],
+        "deny": ["Bash(git push --force*)"]
+    },
+
+    "env": {
+        "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": 1
+    },
+
+    "cleanupPeriodDays": 30,
+    "includeCoAuthoredBy": true
+}
