@@ -26,20 +26,28 @@ interface DocumentoListProps {
     canEdit?: boolean;
 }
 
+function getExt(fileName: string | null): string {
+    if (!fileName) return '';
+    const raw = fileName.split('.').pop()?.toLowerCase() ?? '';
+    // Si tiene más de 5 chars no es una extensión real (es parte del path sin extensión)
+    return raw.length <= 5 ? raw : '';
+}
+
 function getFileIcon(fileName: string | null) {
-    if (!fileName)
-        return { icon: FileText, color: 'text-cg-primary-tonal', bg: 'bg-[rgba(90,103,216,0.1)]' };
-    const ext = fileName.split('.').pop()?.toLowerCase();
-    if (ext === 'pdf')
-        return { icon: FileText, color: 'text-[#d73357]', bg: 'bg-[rgba(215,51,87,0.1)]' };
-    if (['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'].includes(ext ?? ''))
+    const ext = getExt(fileName);
+    if (['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'].includes(ext))
         return { icon: Image, color: 'text-amber-400', bg: 'bg-[rgba(251,191,36,0.1)]' };
-    return { icon: FileText, color: 'text-cg-primary-tonal', bg: 'bg-[rgba(90,103,216,0.1)]' };
+    if (['doc', 'docx'].includes(ext))
+        return { icon: FileText, color: 'text-blue-400', bg: 'bg-[rgba(96,165,250,0.1)]' };
+    if (['xls', 'xlsx'].includes(ext))
+        return { icon: FileText, color: 'text-green-400', bg: 'bg-[rgba(74,222,128,0.1)]' };
+    // PDF explícito o sin extensión (raw uploads sin extensión son PDFs)
+    return { icon: FileText, color: 'text-[#d73357]', bg: 'bg-[rgba(215,51,87,0.1)]' };
 }
 
 function getFileExt(fileName: string | null) {
-    if (!fileName) return 'DOC';
-    return (fileName.split('.').pop() ?? 'DOC').toUpperCase();
+    const ext = getExt(fileName);
+    return ext ? ext.toUpperCase() : 'PDF';
 }
 
 export function DocumentoList({ documentos, isAdmin, canEdit = false }: DocumentoListProps) {

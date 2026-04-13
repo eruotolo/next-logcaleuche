@@ -39,8 +39,14 @@ export async function uploadToCloudinary(
     } else if (resourceType === 'raw') {
         const isPdf =
             buffer[0] === 0x25 && buffer[1] === 0x50 && buffer[2] === 0x44 && buffer[3] === 0x46;
-        if (!isPdf) {
-            throw new Error('Formato no permitido. Solo se aceptan archivos PDF.');
+        // OLE2: .doc / .xls (formatos legacy de Office)
+        const isOle2 =
+            buffer[0] === 0xd0 && buffer[1] === 0xcf && buffer[2] === 0x11 && buffer[3] === 0xe0;
+        // ZIP/PK: .docx / .xlsx (formatos modernos Office Open XML)
+        const isZip =
+            buffer[0] === 0x50 && buffer[1] === 0x4b && buffer[2] === 0x03 && buffer[3] === 0x04;
+        if (!isPdf && !isOle2 && !isZip) {
+            throw new Error('Formato no permitido. Solo se aceptan PDF, Word (.doc/.docx) o Excel (.xls/.xlsx).');
         }
     }
 
