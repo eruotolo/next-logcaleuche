@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 
 import { auth } from '@/shared/lib/auth';
+import { requireAdmin } from '@/shared/lib/auth-guards';
 import { uploadToCloudinary } from '@/shared/lib/cloudinary-upload';
 import { prisma } from '@/shared/lib/db';
 import { generateUniqueSlug } from '@/shared/lib/slugs';
@@ -120,8 +121,8 @@ export async function updateFeedPost(
     _prev: ActionResult<null> | null,
     formData: FormData,
 ): Promise<ActionResult<null>> {
-    const session = await auth();
-    if (!session || session.user.categoryId > 2) return { success: false, error: 'No autorizado' };
+    const session = await requireAdmin();
+    if (!session) return { success: false, error: 'No autorizado' };
 
     const parsed = FeedPostSchema.safeParse({
         titulo: formData.get('titulo'),
@@ -159,8 +160,8 @@ export async function updateFeedPost(
 }
 
 export async function deleteFeedPost(id: number): Promise<ActionResult<null>> {
-    const session = await auth();
-    if (!session || session.user.categoryId > 2) return { success: false, error: 'No autorizado' };
+    const session = await requireAdmin();
+    if (!session) return { success: false, error: 'No autorizado' };
 
     await prisma.feed.update({ where: { id }, data: { active: 0 } });
     revalidatePath('/feed');

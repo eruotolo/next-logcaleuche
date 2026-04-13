@@ -8,12 +8,12 @@ import { Banknote, Rss, TrendingUp, Users, Wallet } from 'lucide-react';
 
 
 
-import { BirthdayCard } from '@/features/dashboard/components/BirthdayCard';
-
-
-
+import { BirthdayCard } from '@/shared/components/BirthdayCard';
+import { FeedNewsList } from '@/shared/components/FeedNewsList';
 import { UpcomingEventsList } from '@/shared/components/UpcomingEventsList';
-import { formatCLP, formatDate, truncate } from '@/shared/lib/utils';
+import { GlassPanel } from '@/shared/components/ui/glass-panel';
+import { GRADO_LABEL } from '@/shared/constants/domain';
+import { formatCLP } from '@/shared/lib/utils';
 
 
 
@@ -243,25 +243,6 @@ interface DashboardContentProps {
     categoryId: number;
 }
 
-/* ── Panel glass reutilizable ─────────────────────────────── */
-function GlassPanel({
-    children,
-    className = '',
-}: {
-    children: React.ReactNode;
-    className?: string;
-}) {
-    return (
-        <div
-            className={`rounded-xl border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.03)] backdrop-blur-[20px] ${className}`}
-        >
-            {children}
-        </div>
-    );
-}
-
-// Mapa de gradoId → etiqueta legible para los badges de eventos
-const GRADO_LABEL: Record<number, string> = { 1: 'Aprendiz', 2: 'Compañero', 3: 'Maestro' };
 
 export function DashboardContent({ data, categoryId }: DashboardContentProps) {
     const { feedPosts, upcomingBirthdays, eventos, activeUsersCount, tesoreria } = data;
@@ -418,42 +399,7 @@ export function DashboardContent({ data, categoryId }: DashboardContentProps) {
                             </div>
                         </div>
                         <div className="flex-1 divide-y divide-[rgba(255,255,255,0.05)] px-6">
-                            {feedPosts.slice(0, 5).map((post) => (
-                                <div key={post.id} className="flex items-start gap-4 py-4">
-                                    <div className="bg-cg-surface-high text-cg-primary-tonal flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold">
-                                        {post.user?.name?.[0] ?? 'U'}
-                                        {post.user?.lastName?.[0] ?? ''}
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                        <div className="flex items-center gap-2 justify-between">
-                                            <Link href={`/feed/${post.slug ?? post.id}`}>
-                                                <span className="text-cg-on-surface hover:text-cg-primary-tonal text-sm font-semibold">
-                                                    {truncate(post.titulo, 80)}
-                                                </span>
-                                            </Link>
-                                            <span className="text-cg-outline text-xs">
-                                                {formatDate(post.createdAt)}
-                                            </span>
-                                        </div>
-                                        <div>
-                                            <span className="text-cg-on-surface-variant  mt-1 block text-sm transition-colors">
-                                                {post.user?.name} {post.user?.lastName}
-                                            </span>
-                                        </div>
-
-                                        {post.category && (
-                                            <span className="bg-cg-surface-high text-cg-on-surface-variant mt-1.5 inline-block rounded-full px-2 py-0.5 text-[11px] font-medium">
-                                                {post.category.nombre}
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
-                            {feedPosts.length === 0 && (
-                                <div className="text-cg-outline py-12 text-center text-sm italic">
-                                    No hay publicaciones disponibles.
-                                </div>
-                            )}
+                            <FeedNewsList posts={feedPosts} maxItems={5} titleMaxLength={80} />
                         </div>
                         <div className="px-6 pb-4">
                             <Link

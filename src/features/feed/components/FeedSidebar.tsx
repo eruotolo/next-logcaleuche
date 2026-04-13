@@ -1,10 +1,9 @@
 import Link from 'next/link';
 
-import { BirthdayCard } from '@/features/dashboard/components/BirthdayCard';
+import { BirthdayCard } from '@/shared/components/BirthdayCard';
+import { FeedNewsList } from '@/shared/components/FeedNewsList';
 import { UpcomingEventsList } from '@/shared/components/UpcomingEventsList';
-import { formatDate, truncate } from '@/shared/lib/utils';
-
-const GRADO_LABEL: Record<number, string> = { 1: 'Aprendiz', 2: 'Compañero', 3: 'Maestro' };
+import { GRADO_LABEL } from '@/shared/constants/domain';
 
 interface BirthdayUser {
     id: number;
@@ -47,39 +46,7 @@ export function FeedSidebar({ posts, eventos, upcomingBirthdays, totalPosts }: F
                     </Link>
                 </div>
                 <div className="divide-y divide-[rgba(255,255,255,0.05)] px-6">
-                    {posts.slice(0, 5).map((post) => (
-                        <div key={post.id} className="flex items-start gap-4 py-4">
-                            <div className="bg-cg-surface-high text-cg-primary-tonal flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold">
-                                {post.user?.name?.[0] ?? 'U'}
-                                {post.user?.lastName?.[0] ?? ''}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                                <div className="flex items-center justify-between gap-2">
-                                    <Link href={`/feed/${post.slug}`}>
-                                        <span className="text-cg-on-surface hover:text-cg-primary-tonal text-sm font-semibold">
-                                            {truncate(post.titulo ?? '', 60)}
-                                        </span>
-                                    </Link>
-                                    <span className="text-cg-outline shrink-0 text-xs">
-                                        {formatDate(post.createdAt)}
-                                    </span>
-                                </div>
-                                <span className="text-cg-on-surface-variant mt-1 block text-sm">
-                                    {post.user?.name} {post.user?.lastName}
-                                </span>
-                                {post.category && (
-                                    <span className="bg-cg-surface-high text-cg-on-surface-variant mt-1.5 inline-block rounded-full px-2 py-0.5 text-[11px] font-medium">
-                                        {post.category.nombre}
-                                    </span>
-                                )}
-                            </div>
-                        </div>
-                    ))}
-                    {posts.length === 0 && (
-                        <div className="text-cg-outline py-12 text-center text-sm italic">
-                            No hay publicaciones disponibles.
-                        </div>
-                    )}
+                    <FeedNewsList posts={posts} maxItems={5} titleMaxLength={60} />
                 </div>
             </section>
 

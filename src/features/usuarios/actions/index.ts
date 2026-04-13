@@ -6,7 +6,7 @@ import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 
 import { auth } from '@/shared/lib/auth';
-import { requireAuth } from '@/shared/lib/auth-guards';
+import { requireAdmin, requireAuth } from '@/shared/lib/auth-guards';
 import { uploadToCloudinary } from '@/shared/lib/cloudinary-upload';
 import { prisma } from '@/shared/lib/db';
 import { generateUniqueSlug } from '@/shared/lib/slugs';
@@ -91,8 +91,8 @@ export async function assignTarifa(
     userId: number,
     cuotaId: number | null,
 ): Promise<ActionResult<null>> {
-    const session = await auth();
-    if (!session || session.user.categoryId > 2) return { success: false, error: 'No autorizado' };
+    const session = await requireAdmin();
+    if (!session) return { success: false, error: 'No autorizado' };
 
     await prisma.user.update({ where: { id: userId }, data: { cuotaId } });
     revalidatePath(`/usuarios/${userId}`);
@@ -104,8 +104,8 @@ export async function createUser(
     _prev: ActionResult<null> | null,
     formData: FormData,
 ): Promise<ActionResult<null>> {
-    const session = await auth();
-    if (!session || session.user.categoryId > 2) return { success: false, error: 'No autorizado' };
+    const session = await requireAdmin();
+    if (!session) return { success: false, error: 'No autorizado' };
 
     const parsed = UserCreateSchema.safeParse(Object.fromEntries(formData.entries()));
 
@@ -300,8 +300,8 @@ export async function updatePassword(
 }
 
 export async function deactivateUsuario(id: number): Promise<ActionResult<null>> {
-    const session = await auth();
-    if (!session || session.user.categoryId > 2) return { success: false, error: 'No autorizado' };
+    const session = await requireAdmin();
+    if (!session) return { success: false, error: 'No autorizado' };
 
     const hashed = await bcrypt.hash(process.env.DEFAULT_USER_PASSWORD ?? 'Cambiar2024!', 12);
     await prisma.user.update({ where: { id }, data: { active: false, password: hashed } });
@@ -311,8 +311,8 @@ export async function deactivateUsuario(id: number): Promise<ActionResult<null>>
 }
 
 export async function resetPassword(id: number): Promise<ActionResult<null>> {
-    const session = await auth();
-    if (!session || session.user.categoryId > 2) return { success: false, error: 'No autorizado' };
+    const session = await requireAdmin();
+    if (!session) return { success: false, error: 'No autorizado' };
 
     const hashed = await bcrypt.hash(process.env.DEFAULT_USER_PASSWORD ?? 'Cambiar2024!', 12);
     await prisma.user.update({ where: { id }, data: { password: hashed } });
@@ -322,7 +322,7 @@ export async function resetPassword(id: number): Promise<ActionResult<null>> {
 }
 
 export async function setAdmin(id: number): Promise<ActionResult<null>> {
-    const session = await auth();
+    const session = await requireAdmin();
     if (!session || session.user.categoryId !== 1)
         return { success: false, error: 'No autorizado' };
 
@@ -336,9 +336,8 @@ export async function updateUserCategory(
     userId: number,
     categoryId: number,
 ): Promise<ActionResult<null>> {
-    const session = await auth();
-    if (!session || session.user.categoryId > 2)
-        return { success: false, error: 'No autorizado' };
+    const session = await requireAdmin();
+    if (!session) return { success: false, error: 'No autorizado' };
 
     // Solo superadmin puede asignar categoryId 1 (SuperAdmin)
     if (categoryId === 1 && session.user.categoryId !== 1)
@@ -359,8 +358,8 @@ export async function updateUserCategory(
 }
 
 export async function assignGrado(userId: number, gradoId: number): Promise<ActionResult<null>> {
-    const session = await auth();
-    if (!session || session.user.categoryId > 2) return { success: false, error: 'No autorizado' };
+    const session = await requireAdmin();
+    if (!session) return { success: false, error: 'No autorizado' };
 
     await prisma.user.update({ where: { id: userId }, data: { gradoId } });
     revalidatePath('/usuarios');
@@ -371,8 +370,8 @@ export async function assignOficialidad(
     userId: number,
     oficialidadId: number,
 ): Promise<ActionResult<null>> {
-    const session = await auth();
-    if (!session || session.user.categoryId > 2) return { success: false, error: 'No autorizado' };
+    const session = await requireAdmin();
+    if (!session) return { success: false, error: 'No autorizado' };
 
     await prisma.user.update({ where: { id: userId }, data: { oficialidadId } });
     revalidatePath('/usuarios');

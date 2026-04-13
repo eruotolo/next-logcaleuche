@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 
 import { auth } from '@/shared/lib/auth';
+import { requireAdmin } from '@/shared/lib/auth-guards';
 import { uploadToCloudinary } from '@/shared/lib/cloudinary-upload';
 import { prisma } from '@/shared/lib/db';
 import type { ActionResult } from '@/shared/types/actions';
@@ -25,8 +26,8 @@ export async function createLibro(
     _prev: ActionResult<null> | null,
     formData: FormData,
 ): Promise<ActionResult<null>> {
-    const session = await auth();
-    if (!session || session.user.categoryId > 2) return { success: false, error: 'No autorizado' };
+    const session = await requireAdmin();
+    if (!session) return { success: false, error: 'No autorizado' };
 
     const parsed = LibroSchema.safeParse({
         nombre: formData.get('nombre'),
@@ -58,8 +59,8 @@ export async function createLibro(
 }
 
 export async function deleteLibro(id: number): Promise<ActionResult<null>> {
-    const session = await auth();
-    if (!session || session.user.categoryId > 2) return { success: false, error: 'No autorizado' };
+    const session = await requireAdmin();
+    if (!session) return { success: false, error: 'No autorizado' };
     await prisma.biblioteca.delete({ where: { id } });
     revalidatePath('/aprendiz/biblioteca');
     return { success: true, data: null };
@@ -70,8 +71,8 @@ export async function updateLibro(
     _prev: ActionResult<null> | null,
     formData: FormData,
 ): Promise<ActionResult<null>> {
-    const session = await auth();
-    if (!session || session.user.categoryId > 2) return { success: false, error: 'No autorizado' };
+    const session = await requireAdmin();
+    if (!session) return { success: false, error: 'No autorizado' };
 
     const parsed = LibroSchema.safeParse({
         nombre: formData.get('nombre'),
@@ -125,8 +126,8 @@ export async function createTrazado(
     _prev: ActionResult<null> | null,
     formData: FormData,
 ): Promise<ActionResult<null>> {
-    const session = await auth();
-    if (!session || session.user.categoryId > 2) return { success: false, error: 'No autorizado' };
+    const session = await requireAdmin();
+    if (!session) return { success: false, error: 'No autorizado' };
 
     const parsed = TrazadoSchema.safeParse({
         nombre: formData.get('nombre'),
@@ -160,8 +161,8 @@ export async function createTrazado(
 }
 
 export async function deleteTrazado(id: number): Promise<ActionResult<null>> {
-    const session = await auth();
-    if (!session || session.user.categoryId > 2) return { success: false, error: 'No autorizado' };
+    const session = await requireAdmin();
+    if (!session) return { success: false, error: 'No autorizado' };
     await prisma.trazado.delete({ where: { id } });
     revalidatePath('/aprendiz/trazados');
     return { success: true, data: null };
@@ -172,8 +173,8 @@ export async function updateTrazado(
     _prev: ActionResult<null> | null,
     formData: FormData,
 ): Promise<ActionResult<null>> {
-    const session = await auth();
-    if (!session || session.user.categoryId > 2) return { success: false, error: 'No autorizado' };
+    const session = await requireAdmin();
+    if (!session) return { success: false, error: 'No autorizado' };
 
     const parsed = TrazadoSchema.safeParse({
         nombre: formData.get('nombre'),
@@ -222,8 +223,8 @@ export async function createDocumento(
     _prev: ActionResult<null> | null,
     formData: FormData,
 ): Promise<ActionResult<null>> {
-    const session = await auth();
-    if (!session || session.user.categoryId > 2) return { success: false, error: 'No autorizado' };
+    const session = await requireAdmin();
+    if (!session) return { success: false, error: 'No autorizado' };
 
     const parsed = DocumentoSchema.safeParse({
         nombre: formData.get('nombre'),
@@ -253,8 +254,8 @@ export async function updateDocumento(
     _prev: ActionResult<null> | null,
     formData: FormData,
 ): Promise<ActionResult<null>> {
-    const session = await auth();
-    if (!session || session.user.categoryId > 2) return { success: false, error: 'No autorizado' };
+    const session = await requireAdmin();
+    if (!session) return { success: false, error: 'No autorizado' };
 
     const parsed = DocumentoSchema.safeParse({
         nombre: formData.get('nombre'),
@@ -287,8 +288,8 @@ export async function updateDocumento(
 }
 
 export async function deleteDocumento(id: number): Promise<ActionResult<null>> {
-    const session = await auth();
-    if (!session || session.user.categoryId > 2) return { success: false, error: 'No autorizado' };
+    const session = await requireAdmin();
+    if (!session) return { success: false, error: 'No autorizado' };
     await prisma.document.delete({ where: { id } });
     revalidatePath('/documentos');
     return { success: true, data: null };

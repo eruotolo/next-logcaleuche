@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 
 import { auth } from '@/shared/lib/auth';
+import { requireAdmin } from '@/shared/lib/auth-guards';
 import { prisma } from '@/shared/lib/db';
 import type { ActionResult } from '@/shared/types/actions';
 
@@ -71,8 +72,8 @@ export async function createEvento(
     _prev: ActionResult<null> | null,
     formData: FormData,
 ): Promise<ActionResult<null>> {
-    const session = await auth();
-    if (!session || session.user.categoryId > 2) return { success: false, error: 'No autorizado' };
+    const session = await requireAdmin();
+    if (!session) return { success: false, error: 'No autorizado' };
 
     const parsed = EventoSchema.safeParse({
         nombre: formData.get('nombre'),
@@ -110,8 +111,8 @@ export async function updateEvento(
     _prev: ActionResult<null> | null,
     formData: FormData,
 ): Promise<ActionResult<null>> {
-    const session = await auth();
-    if (!session || session.user.categoryId > 2) return { success: false, error: 'No autorizado' };
+    const session = await requireAdmin();
+    if (!session) return { success: false, error: 'No autorizado' };
 
     const parsed = EventoSchema.safeParse({
         nombre: formData.get('nombre'),
@@ -145,8 +146,8 @@ export async function updateEvento(
 }
 
 export async function deleteEvento(id: number): Promise<ActionResult<null>> {
-    const session = await auth();
-    if (!session || session.user.categoryId > 2) return { success: false, error: 'No autorizado' };
+    const session = await requireAdmin();
+    if (!session) return { success: false, error: 'No autorizado' };
 
     await prisma.evento.update({ where: { id }, data: { active: 0 } });
     revalidatePath('/eventos');
@@ -170,10 +171,8 @@ function parseDateCell(cell: ExcelJS.Cell): string {
 const MAX_IMPORT_ROWS = 200;
 
 export async function importEventos(formData: FormData): Promise<ActionResult<ImportResult>> {
-    const session = await auth();
-    if (!session || session.user.categoryId > 2) {
-        return { success: false, error: 'No autorizado' };
-    }
+    const session = await requireAdmin();
+    if (!session) return { success: false, error: 'No autorizado' };
 
     const file = formData.get('file') as File | null;
     if (!file) return { success: false, error: 'No se recibió archivo' };
