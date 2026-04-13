@@ -5,6 +5,7 @@ export function getCloudinaryPdfUrl(publicId: string): string {
     return `https://res.cloudinary.com/${CLOUD}/raw/upload/${publicId}`;
 }
 
+
 /**
  * URL de imagen Cloudinary con crop cuadrado (para avatares).
  * Devuelve undefined si no hay publicId, compatible con <AvatarImage src>.

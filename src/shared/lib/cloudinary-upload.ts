@@ -54,11 +54,15 @@ export async function uploadToCloudinary(
         }
     }
 
-    // Quitar la extensión para evitar el conflicto del .jpg.jpg en Cloudinary
+    // Para imágenes: quitar la extensión para evitar el conflicto .jpg.jpg (Cloudinary la añade)
+    // Para raw (PDFs): mantener la extensión en el public_id para poder detectarla luego
     const lastDot = file.name.lastIndexOf('.');
+    const ext = lastDot > 0 ? file.name.substring(lastDot) : '';
     const baseName = lastDot > 0 ? file.name.substring(0, lastDot) : file.name;
     const safeName = baseName.replace(/[^a-zA-Z0-9_-]/g, '_');
-    const publicId = `${Date.now()}-${safeName}`;
+    const publicId = resourceType === 'raw'
+        ? `${Date.now()}-${safeName}${ext}`
+        : `${Date.now()}-${safeName}`;
 
     const uploadPromise = new Promise<string>((resolve, reject) => {
         cloudinary.uploader

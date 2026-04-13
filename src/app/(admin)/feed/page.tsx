@@ -36,8 +36,6 @@ export default async function FeedPage() {
     // Calcular próximos cumpleaños en los siguientes 30 días
     const today = new Date();
     const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const limitDate = new Date(startOfToday);
-    limitDate.setDate(limitDate.getDate() + 30);
 
     const upcomingBirthdays = usersWithBirthday
         .map((u) => {
@@ -52,7 +50,6 @@ export default async function FeedPage() {
             );
             return { id: u.id, name: u.name, lastName: u.lastName, image: u.image, nextBirthday: next, daysUntil };
         })
-        .filter((u) => u.nextBirthday >= startOfToday && u.nextBirthday <= limitDate)
         .sort((a, b) => a.daysUntil - b.daysUntil);
 
     return (
