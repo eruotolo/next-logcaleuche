@@ -6,6 +6,7 @@ import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 
 import { auth } from '@/shared/lib/auth';
+import { requireAuth } from '@/shared/lib/auth-guards';
 import { uploadToCloudinary } from '@/shared/lib/cloudinary-upload';
 import { prisma } from '@/shared/lib/db';
 import { generateUniqueSlug } from '@/shared/lib/slugs';
@@ -43,8 +44,10 @@ const PasswordSchema = z
     });
 
 export async function getUsuarios(limit = 200, includeInactive = false) {
+    await requireAuth();
     return prisma.user.findMany({
         where: includeInactive ? undefined : { active: true },
+        omit: { password: true, token: true, tokenExpiry: true },
         include: {
             grado: true,
             category: true,
@@ -56,25 +59,31 @@ export async function getUsuarios(limit = 200, includeInactive = false) {
 }
 
 export async function getUsuarioById(id: number) {
+    await requireAuth();
     return prisma.user.findUnique({
         where: { id },
+        omit: { password: true, token: true, tokenExpiry: true },
         include: { grado: true, oficialidad: true, category: true, tarifa: true },
     });
 }
 
 export async function getGrados() {
+    await requireAuth();
     return prisma.grado.findMany({ orderBy: { id: 'asc' } });
 }
 
 export async function getCategories() {
+    await requireAuth();
     return prisma.userCategory.findMany({ orderBy: { id: 'asc' } });
 }
 
 export async function getOficiales() {
+    await requireAuth();
     return prisma.oficial.findMany({ orderBy: { id: 'asc' } });
 }
 
 export async function getTarifas() {
+    await requireAuth();
     return prisma.tarifaCuota.findMany({ orderBy: { monto: 'asc' } });
 }
 

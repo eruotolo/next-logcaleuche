@@ -12,6 +12,8 @@ import { DocumentoSchema, LibroSchema, TrazadoSchema } from '../schemas';
 // ── BIBLIOTECA ────────────────────────────────────────────────────────────
 
 export async function getBiblioteca(gradoTarget: number) {
+    const session = await auth();
+    if (!session) throw new Error('No autorizado');
     return prisma.biblioteca.findMany({
         where: { gradoId: gradoTarget },
         include: { grado: true },
@@ -69,7 +71,7 @@ export async function updateLibro(
     formData: FormData,
 ): Promise<ActionResult<null>> {
     const session = await auth();
-    if (!session || session.user.categoryId > 3) return { success: false, error: 'No autorizado' };
+    if (!session || session.user.categoryId > 2) return { success: false, error: 'No autorizado' };
 
     const parsed = LibroSchema.safeParse({
         nombre: formData.get('nombre'),
@@ -107,6 +109,8 @@ export async function updateLibro(
 // ── TRAZADOS ──────────────────────────────────────────────────────────────
 
 export async function getTrazados(gradoTarget: number) {
+    const session = await auth();
+    if (!session) throw new Error('No autorizado');
     return prisma.trazado.findMany({
         where: { gradoId: gradoTarget },
         include: {
@@ -169,7 +173,7 @@ export async function updateTrazado(
     formData: FormData,
 ): Promise<ActionResult<null>> {
     const session = await auth();
-    if (!session || session.user.categoryId > 3) return { success: false, error: 'No autorizado' };
+    if (!session || session.user.categoryId > 2) return { success: false, error: 'No autorizado' };
 
     const parsed = TrazadoSchema.safeParse({
         nombre: formData.get('nombre'),
@@ -209,6 +213,8 @@ export async function updateTrazado(
 // ── DOCUMENTOS GENERALES ──────────────────────────────────────────────────
 
 export async function getDocumentos() {
+    const session = await auth();
+    if (!session) throw new Error('No autorizado');
     return prisma.document.findMany({ orderBy: { fechaDoc: 'asc' } });
 }
 
@@ -248,7 +254,7 @@ export async function updateDocumento(
     formData: FormData,
 ): Promise<ActionResult<null>> {
     const session = await auth();
-    if (!session || session.user.categoryId > 3) return { success: false, error: 'No autorizado' };
+    if (!session || session.user.categoryId > 2) return { success: false, error: 'No autorizado' };
 
     const parsed = DocumentoSchema.safeParse({
         nombre: formData.get('nombre'),

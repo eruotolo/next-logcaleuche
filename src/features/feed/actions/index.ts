@@ -11,6 +11,8 @@ import type { ActionResult } from '@/shared/types/actions';
 import { CommentSchema, FeedPostSchema } from '../schemas';
 
 export async function getFeedPosts(limit = 50) {
+    const session = await auth();
+    if (!session) throw new Error('No autorizado');
     return prisma.feed.findMany({
         where: { active: 1 },
         include: {
@@ -32,6 +34,8 @@ export async function getFeedPosts(limit = 50) {
 }
 
 export async function getFeedPostBySlug(slug: string) {
+    const session = await auth();
+    if (!session) throw new Error('No autorizado');
     const post = await prisma.feed.findUnique({
         where: { slug },
         include: {
@@ -59,6 +63,8 @@ export async function getFeedPostBySlug(slug: string) {
 }
 
 export async function getCategoryFeeds() {
+    const session = await auth();
+    if (!session) throw new Error('No autorizado');
     return prisma.categoryFeed.findMany({ orderBy: { id: 'asc' } });
 }
 
@@ -115,7 +121,7 @@ export async function updateFeedPost(
     formData: FormData,
 ): Promise<ActionResult<null>> {
     const session = await auth();
-    if (!session || session.user.categoryId > 3) return { success: false, error: 'No autorizado' };
+    if (!session || session.user.categoryId > 2) return { success: false, error: 'No autorizado' };
 
     const parsed = FeedPostSchema.safeParse({
         titulo: formData.get('titulo'),

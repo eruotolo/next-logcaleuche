@@ -13,7 +13,7 @@ import { auth } from '@/shared/lib/auth';
 function isTesorero(session: { user: { oficialidad: number; categoryId: number } }) {
     return (
         session.user.oficialidad === OFICIALIDAD.TESORERO ||
-        session.user.categoryId === CATEGORIA.SUPER_ADMIN
+        session.user.categoryId <= CATEGORIA.ADMIN
     );
 }
 

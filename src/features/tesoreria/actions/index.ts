@@ -46,7 +46,7 @@ async function calcularSaldoCuotasPendiente(userId: number, ano: string): Promis
 function isTesorero(session: { user: { oficialidad: number; categoryId: number } }) {
     return (
         session.user.oficialidad === OFICIALIDAD.TESORERO ||
-        session.user.categoryId === CATEGORIA.SUPER_ADMIN
+        session.user.categoryId <= CATEGORIA.ADMIN
     );
 }
 
@@ -153,10 +153,14 @@ export async function getSalidaById(id: number) {
 }
 
 export async function getMotivoEntradas() {
+    const session = await auth();
+    if (!session) throw new Error('No autorizado');
     return prisma.entradaMotivo.findMany({ orderBy: { id: 'asc' } });
 }
 
 export async function getMotivoSalidas() {
+    const session = await auth();
+    if (!session) throw new Error('No autorizado');
     return prisma.salidaMotivo.findMany({ orderBy: { id: 'asc' } });
 }
 

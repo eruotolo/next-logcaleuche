@@ -11,10 +11,14 @@ import ExcelJS from 'exceljs';
 import { EventoImportRowSchema, type ImportResult, EventoSchema } from '../schemas';
 
 export async function getGrados() {
+    const session = await auth();
+    if (!session) throw new Error('No autorizado');
     return prisma.grado.findMany({ orderBy: { id: 'asc' } });
 }
 
 export async function getEventos(grado: number) {
+    const session = await auth();
+    if (!session) throw new Error('No autorizado');
     const today = new Date();
 
     const gradoFilter =
@@ -33,6 +37,8 @@ export async function getEventos(grado: number) {
 }
 
 export async function getEventosCalendario(grado: number) {
+    const session = await auth();
+    if (!session) throw new Error('No autorizado');
     const gradoFilter =
         grado === 1 ? { gradoId: 1 } : grado === 2 ? { gradoId: { in: [1, 2] } } : {};
 
