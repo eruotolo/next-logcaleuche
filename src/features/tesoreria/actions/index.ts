@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 
 import { z } from 'zod';
 
-import { CATEGORIA, MOTIVO_ENTRADA, MOTIVO_SALIDA, OFICIALIDAD } from '@/shared/constants/domain';
+import { CATEGORIA, MESES_NOMBRE, MOTIVO_ENTRADA, MOTIVO_SALIDA, OFICIALIDAD } from '@/shared/constants/domain';
 import { auth } from '@/shared/lib/auth';
 import { prisma } from '@/shared/lib/db';
 import { sendBoleta, sendRecordatorioCuotas } from '@/shared/lib/email';
@@ -637,20 +637,6 @@ export async function getInforme(
     };
 
     // ── Movimientos por mes (solo informe anual) ──
-    const MESES_NOMBRE = [
-        'Enero',
-        'Febrero',
-        'Marzo',
-        'Abril',
-        'Mayo',
-        'Junio',
-        'Julio',
-        'Agosto',
-        'Septiembre',
-        'Octubre',
-        'Noviembre',
-        'Diciembre',
-    ];
     let movimientosPorMes: { mes: string; ingresos: number; egresos: number; saldo: number }[] = [];
     if (tipo === 'anual' && params.ano) {
         const mesRows = await Promise.all(
@@ -765,7 +751,7 @@ export async function getInforme(
                 const parts = (e.mes ?? '').split(' - ');
                 return parts.length === 2 ? parts[1].trim() : (e.mes ?? '');
             })
-            .filter((m) => MESES_NOMBRE.includes(m))
+            .filter((m) => (MESES_NOMBRE as readonly string[]).includes(m))
             .sort((a, b) => (ORDEN_MESES[a] ?? 0) - (ORDEN_MESES[b] ?? 0));
 
         const mesesPendientes = mesesACobrar.filter((m) => !mesesPagados.includes(m));

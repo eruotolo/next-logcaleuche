@@ -4,12 +4,15 @@ import { useState } from 'react';
 
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
+import type { getFeedPosts } from '../actions';
 import { FeedCard } from './FeedCard';
 
 const PAGE_SIZE = 4;
 
+type FeedPost = Awaited<ReturnType<typeof getFeedPosts>>[number];
+
 interface FeedListProps {
-    posts: any[];
+    posts: FeedPost[];
     canEdit?: boolean;
     canDelete?: boolean;
     categories?: { id: number; nombre: string }[];

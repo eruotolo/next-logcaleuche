@@ -5,6 +5,10 @@ import { FeedNewsList } from '@/shared/components/FeedNewsList';
 import { UpcomingEventsList } from '@/shared/components/UpcomingEventsList';
 import { GRADO_LABEL } from '@/shared/constants/domain';
 
+import type { getFeedPosts } from '../actions';
+
+type FeedPost = Awaited<ReturnType<typeof getFeedPosts>>[number];
+
 interface BirthdayUser {
     id: number;
     name: string | null;
@@ -15,8 +19,7 @@ interface BirthdayUser {
 }
 
 interface FeedSidebarProps {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    posts: any[];
+    posts: FeedPost[];
     eventos: {
         id: number;
         nombre: string;

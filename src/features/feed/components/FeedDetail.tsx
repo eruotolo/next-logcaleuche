@@ -16,12 +16,21 @@ import { Tooltip } from '@/shared/components/ui/tooltip';
 import { getCloudinaryImageUrl, getCloudinaryRawImageUrl } from '@/shared/lib/cloudinary';
 import { formatDate } from '@/shared/lib/utils';
 
+import type { getFeedPostBySlug } from '../actions';
 import { addComment, deleteFeedPost } from '../actions';
 
+type FeedPostDetail = NonNullable<Awaited<ReturnType<typeof getFeedPostBySlug>>['post']>;
+type FeedPostOther = Awaited<ReturnType<typeof getFeedPostBySlug>>['others'][number];
+
+interface CurrentUser {
+    id: string;
+    categoryId: number;
+}
+
 interface FeedDetailProps {
-    post: any;
-    others: any[];
-    currentUser: any;
+    post: FeedPostDetail;
+    others: FeedPostOther[];
+    currentUser: CurrentUser;
 }
 
 export function FeedDetail({ post, others, currentUser }: FeedDetailProps) {
@@ -88,7 +97,7 @@ export function FeedDetail({ post, others, currentUser }: FeedDetailProps) {
                             <div className="h-[400px] w-full overflow-hidden">
                                 <img
                                     src={getCloudinaryRawImageUrl(post.fileName) ?? ''}
-                                    alt={post.titulo}
+                                    alt={post.titulo ?? ''}
                                     className="h-full w-full object-cover"
                                 />
                             </div>
@@ -155,7 +164,7 @@ export function FeedDetail({ post, others, currentUser }: FeedDetailProps) {
                         </Card>
 
                         <div className="space-y-4">
-                            {post.comments?.map((comment: any) => (
+                            {post.comments?.map((comment) => (
                                 <div
                                     key={comment.id}
                                     className="flex gap-4 rounded-xl border border-[rgba(70,70,88,0.2)] bg-[rgba(255,255,255,0.03)] p-4 shadow-sm"

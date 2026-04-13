@@ -20,10 +20,11 @@ import { formatDate, truncate } from '@/shared/lib/utils';
 
 
 
+import type { getFeedPosts } from '../actions';
 import { deleteFeedPost } from '../actions';
 import { EditFeedModal } from './EditFeedModal';
 
-
+type FeedPost = Awaited<ReturnType<typeof getFeedPosts>>[number];
 
 
 
@@ -69,7 +70,7 @@ import { EditFeedModal } from './EditFeedModal';
 
 
 interface FeedCardProps {
-    post: any;
+    post: FeedPost;
     canEdit?: boolean;
     canDelete?: boolean;
     categories?: { id: number; nombre: string }[];
@@ -140,7 +141,7 @@ export function FeedCard({ post, canEdit = false, canDelete = false, categories 
             {/* Content */}
             <Link href={`/feed/${post.slug}`}>
                 <p className="text-cg-on-surface-variant mb-4 leading-relaxed">
-                    {truncate(post.contenido, 280)}
+                    {truncate(post.contenido ?? '', 280)}
                 </p>
             </Link>
 
@@ -195,9 +196,9 @@ export function FeedCard({ post, canEdit = false, canDelete = false, categories 
                         <EditFeedModal
                             post={{
                                 id: post.id,
-                                titulo: post.titulo,
-                                categoryId: post.categoryId,
-                                contenido: post.contenido,
+                                titulo: post.titulo ?? '',
+                                categoryId: post.categoryId ?? 0,
+                                contenido: post.contenido ?? '',
                                 fileName: post.fileName,
                             }}
                             categories={categories}

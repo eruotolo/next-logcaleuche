@@ -17,6 +17,7 @@ import { useModal } from '@/shared/hooks/useModal';
 import { getCloudinaryImageUrl } from '@/shared/lib/cloudinary';
 import { cn } from '@/shared/lib/utils';
 
+import type { getUsuarios } from '../actions';
 import {
     assignGrado,
     assignOficialidad,
@@ -26,8 +27,10 @@ import {
 } from '../actions';
 import { UserViewModal } from './UserViewModal';
 
+type Usuario = Awaited<ReturnType<typeof getUsuarios>>[number];
+
 interface UserListProps {
-    usuarios: any[];
+    usuarios: Usuario[];
     currentUserCategory: number;
     grados?: { id: number; nombre: string }[];
     oficiales?: { id: number; nombre: string }[];
@@ -101,7 +104,7 @@ export function UserList({
             .sort((a, b) => a.value - b.value);
     }, [usuarios]);
 
-    const filters: FilterDef<any>[] = [
+    const filters: FilterDef<Usuario>[] = [
         {
             label: 'Todos los grados',
             options: gradoFilterOptions,
@@ -160,7 +163,7 @@ export function UserList({
         }
     }
 
-    const columns: ColumnDef<any>[] = [
+    const columns: ColumnDef<Usuario>[] = [
         {
             header: 'Foto',
             headerClassName: 'w-[80px]',
@@ -265,7 +268,7 @@ export function UserList({
                     >
                         {u.grado?.nombre}
                     </Badge>
-                    {u.oficialidadId > 1 && (
+                    {(u.oficialidadId ?? 0) > 1 && (
                         <span className="rounded border border-[rgba(249,115,22,0.2)] bg-[rgba(249,115,22,0.12)] px-1.5 py-0.5 text-xs font-medium text-orange-400">
                             {u.oficialidad?.nombre}
                         </span>
@@ -332,7 +335,7 @@ export function UserList({
                                         <Button
                                             variant="outline"
                                             size="icon"
-                                            onClick={() => handleResetPassword(u.id, u.name)}
+                                            onClick={() => handleResetPassword(u.id, u.name ?? '')}
                                         >
                                             <Key className="h-4 w-4 text-amber-600" />
                                         </Button>
@@ -341,7 +344,7 @@ export function UserList({
                                         <Button
                                             variant="outline"
                                             size="icon"
-                                            onClick={() => handleDeactivate(u.id, u.name)}
+                                            onClick={() => handleDeactivate(u.id, u.name ?? '')}
                                         >
                                             <UserMinus className="h-4 w-4 text-red-600" />
                                         </Button>

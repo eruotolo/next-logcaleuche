@@ -1,5 +1,7 @@
 'use server';
 
+import { cache } from 'react';
+
 import { revalidatePath } from 'next/cache';
 
 import bcrypt from 'bcryptjs';
@@ -58,14 +60,14 @@ export async function getUsuarios(limit = 200, includeInactive = false) {
     });
 }
 
-export async function getUsuarioById(id: number) {
+export const getUsuarioById = cache(async (id: number) => {
     await requireAuth();
     return prisma.user.findUnique({
         where: { id },
         omit: { password: true, token: true, tokenExpiry: true },
         include: { grado: true, oficialidad: true, category: true, tarifa: true },
     });
-}
+});
 
 export async function getGrados() {
     await requireAuth();

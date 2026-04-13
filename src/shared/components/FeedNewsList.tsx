@@ -5,7 +5,7 @@ import { formatDate, truncate } from '@/shared/lib/utils';
 interface FeedPost {
     id: number;
     slug: string | null;
-    titulo: string;
+    titulo: string | null;
     createdAt: Date | string;
     user: { name: string | null; lastName: string | null } | null;
     category: { nombre: string } | null;
@@ -38,7 +38,7 @@ export function FeedNewsList({ posts, maxItems = 5, titleMaxLength = 60 }: FeedN
                         <div className="flex items-center justify-between gap-2">
                             <Link href={`/feed/${post.slug ?? post.id}`}>
                                 <span className="text-cg-on-surface hover:text-cg-primary-tonal text-sm font-semibold">
-                                    {truncate(post.titulo, titleMaxLength)}
+                                    {truncate(post.titulo ?? '', titleMaxLength)}
                                 </span>
                             </Link>
                             <span className="text-cg-outline shrink-0 text-xs">

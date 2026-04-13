@@ -15,7 +15,9 @@ import { GlassPanel } from '@/shared/components/ui/glass-panel';
 import { GRADO_LABEL } from '@/shared/constants/domain';
 import { formatCLP } from '@/shared/lib/utils';
 
+import type { getDashboardData } from '@/features/dashboard/actions';
 
+type DashboardData = Awaited<ReturnType<typeof getDashboardData>>;
 
 
 
@@ -217,29 +219,10 @@ import { formatCLP } from '@/shared/lib/utils';
 
 
 
-interface TesoreriaData {
-    totalIngresos: number;
-    totalEgresos: number;
-    balance: number;
-}
 
-interface BirthdayUser {
-    id: number;
-    name: string | null;
-    lastName: string | null;
-    image: string | null;
-    nextBirthday: Date;
-    daysUntil: number;
-}
 
 interface DashboardContentProps {
-    data: {
-        feedPosts: any[];
-        upcomingBirthdays: BirthdayUser[];
-        eventos: any[];
-        activeUsersCount: number;
-        tesoreria: TesoreriaData;
-    };
+    data: DashboardData;
     categoryId: number;
 }
 
@@ -420,15 +403,8 @@ export function DashboardContent({ data, categoryId }: DashboardContentProps) {
                             id: ev.id,
                             nombre: ev.nombre,
                             trabajo: ev.trabajo,
-                            fecha: new Date(ev.fecha),
-                            hora: ev.inicio
-                                ? new Date(
-                                      `1970-01-01T${ev.inicio.toISOString().split('T')[1]}`,
-                                  ).toLocaleTimeString('es-CL', {
-                                      hour: '2-digit',
-                                      minute: '2-digit',
-                                  })
-                                : null,
+                            fecha: ev.fecha ? new Date(ev.fecha) : null,
+                            hora: ev.hora ?? null,
                             grado: ev.gradoId
                                 ? {
                                       id: ev.gradoId as number,
