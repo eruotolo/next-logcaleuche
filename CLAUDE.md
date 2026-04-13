@@ -104,9 +104,6 @@ src/
 │   │   │   ├── egresos/nuevo/page.tsx
 │   │   │   └── informe/page.tsx
 │   │   ├── documentos/page.tsx
-│   │   ├── mensajes/
-│   │   │   ├── page.tsx
-│   │   │   └── [id]/page.tsx
 │   │   ├── aprendiz/                    # Documentos grado 1
 │   │   │   ├── actas/, biblioteca/, boletin/, trazados/
 │   │   ├── companero/                   # Documentos grado 2
@@ -120,10 +117,8 @@ src/
 ├── features/                            # Módulos DDD
 │   ├── auth/
 │   ├── feed/
-│   ├── noticias/
 │   ├── eventos/
 │   ├── documentos/
-│   ├── mensajes/
 │   ├── tesoreria/
 │   ├── usuarios/
 │   └── dashboard/
@@ -135,19 +130,18 @@ src/
 │   ├── hooks/                           # Custom hooks globales
 │   ├── lib/
 │   │   ├── auth.ts                      # NextAuth config (CANÓNICO — usar siempre este)
+│   │   ├── auth-guards.ts               # requireAuth(), requireAdmin(), requireTesorero()
 │   │   ├── db.ts                        # Prisma client singleton (CANÓNICO)
 │   │   ├── utils.ts                     # cn(), truncate(), formatCLP(), formatDate(), getMesNombre()
 │   │   └── slugs.ts                     # slugify(), generateUniqueSlug()
+│   ├── constants/
+│   │   └── domain.ts                    # GRADO, CATEGORIA, OFICIALIDAD, MESES_NOMBRE, GRADO_LABEL, ...
 │   └── types/
 │       ├── actions.ts                   # ActionResult<T>
 │       └── next-auth.d.ts               # Type augmentation de sesión
 │
-├── generated/
-│   └── prisma/                          # Cliente Prisma generado — NO EDITAR
-│
-└── lib/                                 # Re-exports legacy — no usar en código nuevo
-    ├── auth.ts                          → re-export de @/shared/lib/auth
-    └── db.ts                            → re-export de @/shared/lib/db
+└── generated/
+    └── prisma/                          # Cliente Prisma generado — NO EDITAR
 ```
 
 ---
@@ -158,7 +152,7 @@ src/
 
 | Modelo         | Campos clave                                                                                                                                                                       | Notas                               |
 | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
-| `User`         | id, email, username (RUT), password, name, lastName, slug, dateBirthday, phone, address, city, categoryId, gradoId, oficialidadId, dateInitiation, dateSalary, dateExalted, active | Imagen en `public/uploads/profile/` |
+| `User`         | id, email, username (RUT), password, name, lastName, slug, dateBirthday, phone, address, city, categoryId, gradoId, oficialidadId, dateInitiation, dateSalary, dateExalted, active | Imagen en Cloudinary (`logiacaleuche/usuarios/`) |
 | `Grado`        | id, nombre                                                                                                                                                                         | 1=Aprendiz, 2=Compañero, 3=Maestro  |
 | `UserCategory` | id, nombre                                                                                                                                                                         | 1=SuperAdmin, 2=Admin, 3=Usuario    |
 | `Oficial`      | id, nombre                                                                                                                                                                         | 15 oficialidades, id=7 es Tesorero  |
@@ -268,12 +262,10 @@ features/[nombre]/
 | `auth`       | loginAction, recoveryAction                                                                    | —                               |
 | `dashboard`  | getDashboardData, sendBirthdayMessage                                                          | auth                            |
 | `feed`       | getFeedPosts, getFeedPostBySlug, createFeedPost, addComment                                    | auth / crear: cualquier usuario |
-| `noticias`   | getNoticias, getNoticiaBySlug, createNoticia, updateNoticia, deleteNoticia                     | crear/editar/borrar: admin+     |
 | `usuarios`   | getUsuarios, getUsuarioById, createUser, updateUserProfile, changePassword, uploadProfileImage | crear: admin+                   |
 | `eventos`    | getEventos (filtrado por grado), createEvento                                                  | crear: admin+                   |
 | `documentos` | CRUD para Acta, Libro, Boletin, Trazado, Document (por grado)                                  | crear: admin+                   |
 | `tesoreria`  | getResumenTesoreria, getEntradas/Salidas, createEntrada/Salida                                 | tesorero+                       |
-| `mensajes`   | getInbox, getSent, getMessageById (auto-mark read), sendMessage, deleteMessage                 | auth                            |
 
 ---
 
@@ -327,9 +319,10 @@ Usado en: `Feed`, `Noticia`, `User` (basado en nombre completo).
 
 ## Subida de Archivos
 
-- Destino: `public/uploads/{tipo}/` (actas, biblioteca, boletin, trazados, profile, noticias, feed)
-- Prefijo aleatorio para evitar colisiones: `${Date.now()}-${Math.random()}`
-- Sin validación de MIME type actualmente — solo extensión
+- Destino: **Cloudinary** — helper `uploadToCloudinary(file, folder, resourceType)` en `@/shared/lib/cloudinary-upload.ts`
+- Carpetas: `logiacaleuche/usuarios/`, `logiacaleuche/biblioteca/`, `logiacaleuche/trazados/`, `logiacaleuche/documentos/`
+- Validación de MIME type via magic bytes en `cloudinary-upload.ts` — soporta imágenes y PDFs
+- Imágenes servidas via `getCloudinaryImageUrl(fileName)` y `getCloudinaryRawImageUrl(fileName)` en `@/shared/lib/cloudinary.ts`
 
 ---
 
@@ -337,14 +330,22 @@ Usado en: `Feed`, `Noticia`, `User` (basado en nombre completo).
 
 ### UI Primitivos
 
-| Componente   | Descripción                                                  |
-| ------------ | ------------------------------------------------------------ |
-| `button.tsx` | Botón con variantes (primary, secondary, ghost, destructive) |
-| `card.tsx`   | Contenedor con header/content/footer                         |
-| `input.tsx`  | Input con label y estado de error                            |
-| `table.tsx`  | Wrapper de TanStack Table                                    |
-| `badge.tsx`  | Etiqueta/indicador de estado                                 |
-| `avatar.tsx` | Imagen de perfil con fallback                                |
+| Componente        | Descripción                                                  |
+| ----------------- | ------------------------------------------------------------ |
+| `button.tsx`      | Botón con variantes (primary, secondary, ghost, destructive) |
+| `card.tsx`        | Contenedor con header/content/footer                         |
+| `input.tsx`       | Input con label y estado de error                            |
+| `table.tsx`       | Wrapper de TanStack Table                                    |
+| `badge.tsx`       | Etiqueta/indicador de estado                                 |
+| `avatar.tsx`      | Imagen de perfil con fallback                                |
+| `glass-panel.tsx` | Panel con efecto glass (`rounded-xl border backdrop-blur`)   |
+
+### Componentes compartidos
+
+| Componente         | Descripción                                                        |
+| ------------------ | ------------------------------------------------------------------ |
+| `BirthdayCard.tsx` | Lista de próximos cumpleaños con avatar, nombre y badge de días    |
+| `FeedNewsList.tsx` | Lista de posts del feed: avatar inicial, título, fecha, categoría  |
 
 ### Layout
 
@@ -422,6 +423,22 @@ pnpm clean     # Eliminar directorio .next
 ## TODOs y Deuda Técnica
 
 - **Recuperación de contraseña** (`features/auth/actions/index.ts`): La acción existe pero el envío real de email vía Brevo SMTP está comentado (pendiente de implementar).
-- **Validación MIME en uploads**: Solo se valida la extensión, no el tipo real del archivo.
-- **Status de mensajes**: Se usan enteros crudos (0/1/2/3) en lugar de enums Prisma.
-- **Mensajería**: No hay sistema de respuesta/hilo (solo mensajes individuales).
+
+## Auth Guards
+
+Usar `@/shared/lib/auth-guards.ts` para controlar acceso en Server Actions:
+
+```typescript
+import { requireAuth, requireAdmin, requireTesorero } from '@/shared/lib/auth-guards';
+
+// Para lecturas (cualquier usuario autenticado):
+await requireAuth(); // lanza Error si no hay sesión
+
+// Para mutations de admin (categoryId <= 2):
+const session = await requireAdmin();
+if (!session) return { success: false, error: 'No autorizado' };
+
+// Para tesorería (tesorero u admin):
+const session = await requireTesorero();
+if (!session) return { success: false, error: 'No autorizado' };
+```
