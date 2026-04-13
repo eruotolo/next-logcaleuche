@@ -27,6 +27,22 @@ const SalidaSchema = z.object({
     fecha: z.string().min(1),
 });
 
+async function calcularSaldoCuotasPendiente(userId: number, ano: string): Promise<number> {
+    const [totalResult, user] = await Promise.all([
+        prisma.entradaDinero.aggregate({
+            where: { userId, ano, motivoId: MOTIVO_ENTRADA.CUOTA_MENSUAL },
+            _sum: { monto: true },
+        }),
+        prisma.user.findUnique({
+            where: { id: userId },
+            select: { tarifa: { select: { monto: true } } },
+        }),
+    ]);
+    const totalPagado = Number(totalResult._sum.monto ?? 0);
+    const cuotaMensual = Number(user?.tarifa?.monto ?? 45000);
+    return Math.max(0, cuotaMensual * 12 - totalPagado);
+}
+
 function isTesorero(session: { user: { oficialidad: number; categoryId: number } }) {
     return (
         session.user.oficialidad === OFICIALIDAD.TESORERO ||
@@ -180,6 +196,10 @@ export async function createEntrada(
     // Enviar boleta por email automáticamente — idéntico al PHP
     if (entrada.user?.email) {
         const nombre = `${entrada.user.name ?? ''} ${entrada.user.lastName ?? ''}`.trim();
+        const esCuota = parsed.data.motivoId === MOTIVO_ENTRADA.CUOTA_MENSUAL;
+        const saldoPendiente = esCuota
+            ? await calcularSaldoCuotasPendiente(parsed.data.userId, parsed.data.ano)
+            : undefined;
         sendBoleta({
             id: entrada.id,
             emailDestino: entrada.user.email,
@@ -190,6 +210,7 @@ export async function createEntrada(
             motivo: entrada.motivo?.nombre ?? '',
             fecha: entrada.fechaMov,
             monto: Number(entrada.monto ?? 0),
+            saldoPendiente,
         }).catch((err: unknown) => {
             console.error('[createEntrada] Fallo al enviar boleta por email:', err);
         });
@@ -334,6 +355,14 @@ export async function sendBoletaManual(id: number): Promise<ActionResult<null>> 
         return { success: false, error: 'El miembro no tiene email registrado.' };
 
     const nombre = `${entrada.user.name ?? ''} ${entrada.user.lastName ?? ''}`.trim();
+    const esCuota = entrada.motivoId === MOTIVO_ENTRADA.CUOTA_MENSUAL;
+    const saldoPendiente =
+        esCuota && entrada.userId
+            ? await calcularSaldoCuotasPendiente(
+                  entrada.userId,
+                  entrada.ano ?? new Date().getFullYear().toString(),
+              )
+            : undefined;
 
     await sendBoleta({
         id: entrada.id,
@@ -345,6 +374,7 @@ export async function sendBoletaManual(id: number): Promise<ActionResult<null>> 
         motivo: entrada.motivo?.nombre ?? '',
         fecha: entrada.fechaMov,
         monto: Number(entrada.monto ?? 0),
+        saldoPendiente,
     });
 
     return { success: true, data: null };
@@ -454,6 +484,35 @@ export async function createMultipleEntradas(
 
     revalidatePath('/tesoreria/ingresos');
     return { success: true, data: { count: meses.length } };
+}
+
+export async function getPagosUsuarioAno(userId: number): Promise<
+    { mes: string; ano: string; motivo: string; monto: number; fechaMov: Date }[]
+> {
+    const session = await auth();
+    if (!session) throw new Error('No autorizado');
+
+    const ano = new Date().getFullYear().toString();
+
+    const rows = await prisma.entradaDinero.findMany({
+        where: { userId, ano, motivoId: MOTIVO_ENTRADA.CUOTA_MENSUAL },
+        select: {
+            mes: true,
+            ano: true,
+            monto: true,
+            fechaMov: true,
+            motivo: { select: { nombre: true } },
+        },
+        orderBy: { fechaMov: 'asc' },
+    });
+
+    return rows.map((r) => ({
+        mes: r.mes ?? '',
+        ano: r.ano ?? '',
+        motivo: r.motivo?.nombre ?? '',
+        monto: Number(r.monto ?? 0),
+        fechaMov: r.fechaMov,
+    }));
 }
 
 export async function sendRecordatorioCuotasAction(): Promise<ActionResult<null>> {

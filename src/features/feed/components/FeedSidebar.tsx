@@ -1,106 +1,114 @@
 import Link from 'next/link';
 
-import { ChevronRight } from 'lucide-react';
-
-import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar';
+import { BirthdayCard } from '@/features/dashboard/components/BirthdayCard';
 import { UpcomingEventsList } from '@/shared/components/UpcomingEventsList';
-import { getCloudinaryImageUrl } from '@/shared/lib/cloudinary';
+import { formatDate, truncate } from '@/shared/lib/utils';
+
+const GRADO_LABEL: Record<number, string> = { 1: 'Aprendiz', 2: 'Compañero', 3: 'Maestro' };
+
+interface BirthdayUser {
+    id: number;
+    name: string | null;
+    lastName: string | null;
+    image: string | null;
+    nextBirthday: Date;
+    daysUntil: number;
+}
 
 interface FeedSidebarProps {
-    usuarios: {
-        id: number;
-        name: string | null;
-        lastName: string | null;
-        image: string | null;
-        grado?: { nombre: string } | null;
-    }[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    posts: any[];
     eventos: {
         id: number;
         nombre: string;
+        trabajo: string | null;
         fecha: Date | null;
+        hora: string | null;
+        gradoId: number | null;
     }[];
+    upcomingBirthdays: BirthdayUser[];
     totalPosts: number;
 }
 
-export function FeedSidebar({ usuarios, eventos, totalPosts }: FeedSidebarProps) {
+export function FeedSidebar({ posts, eventos, upcomingBirthdays, totalPosts }: FeedSidebarProps) {
     return (
         <aside className="space-y-8">
-            {/* Hermanos Activos */}
-            <section className="rounded-xl border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.05)] p-6 backdrop-blur-[20px]">
-                <h2 className="font-display text-cg-primary-tonal mb-6 border-b border-[rgba(255,255,255,0.1)] pb-4 text-lg font-bold">
-                    Hermanos Activos
-                </h2>
-                <div className="space-y-5">
-                    {usuarios.slice(0, 7).map((u) => (
-                        <Link
-                            key={u.id}
-                            href={`/usuarios/${u.id}`}
-                            className="group flex items-center justify-between"
-                        >
-                            <div className="flex items-center gap-3">
-                                <div className="relative">
-                                    <Avatar className="h-10 w-10 border border-[rgba(255,255,255,0.1)]">
-                                        <AvatarImage
-                                            src={
-                                                u.image ? getCloudinaryImageUrl(u.image) : undefined
-                                            }
-                                        />
-                                        <AvatarFallback className="text-cg-primary-tonal bg-[rgba(90,103,216,0.2)] text-xs font-bold">
-                                            {u.name?.[0]}
-                                            {u.lastName?.[0]}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                    <div className="bg-cg-tertiary-tonal absolute right-0 bottom-0 h-3 w-3 animate-pulse rounded-full border-2 border-[#17182a]" />
-                                </div>
-                                <div>
-                                    <p className="text-cg-on-surface group-hover:text-cg-primary-tonal text-sm font-bold transition-colors">
-                                        {u.name} {u.lastName}
-                                    </p>
-                                    {u.grado && (
-                                        <p className="text-cg-on-surface-variant text-[10px] uppercase">
-                                            {u.grado.nombre}
-                                        </p>
-                                    )}
-                                </div>
+            {/* Feed de Noticias */}
+            <section className="rounded-xl border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.03)] backdrop-blur-[20px]">
+                <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.08)] px-6 py-4">
+                    <h2 className="font-display text-cg-on-surface text-[15px] font-semibold">
+                        Feed de Noticias
+                    </h2>
+                    <Link
+                        href="/feed"
+                        className="text-cg-primary-tonal text-xs font-medium transition-colors hover:underline"
+                    >
+                        Ver todo
+                    </Link>
+                </div>
+                <div className="divide-y divide-[rgba(255,255,255,0.05)] px-6">
+                    {posts.slice(0, 5).map((post) => (
+                        <div key={post.id} className="flex items-start gap-4 py-4">
+                            <div className="bg-cg-surface-high text-cg-primary-tonal flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold">
+                                {post.user?.name?.[0] ?? 'U'}
+                                {post.user?.lastName?.[0] ?? ''}
                             </div>
-                            <ChevronRight className="text-cg-primary-tonal/40 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                        </Link>
+                            <div className="min-w-0 flex-1">
+                                <div className="flex items-center justify-between gap-2">
+                                    <Link href={`/feed/${post.slug}`}>
+                                        <span className="text-cg-on-surface hover:text-cg-primary-tonal text-sm font-semibold">
+                                            {truncate(post.titulo ?? '', 60)}
+                                        </span>
+                                    </Link>
+                                    <span className="text-cg-outline shrink-0 text-xs">
+                                        {formatDate(post.createdAt)}
+                                    </span>
+                                </div>
+                                <span className="text-cg-on-surface-variant mt-1 block text-sm">
+                                    {post.user?.name} {post.user?.lastName}
+                                </span>
+                                {post.category && (
+                                    <span className="bg-cg-surface-high text-cg-on-surface-variant mt-1.5 inline-block rounded-full px-2 py-0.5 text-[11px] font-medium">
+                                        {post.category.nombre}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
                     ))}
+                    {posts.length === 0 && (
+                        <div className="text-cg-outline py-12 text-center text-sm italic">
+                            No hay publicaciones disponibles.
+                        </div>
+                    )}
                 </div>
             </section>
 
-            {/* Eventos Próximos */}
+            {/* Próximos Eventos */}
             <UpcomingEventsList
-                eventos={eventos}
-                maxItems={3}
-                showTrabajo={false}
-                showGradoBadge={false}
-                title="Eventos Próximos"
-                linkText="Ver Calendario Completo"
+                eventos={eventos.slice(0, 6).map((ev) => ({
+                    id: ev.id,
+                    nombre: ev.nombre,
+                    trabajo: ev.trabajo,
+                    fecha: ev.fecha ? new Date(ev.fecha) : null,
+                    hora: ev.hora ?? null,
+                    grado: ev.gradoId
+                        ? {
+                              id: ev.gradoId,
+                              nombre: GRADO_LABEL[ev.gradoId] ?? '',
+                          }
+                        : null,
+                }))}
+                maxItems={6}
+                showHora={true}
+                showGradoBadge={true}
+                showLink={true}
+                linkText="Ver todos"
+                emptyMessage="No hay eventos para este mes."
             />
 
-            {/* Activity Stats */}
-            <section className="from-cg-primary-tonal/10 to-cg-secondary-tonal/10 rounded-xl border border-[rgba(255,255,255,0.05)] bg-gradient-to-br p-6">
-                <div className="mb-4 flex items-center justify-between">
-                    <span className="text-cg-on-surface/50 text-xs font-bold uppercase">
-                        Actividad
-                    </span>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <p className="font-display text-cg-on-surface text-2xl font-black">
-                            {totalPosts}
-                        </p>
-                        <p className="text-cg-on-surface-variant text-[10px]">Publicaciones</p>
-                    </div>
-                    <div>
-                        <p className="font-display text-cg-on-surface text-2xl font-black">
-                            {usuarios.length}
-                        </p>
-                        <p className="text-cg-on-surface-variant text-[10px]">Miembros</p>
-                    </div>
-                </div>
-            </section>
+            {/* Próximos Cumpleaños */}
+            <BirthdayCard birthdays={upcomingBirthdays} />
+
         </aside>
     );
 }

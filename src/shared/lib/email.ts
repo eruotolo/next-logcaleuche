@@ -52,8 +52,25 @@ function boletaHtml(data: {
     motivo: string;
     fecha: Date;
     monto: number;
+    saldoPendiente?: number;
 }): string {
     const mesCortado = data.mes.includes(' - ') ? data.mes.split(' - ')[1] : data.mes;
+    const saldoHtml =
+        data.saldoPendiente !== undefined
+            ? `
+      <div style="width:100%;padding:0 20px 20px 20px;box-sizing:border-box;overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;min-width:600px;">
+          <tr>
+            <td style="border:1px solid #000000;padding:10px;font-size:12px;font-weight:bold;">
+              Saldo pendiente de cuotas — Año ${data.ano}
+            </td>
+            <td style="border:1px solid #000000;padding:10px;text-align:center;font-size:12px;font-weight:bold;${data.saldoPendiente === 0 ? 'color:#41a65a;' : 'color:#e67e22;'}">
+              ${data.saldoPendiente === 0 ? 'Al dia' : `$ ${formatMonto(data.saldoPendiente)}`}
+            </td>
+          </tr>
+        </table>
+      </div>`
+            : '';
     return `
     <div style="max-width:840px;width:100%;margin:0 auto;border:1px solid #000000;box-sizing:border-box;">
       <div style="display:block;">
@@ -90,6 +107,7 @@ function boletaHtml(data: {
           </tbody>
         </table>
       </div>
+      ${saldoHtml}
     </div>
     <div style="margin-top:30px;padding:0 20px;">
       <p>Le agradecemos por su puntualidad y compromiso con las obligaciones financieras de nuestra Logia.</p>
@@ -109,6 +127,7 @@ export async function sendBoleta(data: {
     motivo: string;
     fecha: Date;
     monto: number;
+    saldoPendiente?: number;
 }) {
     await transporter.sendMail({
         from: FROM,

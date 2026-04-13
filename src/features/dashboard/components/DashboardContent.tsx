@@ -2,23 +2,240 @@
 
 import Link from 'next/link';
 
-import { Banknote, TrendingUp, Users, Wallet } from 'lucide-react';
+
+
+import { Banknote, Rss, TrendingUp, Users, Wallet } from 'lucide-react';
+
+
+
+import { BirthdayCard } from '@/features/dashboard/components/BirthdayCard';
+
+
 
 import { UpcomingEventsList } from '@/shared/components/UpcomingEventsList';
-import { formatCLP, formatDate, getMesNombre, truncate } from '@/shared/lib/utils';
+import { formatCLP, formatDate, truncate } from '@/shared/lib/utils';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 interface TesoreriaData {
     totalIngresos: number;
     totalEgresos: number;
     balance: number;
-    monthlyIngresos: { mes: number; total: number }[];
-    monthlyEgresos: { mes: number; total: number }[];
+}
+
+interface BirthdayUser {
+    id: number;
+    name: string | null;
+    lastName: string | null;
+    image: string | null;
+    nextBirthday: Date;
+    daysUntil: number;
 }
 
 interface DashboardContentProps {
     data: {
         feedPosts: any[];
-        upcomingBirthdays: any[];
+        upcomingBirthdays: BirthdayUser[];
         eventos: any[];
         activeUsersCount: number;
         tesoreria: TesoreriaData;
@@ -47,26 +264,8 @@ function GlassPanel({
 const GRADO_LABEL: Record<number, string> = { 1: 'Aprendiz', 2: 'Compañero', 3: 'Maestro' };
 
 export function DashboardContent({ data, categoryId }: DashboardContentProps) {
-    const { feedPosts, eventos, activeUsersCount, tesoreria } = data;
+    const { feedPosts, upcomingBirthdays, eventos, activeUsersCount, tesoreria } = data;
     const isAdmin = categoryId <= 2;
-
-    /* ── Helpers para mini-charts ──────────────────────────── */
-    const monthlyBalance = tesoreria.monthlyIngresos.map((ing, i) => ({
-        mes: ing.mes,
-        total: ing.total - tesoreria.monthlyEgresos[i].total,
-    }));
-
-    function getBarHeights(values: { mes: number; total: number }[]) {
-        const max = Math.max(...values.map((v) => Math.abs(v.total)), 1);
-        return values.map((v) => ({
-            ...v,
-            height: Math.max((Math.abs(v.total) / max) * 100, 4),
-        }));
-    }
-
-    const ingBars = getBarHeights(tesoreria.monthlyIngresos);
-    const egBars = getBarHeights(tesoreria.monthlyEgresos);
-    const balBars = getBarHeights(monthlyBalance);
 
     return (
         <div className="space-y-8">
@@ -205,23 +404,20 @@ export function DashboardContent({ data, categoryId }: DashboardContentProps) {
                 </div>
             )}
 
-            {/* ── Row 2: Feed + Eventos ───────────────────────── */}
-            <div className="grid grid-cols-1 gap-8 xl:grid-cols-10">
+            {/* ── Row 2: Feed + Eventos + Cumpleaños ─────────── */}
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-7">
                 {/* Feed de Actividad */}
-                <div className="xl:col-span-6">
-                    <GlassPanel>
+                <div className="md:col-span-2 xl:col-span-3">
+                    <GlassPanel className="flex h-full flex-col">
                         <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.08)] px-6 py-4">
-                            <h2 className="font-display text-cg-on-surface text-[15px] font-semibold">
-                                Feed de Actividad
-                            </h2>
-                            <Link
-                                href="/feed"
-                                className="text-cg-primary-tonal text-xs font-medium transition-colors hover:underline"
-                            >
-                                Ver todo
-                            </Link>
+                            <div className="flex items-center gap-2">
+                                <Rss className="text-cg-primary-tonal h-4 w-4" />
+                                <h2 className="font-display text-cg-on-surface text-[15px] font-semibold">
+                                    Feed de Noticias
+                                </h2>
+                            </div>
                         </div>
-                        <div className="divide-y divide-[rgba(255,255,255,0.05)] px-6">
+                        <div className="flex-1 divide-y divide-[rgba(255,255,255,0.05)] px-6">
                             {feedPosts.slice(0, 5).map((post) => (
                                 <div key={post.id} className="flex items-start gap-4 py-4">
                                     <div className="bg-cg-surface-high text-cg-primary-tonal flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold">
@@ -229,20 +425,22 @@ export function DashboardContent({ data, categoryId }: DashboardContentProps) {
                                         {post.user?.lastName?.[0] ?? ''}
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-cg-on-surface text-sm font-semibold">
-                                                {post.user?.name} {post.user?.lastName}
-                                            </span>
+                                        <div className="flex items-center gap-2 justify-between">
+                                            <Link href={`/feed/${post.slug ?? post.id}`}>
+                                                <span className="text-cg-on-surface hover:text-cg-primary-tonal text-sm font-semibold">
+                                                    {truncate(post.titulo, 80)}
+                                                </span>
+                                            </Link>
                                             <span className="text-cg-outline text-xs">
                                                 {formatDate(post.createdAt)}
                                             </span>
                                         </div>
-                                        <Link
-                                            href={`/feed/${post.slug ?? post.id}`}
-                                            className="text-cg-on-surface-variant hover:text-cg-primary-tonal mt-1 block text-sm transition-colors"
-                                        >
-                                            {truncate(post.titulo, 80)}
-                                        </Link>
+                                        <div>
+                                            <span className="text-cg-on-surface-variant  mt-1 block text-sm transition-colors">
+                                                {post.user?.name} {post.user?.lastName}
+                                            </span>
+                                        </div>
+
                                         {post.category && (
                                             <span className="bg-cg-surface-high text-cg-on-surface-variant mt-1.5 inline-block rounded-full px-2 py-0.5 text-[11px] font-medium">
                                                 {post.category.nombre}
@@ -257,13 +455,22 @@ export function DashboardContent({ data, categoryId }: DashboardContentProps) {
                                 </div>
                             )}
                         </div>
+                        <div className="px-6 pb-4">
+                            <Link
+                                href="/feed"
+                                className="border-cg-primary-tonal/30 text-cg-primary-tonal hover:bg-cg-primary-tonal/10 block w-full rounded-lg border py-2 text-center text-xs font-bold transition-colors"
+                            >
+                                Ver todo
+                            </Link>
+                        </div>
                     </GlassPanel>
                 </div>
 
                 {/* Proximos Eventos */}
-                <div className="xl:col-span-4">
+                <div className="xl:col-span-2 flex flex-col">
                     <UpcomingEventsList
-                        eventos={eventos.slice(0, 6).map((ev) => ({
+                        className="h-full"
+                        eventos={eventos.slice(0, 7).map((ev) => ({
                             id: ev.id,
                             nombre: ev.nombre,
                             trabajo: ev.trabajo,
@@ -277,10 +484,13 @@ export function DashboardContent({ data, categoryId }: DashboardContentProps) {
                                   })
                                 : null,
                             grado: ev.gradoId
-                                ? { id: ev.gradoId as number, nombre: GRADO_LABEL[ev.gradoId as number] ?? '' }
+                                ? {
+                                      id: ev.gradoId as number,
+                                      nombre: GRADO_LABEL[ev.gradoId as number] ?? '',
+                                  }
                                 : null,
                         }))}
-                        maxItems={6}
+                        maxItems={7}
                         showHora={true}
                         showGradoBadge={true}
                         showLink={true}
@@ -288,111 +498,12 @@ export function DashboardContent({ data, categoryId }: DashboardContentProps) {
                         emptyMessage="No hay eventos para este mes."
                     />
                 </div>
+
+                {/* Próximos Cumpleaños */}
+                <div className="xl:col-span-2 flex flex-col">
+                    <BirthdayCard birthdays={upcomingBirthdays} maxItems={9} className="h-full" />
+                </div>
             </div>
-
-            {/* ── Row 3: Resumen Tesoreria ────────────────────── */}
-            <GlassPanel className="p-6">
-                <div className="mb-6">
-                    <h2 className="font-display text-cg-on-surface text-[15px] font-semibold">
-                        Resumen Tesorería
-                    </h2>
-                    <p className="text-cg-on-surface-variant mt-1 text-xs">
-                        Últimos 6 meses de movimientos financieros
-                    </p>
-                </div>
-
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                    {/* Mini chart: Ingresos */}
-                    <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-5">
-                        <p className="text-cg-on-surface-variant text-xs font-medium tracking-wider uppercase">
-                            Ingresos
-                        </p>
-                        <p className="font-display text-cg-tertiary-tonal mt-1 text-xl font-bold">
-                            {formatCLP(tesoreria.totalIngresos)}
-                        </p>
-                        <div className="mt-4 flex items-end gap-1.5" style={{ height: 64 }}>
-                            {ingBars.map((bar) => (
-                                <div
-                                    key={bar.mes}
-                                    className="bg-cg-tertiary/40 flex-1 rounded-t transition-all"
-                                    style={{ height: `${bar.height}%` }}
-                                    title={`${getMesNombre(bar.mes)}: ${formatCLP(bar.total)}`}
-                                />
-                            ))}
-                        </div>
-                        <div className="mt-2 flex gap-1.5">
-                            {ingBars.map((bar) => (
-                                <span
-                                    key={bar.mes}
-                                    className="text-cg-outline flex-1 text-center text-[9px]"
-                                >
-                                    {getMesNombre(bar.mes).slice(0, 3)}
-                                </span>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Mini chart: Egresos */}
-                    <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-5">
-                        <p className="text-cg-on-surface-variant text-xs font-medium tracking-wider uppercase">
-                            Egresos
-                        </p>
-                        <p className="font-display text-cg-secondary-tonal mt-1 text-xl font-bold">
-                            {formatCLP(tesoreria.totalEgresos)}
-                        </p>
-                        <div className="mt-4 flex items-end gap-1.5" style={{ height: 64 }}>
-                            {egBars.map((bar) => (
-                                <div
-                                    key={bar.mes}
-                                    className="bg-cg-secondary/40 flex-1 rounded-t transition-all"
-                                    style={{ height: `${bar.height}%` }}
-                                    title={`${getMesNombre(bar.mes)}: ${formatCLP(bar.total)}`}
-                                />
-                            ))}
-                        </div>
-                        <div className="mt-2 flex gap-1.5">
-                            {egBars.map((bar) => (
-                                <span
-                                    key={bar.mes}
-                                    className="text-cg-outline flex-1 text-center text-[9px]"
-                                >
-                                    {getMesNombre(bar.mes).slice(0, 3)}
-                                </span>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Mini chart: Balance */}
-                    <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-5">
-                        <p className="text-cg-on-surface-variant text-xs font-medium tracking-wider uppercase">
-                            Balance
-                        </p>
-                        <p className="font-display text-cg-primary-tonal mt-1 text-xl font-bold">
-                            {formatCLP(tesoreria.balance)}
-                        </p>
-                        <div className="mt-4 flex items-end gap-1.5" style={{ height: 64 }}>
-                            {balBars.map((bar) => (
-                                <div
-                                    key={bar.mes}
-                                    className="bg-cg-primary/40 flex-1 rounded-t transition-all"
-                                    style={{ height: `${bar.height}%` }}
-                                    title={`${getMesNombre(bar.mes)}: ${formatCLP(bar.total)}`}
-                                />
-                            ))}
-                        </div>
-                        <div className="mt-2 flex gap-1.5">
-                            {balBars.map((bar) => (
-                                <span
-                                    key={bar.mes}
-                                    className="text-cg-outline flex-1 text-center text-[9px]"
-                                >
-                                    {getMesNombre(bar.mes).slice(0, 3)}
-                                </span>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            </GlassPanel>
         </div>
     );
 }

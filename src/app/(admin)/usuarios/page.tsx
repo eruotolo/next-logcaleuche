@@ -2,6 +2,7 @@ import { BookOpen, Compass, Sun, Users } from 'lucide-react';
 import type { Metadata } from 'next';
 
 import { getCategories, getGrados, getOficiales, getUsuarios } from '@/features/usuarios/actions';
+import { CandidatesSubtitle } from '@/features/usuarios/components/CandidatesSubtitle';
 import { CreateUserModal } from '@/features/usuarios/components/CreateUserModal';
 import { UserList } from '@/features/usuarios/components/UserList';
 
@@ -15,6 +16,12 @@ export const metadata: Metadata = {
 export default async function UsuariosPage() {
     const session = await auth();
     const canRegister = session?.user?.categoryId && session.user.categoryId <= 2;
+    const isMaestro = session?.user?.grado === 3;
+    const isSuperAdmin = session?.user?.categoryId === 1;
+
+    const today = new Date();
+    const twentyTwoMonthsAgo = new Date(today);
+    twentyTwoMonthsAgo.setMonth(twentyTwoMonthsAgo.getMonth() - 22);
 
     const [
         usuarios,
@@ -22,15 +29,29 @@ export default async function UsuariosPage() {
         aprendices,
         companeros,
         maestros,
+        candidatosAprendiz,
+        candidatosCompanero,
         grados,
         categories,
         oficiales,
     ] = await Promise.all([
-        getUsuarios(),
+        getUsuarios(200, isSuperAdmin),
         prisma.user.count({ where: { active: true } }),
         prisma.user.count({ where: { active: true, gradoId: 1 } }),
         prisma.user.count({ where: { active: true, gradoId: 2 } }),
         prisma.user.count({ where: { active: true, gradoId: 3 } }),
+        isMaestro
+            ? prisma.user.findMany({
+                  where: { active: true, gradoId: 1, dateInitiation: { lte: twentyTwoMonthsAgo } },
+                  select: { name: true, lastName: true },
+              })
+            : Promise.resolve([]),
+        isMaestro
+            ? prisma.user.findMany({
+                  where: { active: true, gradoId: 2, dateSalary: { lte: twentyTwoMonthsAgo } },
+                  select: { name: true, lastName: true },
+              })
+            : Promise.resolve([]),
         canRegister ? getGrados() : Promise.resolve([]),
         canRegister ? getCategories() : Promise.resolve([]),
         canRegister ? getOficiales() : Promise.resolve([]),
@@ -53,16 +74,20 @@ export default async function UsuariosPage() {
             icon: Compass,
             iconBg: 'bg-slate-500/10',
             iconColor: 'text-slate-400',
-            subtitleColor: 'text-cg-outline',
+            subtitleColor:
+                candidatosAprendiz.length > 0 ? 'text-cg-secondary-tonal' : 'text-cg-outline',
+            candidates: candidatosAprendiz,
         },
         {
             label: 'Compañeros',
             value: companeros,
-            subtitle: '3 candidatos a aumento',
+            subtitle: 'Grado 2',
             icon: BookOpen,
             iconBg: 'bg-cg-secondary-tonal/10',
             iconColor: 'text-cg-secondary-tonal',
-            subtitleColor: 'text-cg-secondary-tonal',
+            subtitleColor:
+                candidatosCompanero.length > 0 ? 'text-cg-secondary-tonal' : 'text-cg-outline',
+            candidates: candidatosCompanero,
         },
         {
             label: 'Maestros',
@@ -116,7 +141,16 @@ export default async function UsuariosPage() {
                                 <card.icon className={`h-6 w-6 ${card.iconColor}`} />
                             </div>
                         </div>
-                        <p className={`mt-3 text-[10px] ${card.subtitleColor}`}>{card.subtitle}</p>
+                        {card.candidates && card.candidates.length > 0 ? (
+                            <CandidatesSubtitle
+                                candidates={card.candidates}
+                                subtitleColor={card.subtitleColor}
+                            />
+                        ) : (
+                            <p className={`mt-3 text-[10px] ${card.subtitleColor}`}>
+                                {card.subtitle}
+                            </p>
+                        )}
                     </div>
                 ))}
             </div>

@@ -13,7 +13,7 @@ export function Tooltip({
     delayDuration = 200,
 }: {
     children: React.ReactNode;
-    content: string;
+    content: React.ReactNode;
     side?: 'top' | 'right' | 'bottom' | 'left';
     delayDuration?: number;
 }) {

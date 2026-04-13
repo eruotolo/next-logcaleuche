@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useTransition } from 'react';
+import { useMemo, useState, useTransition } from 'react';
 
 import { useRouter } from 'next/navigation';
 
@@ -144,6 +144,8 @@ function ActionsCell({
 export function TesoreriaTable({ rows, tipo, motivos = [], usuarios = [] }: TesoreriaTableProps) {
     const editModal = useModal<Row>();
     const router = useRouter();
+    // Estado de página elevado aquí para sobrevivir a router.refresh()
+    const [page, setPage] = useState(1);
 
     // Años disponibles derivados de los datos (para filtro condicional)
     const anoOptions = useMemo(() => {
@@ -223,6 +225,8 @@ export function TesoreriaTable({ rows, tipo, motivos = [], usuarios = [] }: Teso
                 data={rows}
                 columns={columns}
                 keyExtractor={(r) => r.id}
+                page={page}
+                onPageChange={setPage}
                 searchPlaceholder="Buscar por miembro o motivo…"
                 searchFn={(r, q) => {
                     const miembro = `${r.user?.name ?? ''} ${r.user?.lastName ?? ''}`.toLowerCase();

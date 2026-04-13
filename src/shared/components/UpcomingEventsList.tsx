@@ -26,6 +26,7 @@ interface UpcomingEventsListProps {
     linkHref?: string;
     title?: string;
     emptyMessage?: string;
+    className?: string;
     onEventClick?: (evento: UpcomingEventItem) => void;
     onEventDelete?: (id: number, nombre: string) => void;
 }
@@ -52,18 +53,25 @@ export function UpcomingEventsList({
     linkHref = '/eventos',
     title = 'Próximos Eventos',
     emptyMessage = 'No hay eventos próximos.',
+    className = '',
     onEventClick,
     onEventDelete,
 }: UpcomingEventsListProps) {
     const visibleEventos = eventos.slice(0, maxItems);
 
     return (
-        <div className="rounded-2xl border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.03)] p-6 backdrop-blur-[20px]">
-            <h2 className="font-display text-cg-secondary-tonal mb-6 border-b border-[rgba(255,255,255,0.1)] pb-4 text-lg font-bold">
-                {title}
-            </h2>
+        <div className={`flex flex-col rounded-xl border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.03)] backdrop-blur-[20px] ${className}`}>
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.08)] px-6 py-4">
+                <div className="flex items-center gap-2">
+                    <Calendar className="text-cg-secondary-tonal h-4 w-4" />
+                    <h2 className="font-display text-cg-on-surface text-[15px] font-semibold">
+                        {title}
+                    </h2>
+                </div>
+            </div>
 
-            <div className="space-y-4">
+            <div className="flex-1 space-y-4 px-6 py-4">
                 {visibleEventos.length === 0 && (
                     <p className="text-cg-outline py-8 text-center text-sm italic">
                         {emptyMessage}
@@ -147,12 +155,14 @@ export function UpcomingEventsList({
             </div>
 
             {showLink && (
-                <Link
-                    href={linkHref}
-                    className="border-cg-primary-tonal/30 text-cg-primary-tonal hover:bg-cg-primary-tonal/10 mt-8 block w-full rounded-lg border py-2 text-center text-xs font-bold transition-colors"
-                >
-                    {linkText}
-                </Link>
+                <div className="px-6 pb-4">
+                    <Link
+                        href={linkHref}
+                        className="border-cg-primary-tonal/30 text-cg-primary-tonal hover:bg-cg-primary-tonal/10 block w-full rounded-lg border py-2 text-center text-xs font-bold transition-colors"
+                    >
+                        {linkText}
+                    </Link>
+                </div>
             )}
         </div>
     );

@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 
 import type { Metadata } from 'next';
 
+import { getPagosUsuarioAno } from '@/features/tesoreria/actions';
 import {
     getCategories,
     getGrados,
@@ -36,11 +37,12 @@ export default async function UsuarioPage({ params }: { params: Promise<{ id: st
         notFound();
     }
 
-    const [grados, oficiales, categories, tarifas] = await Promise.all([
+    const [grados, oficiales, categories, tarifas, pagos] = await Promise.all([
         getGrados(),
         getOficiales(),
         getCategories(),
         getTarifas(),
+        getPagosUsuarioAno(user.id),
     ]);
 
     return (
@@ -51,6 +53,7 @@ export default async function UsuarioPage({ params }: { params: Promise<{ id: st
             oficiales={oficiales}
             categories={categories}
             tarifas={tarifas}
+            pagos={pagos}
         />
     );
 }

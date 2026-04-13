@@ -42,9 +42,9 @@ const PasswordSchema = z
         path: ['confirm'],
     });
 
-export async function getUsuarios(limit = 200) {
+export async function getUsuarios(limit = 200, includeInactive = false) {
     return prisma.user.findMany({
-        where: { active: true },
+        where: includeInactive ? undefined : { active: true },
         include: {
             grado: true,
             category: true,
@@ -58,7 +58,7 @@ export async function getUsuarios(limit = 200) {
 export async function getUsuarioById(id: number) {
     return prisma.user.findUnique({
         where: { id },
-        include: { grado: true, oficialidad: true, category: true },
+        include: { grado: true, oficialidad: true, category: true, tarifa: true },
     });
 }
 

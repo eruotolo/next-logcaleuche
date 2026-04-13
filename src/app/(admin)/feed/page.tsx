@@ -15,24 +15,39 @@ export default async function FeedPage() {
 
     const grado = session.user.grado ?? 1;
     const canEdit = session.user.categoryId <= 3;
+    const canDelete = session.user.categoryId <= 2;
 
-    const [posts, eventos, usuarios, categories] = await Promise.all([
+    const [posts, eventos, usersWithBirthday, categories] = await Promise.all([
         getFeedPosts(),
         getEventos(grado),
         prisma.user.findMany({
-            where: { active: true },
-            select: {
-                id: true,
-                name: true,
-                lastName: true,
-                image: true,
-                grado: { select: { nombre: true } },
-            },
-            orderBy: { name: 'asc' },
-            take: 10,
+            where: { active: true, dateBirthday: { not: null } },
+            select: { id: true, name: true, lastName: true, dateBirthday: true, image: true },
         }),
         getCategoryFeeds(),
     ]);
+
+    // Calcular próximos cumpleaños en los siguientes 30 días
+    const today = new Date();
+    const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const limitDate = new Date(startOfToday);
+    limitDate.setDate(limitDate.getDate() + 30);
+
+    const upcomingBirthdays = usersWithBirthday
+        .map((u) => {
+            const bday = u.dateBirthday as Date;
+            const currentYear = today.getFullYear();
+            let next = new Date(currentYear, bday.getMonth(), bday.getDate());
+            if (next < startOfToday) {
+                next = new Date(currentYear + 1, bday.getMonth(), bday.getDate());
+            }
+            const daysUntil = Math.round(
+                (next.getTime() - startOfToday.getTime()) / (1000 * 60 * 60 * 24),
+            );
+            return { id: u.id, name: u.name, lastName: u.lastName, image: u.image, nextBirthday: next, daysUntil };
+        })
+        .filter((u) => u.nextBirthday >= startOfToday && u.nextBirthday <= limitDate)
+        .sort((a, b) => a.daysUntil - b.daysUntil);
 
     return (
         <div className="space-y-6">
@@ -52,12 +67,22 @@ export default async function FeedPage() {
             <div className="flex gap-8">
                 {/* Left: Feed Timeline (65%) */}
                 <div className="w-full xl:w-[65%]">
-                    <FeedList posts={posts} canEdit={canEdit} categories={categories} />
+                    <FeedList
+                        posts={posts}
+                        canEdit={canEdit}
+                        canDelete={canDelete}
+                        categories={categories}
+                    />
                 </div>
 
                 {/* Right: Sidebar (35%) */}
                 <div className="hidden xl:block xl:w-[35%]">
-                    <FeedSidebar usuarios={usuarios} eventos={eventos} totalPosts={posts.length} />
+                    <FeedSidebar
+                        posts={posts}
+                        eventos={eventos}
+                        upcomingBirthdays={upcomingBirthdays}
+                        totalPosts={posts.length}
+                    />
                 </div>
             </div>
         </div>

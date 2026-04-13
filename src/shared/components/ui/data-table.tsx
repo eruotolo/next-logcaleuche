@@ -50,6 +50,10 @@ export interface DataTableProps<T> {
     emptyFilteredMessage?: string;
     /** Cuántos ítems por página. Por defecto 6. */
     pageSize?: number;
+    /** Página actual (controlada externamente). Si se omite, se usa estado interno. */
+    page?: number;
+    /** Callback cuando la página cambia (requerido si se usa page controlada). */
+    onPageChange?: (page: number) => void;
 }
 
 export function DataTable<T>({
@@ -62,13 +66,27 @@ export function DataTable<T>({
     emptyMessage = 'No hay registros.',
     emptyFilteredMessage = 'Sin resultados para los filtros aplicados.',
     pageSize = 6,
+    page: externalPage,
+    onPageChange: externalOnPageChange,
 }: DataTableProps<T>) {
     const [query, setQuery] = useState('');
     // Un estado de filtro por cada FilterDef ('' = sin filtrar)
     const [filterValues, setFilterValues] = useState<(string | number)[]>(() =>
         filters.map(() => ''),
     );
-    const [page, setPage] = useState(1);
+    const [internalPage, setInternalPage] = useState(1);
+
+    // Soporte de página controlada: si el padre pasa `page`, se usa ese valor;
+    // de lo contrario se gestiona internamente.
+    const page = externalPage ?? internalPage;
+
+    function setPage(newPage: number) {
+        if (externalPage !== undefined) {
+            externalOnPageChange?.(newPage);
+        } else {
+            setInternalPage(newPage);
+        }
+    }
 
     // Aplica búsqueda y todos los filtros con useMemo
     const filtered = useMemo(() => {

@@ -178,9 +178,16 @@ export function UserList({
             header: 'Nombre Completo',
             cell: (u) => (
                 <div className="flex flex-col">
-                    <span className="text-cg-on-surface font-semibold">
-                        {u.name} {u.lastName}
-                    </span>
+                    <div className="flex items-center gap-2">
+                        <span className="text-cg-on-surface font-semibold">
+                            {u.name} {u.lastName}
+                        </span>
+                        {u.active === false && (
+                            <span className="rounded border border-red-500/20 bg-red-500/10 px-1.5 py-0.5 text-[10px] font-medium text-red-400 uppercase tracking-wider">
+                                Inactivo
+                            </span>
+                        )}
+                    </div>
                     {isAdmin && categories.length > 0 ? (
                         <div
                             className="relative"

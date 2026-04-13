@@ -1,20 +1,77 @@
 'use client';
 
+import { useTransition } from 'react';
+
+import Image from 'next/image';
 import Link from 'next/link';
 
-import { Calendar, Eye, Heart, MessageSquare, Pencil } from 'lucide-react';
+
+
+import { Calendar, Eye, Heart, MessageSquare, Pencil, Trash2 } from 'lucide-react';
+
+
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar';
 import { Badge } from '@/shared/components/ui/badge';
 import { Tooltip } from '@/shared/components/ui/tooltip';
 import { getCloudinaryImageUrl, getCloudinaryRawImageUrl } from '@/shared/lib/cloudinary';
-import { formatDate } from '@/shared/lib/utils';
 
+import { formatDate, truncate } from '@/shared/lib/utils';
+
+
+
+import { deleteFeedPost } from '../actions';
 import { EditFeedModal } from './EditFeedModal';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 interface FeedCardProps {
     post: any;
     canEdit?: boolean;
+    canDelete?: boolean;
     categories?: { id: number; nombre: string }[];
 }
 
@@ -24,9 +81,17 @@ const gradoColors: Record<number, string> = {
     3: 'bg-[rgba(155,255,206,0.2)] text-cg-tertiary-tonal',
 };
 
-export function FeedCard({ post, canEdit = false, categories = [] }: FeedCardProps) {
+export function FeedCard({ post, canEdit = false, canDelete = false, categories = [] }: FeedCardProps) {
     const gradoId = post.user?.gradoId ?? 1;
     const gradoNombre = post.user?.grado?.nombre ?? '';
+    const [isPending, startTransition] = useTransition();
+
+    function handleDelete() {
+        if (!confirm(`¿Eliminar la publicación "${post.titulo}"?`)) return;
+        startTransition(async () => {
+            await deleteFeedPost(post.id);
+        });
+    }
 
     return (
         <article className="group rounded-xl border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.03)] p-6 backdrop-blur-[20px] transition-all hover:bg-[rgba(255,255,255,0.07)]">
@@ -74,17 +139,20 @@ export function FeedCard({ post, canEdit = false, categories = [] }: FeedCardPro
 
             {/* Content */}
             <Link href={`/feed/${post.slug}`}>
-                <p className="text-cg-on-surface-variant mb-4 leading-relaxed">{post.contenido}</p>
+                <p className="text-cg-on-surface-variant mb-4 leading-relaxed">
+                    {truncate(post.contenido, 280)}
+                </p>
             </Link>
 
             {/* Image */}
             {post.fileName && (
                 <Link href={`/feed/${post.slug}`}>
-                    <div className="mb-4 overflow-hidden rounded-xl border border-[rgba(255,255,255,0.05)]">
-                        <img
+                    <div className="relative mb-4 aspect-video overflow-hidden rounded-xl border border-[rgba(255,255,255,0.05)]">
+                        <Image
                             src={getCloudinaryRawImageUrl(post.fileName) ?? ''}
-                            alt={post.titulo}
-                            className="aspect-video w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                            alt={post.titulo ?? ''}
+                            fill
+                            className="object-cover transition-transform duration-700 group-hover:scale-105"
                         />
                     </div>
                 </Link>
@@ -144,6 +212,19 @@ export function FeedCard({ post, canEdit = false, categories = [] }: FeedCardPro
                                 </Tooltip>
                             }
                         />
+                    )}
+
+                    {canDelete && (
+                        <Tooltip content="Eliminar publicación">
+                            <button
+                                type="button"
+                                onClick={handleDelete}
+                                disabled={isPending}
+                                className="text-cg-outline hover:text-cg-error flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg transition-colors hover:bg-[rgba(255,100,132,0.1)] disabled:opacity-50"
+                            >
+                                <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                        </Tooltip>
                     )}
                 </div>
             </div>

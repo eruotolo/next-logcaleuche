@@ -12,6 +12,7 @@ import {
     Mail,
     MapPin,
     Phone,
+    Receipt,
     Shield,
     User,
     Wallet,
@@ -26,7 +27,7 @@ import { Input } from '@/shared/components/ui/input';
 import { Modal } from '@/shared/components/ui/modal';
 import { useModal } from '@/shared/hooks/useModal';
 import { getCloudinaryImageUrl } from '@/shared/lib/cloudinary';
-import { cn, formatCLP, formatDate } from '@/shared/lib/utils';
+import { cn, formatCLP, formatDate, getMesNombre } from '@/shared/lib/utils';
 
 import { assignTarifa, updateProfile } from '../actions';
 
@@ -36,6 +37,14 @@ interface TarifaOption {
     monto: number;
 }
 
+interface PagoItem {
+    mes: string;
+    ano: string;
+    motivo: string;
+    monto: number;
+    fechaMov: Date;
+}
+
 interface UserProfileProps {
     user: any;
     currentUser: any;
@@ -43,6 +52,7 @@ interface UserProfileProps {
     oficiales: any[];
     categories: any[];
     tarifas: TarifaOption[];
+    pagos: PagoItem[];
 }
 
 export function UserProfile({
@@ -52,6 +62,7 @@ export function UserProfile({
     oficiales: _oficiales,
     categories: _categories,
     tarifas,
+    pagos,
 }: UserProfileProps) {
     const editModal = useModal();
     const router = useRouter();
@@ -416,10 +427,8 @@ export function UserProfile({
                             </CardContent>
                         </Card>
 
-                        {/* Aquí podrían ir las pestañas de Tesorería, Publicaciones, etc. en el futuro */}
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                            {isAdmin && (
-                                <Card>
+                        {isAdmin && (
+                            <Card>
                                     <CardHeader className="border-b pb-3">
                                         <CardTitle className="flex items-center gap-2 text-sm font-bold">
                                             <Wallet className="h-4 w-4 text-[#41a65a]" />
@@ -472,14 +481,82 @@ export function UserProfile({
                                             </Button>
                                         </div>
                                     </CardContent>
-                                </Card>
-                            )}
-                            <Card className="flex items-center justify-center border-2 border-dashed border-[rgba(70,70,88,0.2)] bg-[rgba(255,255,255,0.02)] py-10">
-                                <p className="text-cg-outline text-xs font-medium italic">
-                                    Sección Publicaciones próximamente
-                                </p>
                             </Card>
-                        </div>
+                        )}
+
+                        {currentUser.id === String(user.id) && (
+                        <Card>
+                                <CardHeader className="border-b pb-3">
+                                    <CardTitle className="flex items-center gap-2 text-sm font-bold">
+                                        <Receipt className="h-4 w-4 text-[#41a65a]" />
+                                        Pagos {new Date().getFullYear()}
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="pt-4">
+                                    {(() => {
+                                        const totalPagado = pagos.reduce((sum, p) => sum + p.monto, 0);
+                                        const cuotaMensual = user.tarifa?.monto ?? 45000;
+                                        const falta = Math.max(0, cuotaMensual * 12 - totalPagado);
+                                        const pagosPorMes = new Map(
+                                            pagos.map((p) => [Number.parseInt(p.mes, 10), p.monto]),
+                                        );
+
+                                        const renderMes = (mes: number) => {
+                                            const monto = pagosPorMes.get(mes);
+                                            return (
+                                                <div
+                                                    key={mes}
+                                                    className="flex items-center justify-between rounded-md px-2 py-1.5 hover:bg-[rgba(255,255,255,0.03)]"
+                                                >
+                                                    <span className="text-cg-on-surface text-sm">
+                                                        {getMesNombre(mes)}
+                                                    </span>
+                                                    {monto !== undefined ? (
+                                                        <span className="text-xs font-semibold text-[#41a65a]">
+                                                            {formatCLP(monto)}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-cg-outline text-xs">—</span>
+                                                    )}
+                                                </div>
+                                            );
+                                        };
+
+                                        return (
+                                            <>
+                                                <div className="grid grid-cols-2 gap-x-3">
+                                                    <div>{[1, 2, 3, 4, 5, 6].map(renderMes)}</div>
+                                                    <div>{[7, 8, 9, 10, 11, 12].map(renderMes)}</div>
+                                                </div>
+                                                <div className="mt-3 space-y-1 border-t border-[rgba(70,70,88,0.2)] px-2 pt-3">
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-cg-on-surface text-sm font-bold">
+                                                            Total pagado
+                                                        </span>
+                                                        <span className="text-sm font-bold text-[#41a65a]">
+                                                            {formatCLP(totalPagado)}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-cg-outline text-sm">
+                                                            Falta por pagar
+                                                        </span>
+                                                        <span
+                                                            className={cn(
+                                                                'text-sm font-semibold',
+                                                                falta > 0 ? 'text-orange-400' : 'text-[#41a65a]',
+                                                            )}
+                                                        >
+                                                            {falta > 0 ? formatCLP(falta) : 'Al día'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        );
+                                    })()}
+                                </CardContent>
+                            </Card>
+                        )}
                     </div>
                 </div>
             </div>
