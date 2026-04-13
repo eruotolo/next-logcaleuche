@@ -281,7 +281,7 @@ export function UserList({
             headerClassName: 'text-right',
             cellClassName: 'text-right',
             cell: (u) => (
-                <div className="flex justify-end gap-1">
+                <div className="flex flex-wrap justify-end gap-1">
                     {/* Botón Ver siempre visible */}
                     <UserViewModal userId={u.id} userName={`${u.name} ${u.lastName}`} />
 
@@ -374,6 +374,70 @@ export function UserList({
                 filters={filters}
                 emptyMessage="No se encontraron miembros activos."
                 emptyFilteredMessage="Sin resultados para los filtros aplicados."
+                mobileCard={(u) => (
+                    <div className="flex items-start gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
+                        <Avatar>
+                            <AvatarImage src={getCloudinaryImageUrl(u.image)} />
+                            <AvatarFallback className="text-cg-primary-tonal bg-[rgba(90,103,216,0.15)] font-medium">
+                                {u.name?.charAt(0)}
+                                {u.lastName?.charAt(0)}
+                            </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0 flex-1">
+                            <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0">
+                                    <p className="text-cg-on-surface font-semibold">
+                                        {u.name} {u.lastName}
+                                    </p>
+                                    <p className="text-cg-on-surface-variant truncate text-xs">
+                                        {u.email}
+                                    </p>
+                                    <p className="text-cg-outline font-mono text-xs">{u.username}</p>
+                                </div>
+                                <div className="flex shrink-0 flex-wrap justify-end gap-1">
+                                    <UserViewModal
+                                        userId={u.id}
+                                        userName={`${u.name} ${u.lastName}`}
+                                    />
+                                    {!isViewOnly && (
+                                        <Tooltip content="Editar Perfil">
+                                            <Button variant="outline" size="icon" asChild>
+                                                <Link href={`/usuarios/${u.id}`}>
+                                                    <UserCog className="h-4 w-4" />
+                                                </Link>
+                                            </Button>
+                                        </Tooltip>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="mt-2 flex flex-wrap gap-1.5">
+                                <Badge
+                                    variant="outline"
+                                    className={cn(
+                                        'px-2 py-0',
+                                        u.gradoId === 3
+                                            ? 'text-cg-tertiary-tonal border-[rgba(155,255,206,0.2)] bg-[rgba(155,255,206,0.12)]'
+                                            : u.gradoId === 2
+                                              ? 'text-cg-secondary-tonal border-[rgba(76,214,251,0.2)] bg-[rgba(76,214,251,0.12)]'
+                                              : 'text-cg-primary-tonal border-[rgba(158,167,255,0.2)] bg-[rgba(158,167,255,0.12)]',
+                                    )}
+                                >
+                                    {u.grado?.nombre}
+                                </Badge>
+                                {(u.oficialidadId ?? 0) > 1 && (
+                                    <span className="rounded border border-[rgba(249,115,22,0.2)] bg-[rgba(249,115,22,0.12)] px-1.5 py-0.5 text-xs font-medium text-orange-400">
+                                        {u.oficialidad?.nombre}
+                                    </span>
+                                )}
+                                {u.active === false && (
+                                    <span className="rounded border border-red-500/20 bg-red-500/10 px-1.5 py-0.5 text-[10px] font-medium text-red-400 uppercase tracking-wider">
+                                        Inactivo
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
             />
 
             {/* Modal cambio de grado — fuera del DataTable */}

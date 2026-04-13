@@ -26,13 +26,14 @@ import { cn } from '@/shared/lib/utils';
 
 interface TopbarProps {
     onToggleSidebar: () => void;
+    onToggleMobileSidebar: () => void;
     userName: string;
     userImage: string | null;
     userId: string;
     gradoNombre: string;
 }
 
-export function Topbar({ onToggleSidebar, userName, userImage, userId, gradoNombre }: TopbarProps) {
+export function Topbar({ onToggleSidebar, onToggleMobileSidebar, userName, userImage, userId, gradoNombre }: TopbarProps) {
     const [userDropdownOpen, setUserDropdownOpen] = useState(false);
     const [passwordModalOpen, setPasswordModalOpen] = useState(false);
     const [showCurrent, setShowCurrent] = useState(false);
@@ -90,11 +91,23 @@ export function Topbar({ onToggleSidebar, userName, userImage, userId, gradoNomb
             >
                 {/* Izquierda: toggle sidebar */}
                 <div className="flex items-center gap-3">
+                    {/* Mobile: abre drawer */}
+                    <Tooltip content="Menú">
+                        <button
+                            type="button"
+                            onClick={onToggleMobileSidebar}
+                            className="flex h-9 w-9 items-center justify-center rounded-lg text-[#aaa9be] transition-colors hover:bg-white/5 hover:text-[#e7e6fc] md:hidden"
+                            aria-label="Abrir menú"
+                        >
+                            <Menu className="h-5 w-5" />
+                        </button>
+                    </Tooltip>
+                    {/* Desktop: colapsa sidebar */}
                     <Tooltip content="Menú lateral">
                         <button
                             type="button"
                             onClick={onToggleSidebar}
-                            className="flex h-9 w-9 items-center justify-center rounded-lg text-[#aaa9be] transition-colors hover:bg-white/5 hover:text-[#e7e6fc]"
+                            className="hidden h-9 w-9 items-center justify-center rounded-lg text-[#aaa9be] transition-colors hover:bg-white/5 hover:text-[#e7e6fc] md:flex"
                             aria-label="Toggle sidebar"
                         >
                             <Menu className="h-5 w-5" />

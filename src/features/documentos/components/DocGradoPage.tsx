@@ -37,11 +37,20 @@ export async function DocGradoPage({
 
     if (userGrado < gradoMin && !isAdmin) redirect('/dashboard');
 
-    const [items, grados, allUsers] = await Promise.all([
+    const [rawItems, grados, allUsers] = await Promise.all([
         fetchers[tipo](gradoMin),
         getGrados(),
         tipo === 'trazado' ? getUsuarios() : Promise.resolve([]),
     ]);
+
+    // Biblioteca: Prisma returns `autor` (TS field name) but DocItem expects `autor_Libro`
+    const items =
+        tipo === 'biblioteca'
+            ? (rawItems as Array<Record<string, unknown>>).map(({ autor, ...rest }) => ({
+                  ...rest,
+                  autor_Libro: autor,
+              }))
+            : rawItems;
 
     const usuarios = allUsers as { id: number; name: string | null; lastName: string | null }[];
 

@@ -13,6 +13,7 @@ import {
     TableRow,
 } from '@/shared/components/ui/table';
 import { TablePagination } from '@/shared/components/ui/table-pagination';
+import { cn } from '@/shared/lib/utils';
 
 export interface ColumnDef<T> {
     header: string;
@@ -54,6 +55,11 @@ export interface DataTableProps<T> {
     page?: number;
     /** Callback cuando la página cambia (requerido si se usa page controlada). */
     onPageChange?: (page: number) => void;
+    /**
+     * Render alternativo para mobile (<768px). Si se provee, las filas se renderizan
+     * como cards apiladas en mobile. En desktop (md+) se muestra la tabla normal.
+     */
+    mobileCard?: (item: T) => React.ReactNode;
 }
 
 export function DataTable<T>({
@@ -68,6 +74,7 @@ export function DataTable<T>({
     pageSize = 6,
     page: externalPage,
     onPageChange: externalOnPageChange,
+    mobileCard,
 }: DataTableProps<T>) {
     const [query, setQuery] = useState('');
     // Un estado de filtro por cada FilterDef ('' = sin filtrar)
@@ -183,7 +190,26 @@ export function DataTable<T>({
                 )}
             </div>
 
-            <div className="cg-table-container">
+            {/* Vista cards — solo mobile, si el consumidor provee mobileCard */}
+            {mobileCard && (
+                <div className="space-y-3 md:hidden">
+                    {paged.map((item) => (
+                        <div key={keyExtractor(item)}>{mobileCard(item)}</div>
+                    ))}
+                    {filtered.length === 0 && (
+                        <p className="text-cg-on-surface-variant py-8 text-center text-sm italic">
+                            {hasActiveFilter ? emptyFilteredMessage : emptyMessage}
+                        </p>
+                    )}
+                    <TablePagination
+                        currentPage={safePage}
+                        totalPages={totalPages}
+                        onPageChange={setPage}
+                    />
+                </div>
+            )}
+
+            <div className={cn('cg-table-container', mobileCard && 'hidden md:block')}>
                 <Table>
                     <TableHeader>
                         <TableRow className="bg-[rgba(255,255,255,0.03)]">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
@@ -27,6 +27,8 @@ export function AdminShell({
     categoryId,
 }: AdminShellProps) {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+    const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+    const handleMobileClose = useCallback(() => setMobileSidebarOpen(false), []);
 
     return (
         <div className="flex min-h-screen bg-[#0c0d1c]">
@@ -58,6 +60,8 @@ export function AdminShell({
             {/* Sidebar */}
             <Sidebar
                 collapsed={sidebarCollapsed}
+                mobileOpen={mobileSidebarOpen}
+                onMobileClose={handleMobileClose}
                 grado={grado}
                 oficialidad={oficialidad}
                 categoryId={categoryId}
@@ -67,6 +71,7 @@ export function AdminShell({
             <div className="relative flex min-w-0 flex-1 flex-col transition-all duration-300">
                 <Topbar
                     onToggleSidebar={() => setSidebarCollapsed((v) => !v)}
+                    onToggleMobileSidebar={() => setMobileSidebarOpen((v) => !v)}
                     userName={userName}
                     userImage={userImage}
                     userId={userId}

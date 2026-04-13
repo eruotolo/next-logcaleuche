@@ -20,7 +20,7 @@ export async function uploadToCloudinary(
     folder: string,
     resourceType: 'image' | 'raw' = 'image',
 ): Promise<string> {
-    const UPLOAD_TIMEOUT_MS = 30_000; // 30 segundos máximo
+    const UPLOAD_TIMEOUT_MS = 60_000; // 60 segundos máximo
 
     // Obtener el buffer del archivo
     let buffer: Buffer = Buffer.from(await file.arrayBuffer());

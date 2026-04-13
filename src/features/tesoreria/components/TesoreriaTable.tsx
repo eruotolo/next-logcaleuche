@@ -236,6 +236,44 @@ export function TesoreriaTable({ rows, tipo, motivos = [], usuarios = [] }: Teso
                 filters={filters}
                 emptyMessage="No hay registros."
                 emptyFilteredMessage="Sin resultados para los filtros aplicados."
+                mobileCard={(r) => (
+                    <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
+                        <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0 flex-1">
+                                <p className="text-cg-on-surface font-semibold">
+                                    {r.user
+                                        ? `${r.user.name ?? ''} ${r.user.lastName ?? ''}`.trim()
+                                        : '—'}
+                                </p>
+                                <p className="text-cg-on-surface-variant text-sm">
+                                    {r.motivo?.nombre ?? '—'}
+                                </p>
+                                <p className="text-cg-outline text-xs">
+                                    {`${r.mes ?? ''} ${r.ano ?? ''}`.trim()} ·{' '}
+                                    {formatDate(r.fechaMov)}
+                                </p>
+                            </div>
+                            <div className="shrink-0 text-right">
+                                <p
+                                    className={
+                                        tipo === 'ingreso'
+                                            ? 'font-semibold text-[var(--color-entrada)]'
+                                            : 'font-semibold text-[var(--color-salida)]'
+                                    }
+                                >
+                                    {formatClp(r.monto)}
+                                </p>
+                                <div className="mt-1 flex justify-end">
+                                    <ActionsCell
+                                        row={r}
+                                        tipo={tipo}
+                                        onEdit={(row) => editModal.open(row)}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             />
 
             {editingRow && tipo === 'ingreso' && (

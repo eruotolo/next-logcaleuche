@@ -29,11 +29,11 @@ export function TablePagination({ currentPage, totalPages, onPageChange }: Table
     }
 
     return (
-        <div className="mt-4 flex items-center justify-between px-1 pt-4 pb-4">
-            <span className="text-cg-outline text-xs">
+        <div className="mt-4 flex flex-col gap-2 px-1 pt-4 pb-4 sm:flex-row sm:items-center sm:justify-between">
+            <span className="text-cg-outline text-center text-xs sm:text-left">
                 Página {currentPage} de {totalPages}
             </span>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center justify-center gap-1">
                 <button
                     type="button"
                     disabled={currentPage === 1}
@@ -43,11 +43,12 @@ export function TablePagination({ currentPage, totalPages, onPageChange }: Table
                     <ChevronLeft className="h-4 w-4" />
                 </button>
 
+                {/* Números de página — ocultos en mobile para evitar desbordamiento */}
                 {pages.map((p, i) =>
                     p === '...' ? (
                         <span
                             key={`ellipsis-${i}`}
-                            className="text-cg-outline flex h-8 w-8 items-center justify-center text-xs"
+                            className="text-cg-outline hidden h-8 w-8 items-center justify-center text-xs sm:flex"
                         >
                             …
                         </span>
@@ -56,7 +57,7 @@ export function TablePagination({ currentPage, totalPages, onPageChange }: Table
                             key={p}
                             type="button"
                             onClick={() => onPageChange(p as number)}
-                            className={`flex h-8 w-8 items-center justify-center rounded border text-sm transition-colors ${
+                            className={`hidden h-8 w-8 items-center justify-center rounded border text-sm transition-colors sm:flex ${
                                 p === currentPage
                                     ? 'text-cg-primary-tonal border-[rgba(90,103,216,0.5)] bg-[rgba(90,103,216,0.15)]'
                                     : 'text-cg-on-surface-variant border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] hover:bg-[rgba(255,255,255,0.06)]'

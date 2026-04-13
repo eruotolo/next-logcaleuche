@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import Image from 'next/image';
 import Link from 'next/link';
@@ -24,6 +24,8 @@ import { cn } from '@/shared/lib/utils';
 
 interface SidebarProps {
     collapsed: boolean;
+    mobileOpen: boolean;
+    onMobileClose: () => void;
     grado: number;
     oficialidad: number;
     categoryId: number;
@@ -37,11 +39,17 @@ interface NavItem {
     onlyIf?: boolean;
 }
 
-export function Sidebar({ collapsed, grado, oficialidad, categoryId }: SidebarProps) {
+export function Sidebar({ collapsed, mobileOpen, onMobileClose, grado, oficialidad, categoryId }: SidebarProps) {
     const pathname = usePathname();
     const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
 
-    const isAdmin = categoryId <= 2;
+    // Cerrar drawer mobile al cambiar de ruta (pathname es trigger intencional)
+    // biome-ignore lint/correctness/useExhaustiveDependencies: pathname is used as route-change trigger
+    useEffect(() => {
+        onMobileClose();
+    }, [pathname, onMobileClose]);
+
+    const _isAdmin = categoryId <= 2;
     const isTesorero = oficialidad === OFICIALIDAD.TESORERO || categoryId === CATEGORIA.SUPER_ADMIN;
 
     const toggleMenu = (label: string) => {
@@ -238,13 +246,28 @@ export function Sidebar({ collapsed, grado, oficialidad, categoryId }: SidebarPr
     };
 
     return (
+        <>
+            {/* Overlay backdrop — solo en mobile cuando el drawer está abierto */}
+            {mobileOpen && (
+                <div
+                    className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
+                    onClick={onMobileClose}
+                    aria-hidden="true"
+                />
+            )}
+
         <aside
             className={cn(
-                'sticky top-0 z-40 flex min-h-screen flex-col overflow-y-auto transition-[width] duration-300',
-                // Frosted glass spec
+                'flex flex-col overflow-y-auto',
+                // Frosted glass
                 'bg-[rgba(255,255,255,0.03)] backdrop-blur-xl',
                 'border-r border-white/[0.06]',
-                collapsed ? 'w-[70px]' : 'w-[250px]',
+                // Mobile: drawer fijo (slide desde la izquierda)
+                'fixed inset-y-0 left-0 z-50 w-[260px] transition-[width,transform] duration-300',
+                mobileOpen ? 'translate-x-0' : '-translate-x-full',
+                // Desktop: sidebar sticky (override mobile fixed)
+                'md:static md:inset-auto md:z-40 md:min-h-screen md:translate-x-0',
+                collapsed ? 'md:w-[70px]' : 'md:w-[250px]',
             )}
         >
             {/* Logo */}
@@ -306,5 +329,6 @@ export function Sidebar({ collapsed, grado, oficialidad, categoryId }: SidebarPr
                 </div>
             )}
         </aside>
+        </>
     );
 }
