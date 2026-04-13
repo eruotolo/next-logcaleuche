@@ -1,5 +1,7 @@
 import { redirect } from 'next/navigation';
 
+import type { Metadata } from 'next';
+
 import { getEntradas, getMotivoEntradas, getResumenTesoreria } from '@/features/tesoreria/actions';
 import { CreateEntradaModal } from '@/features/tesoreria/components/CreateEntradaModal';
 import { MultiCuotaModal } from '@/features/tesoreria/components/MultiCuotaModal';
@@ -11,6 +13,10 @@ import { getUsuarios } from '@/features/usuarios/actions';
 import { CATEGORIA, OFICIALIDAD } from '@/shared/constants/domain';
 import { auth } from '@/shared/lib/auth';
 import { prisma } from '@/shared/lib/db';
+
+export const metadata: Metadata = {
+    title: 'Ingresos — Logia Caleuche 250',
+};
 
 function StatCard({
     label,

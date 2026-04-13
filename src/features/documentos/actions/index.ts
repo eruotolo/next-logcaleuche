@@ -55,6 +55,8 @@ export async function createLibro(
     });
 
     revalidatePath('/aprendiz/biblioteca');
+    revalidatePath('/companero/biblioteca');
+    revalidatePath('/maestro/biblioteca');
     return { success: true, data: null };
 }
 
@@ -63,6 +65,8 @@ export async function deleteLibro(id: number): Promise<ActionResult<null>> {
     if (!session) return { success: false, error: 'No autorizado' };
     await prisma.biblioteca.delete({ where: { id } });
     revalidatePath('/aprendiz/biblioteca');
+    revalidatePath('/companero/biblioteca');
+    revalidatePath('/maestro/biblioteca');
     return { success: true, data: null };
 }
 
@@ -157,6 +161,8 @@ export async function createTrazado(
     });
 
     revalidatePath('/aprendiz/trazados');
+    revalidatePath('/companero/trazados');
+    revalidatePath('/maestro/trazados');
     return { success: true, data: null };
 }
 
@@ -165,6 +171,8 @@ export async function deleteTrazado(id: number): Promise<ActionResult<null>> {
     if (!session) return { success: false, error: 'No autorizado' };
     await prisma.trazado.delete({ where: { id } });
     revalidatePath('/aprendiz/trazados');
+    revalidatePath('/companero/trazados');
+    revalidatePath('/maestro/trazados');
     return { success: true, data: null };
 }
 

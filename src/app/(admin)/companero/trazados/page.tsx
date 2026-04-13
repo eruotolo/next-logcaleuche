@@ -1,4 +1,10 @@
+import type { Metadata } from 'next';
+
 import { DocGradoPage } from '@/features/documentos/components/DocGradoPage';
+
+export const metadata: Metadata = {
+    title: 'Trazados Compañero — Logia Caleuche 250',
+};
 
 export default function CompaneroTrazadosPage() {
     return (

@@ -1,5 +1,7 @@
 import { redirect } from 'next/navigation';
 
+import type { Metadata } from 'next';
+
 import { getEventos } from '@/features/eventos/actions';
 import { getCategoryFeeds, getFeedPosts } from '@/features/feed/actions';
 import { CreateFeedModal } from '@/features/feed/components/CreateFeedModal';
@@ -8,6 +10,10 @@ import { FeedSidebar } from '@/features/feed/components/FeedSidebar';
 
 import { auth } from '@/shared/lib/auth';
 import { prisma } from '@/shared/lib/db';
+
+export const metadata: Metadata = {
+    title: 'Feed — Logia Caleuche 250',
+};
 
 export default async function FeedPage() {
     const session = await auth();

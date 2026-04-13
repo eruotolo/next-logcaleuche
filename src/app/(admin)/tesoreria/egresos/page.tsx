@@ -1,11 +1,17 @@
 import { redirect } from 'next/navigation';
 
+import type { Metadata } from 'next';
+
 import { getMotivoSalidas, getResumenTesoreria, getSalidas } from '@/features/tesoreria/actions';
 import { CreateSalidaModal } from '@/features/tesoreria/components/CreateSalidaModal';
 import { TesoreriaTable } from '@/features/tesoreria/components/TesoreriaTable';
 
 import { CATEGORIA, OFICIALIDAD } from '@/shared/constants/domain';
 import { auth } from '@/shared/lib/auth';
+
+export const metadata: Metadata = {
+    title: 'Egresos — Logia Caleuche 250',
+};
 
 function StatCard({
     label,

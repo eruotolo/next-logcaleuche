@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import Link from 'next/link';
 
 import type { Metadata } from 'next';
 
@@ -52,9 +53,9 @@ export default function LoginPage() {
                     <LoginForm />
 
                     <div className="ag-form-footer">
-                        <a href="/recovery" className="ag-form-footer-link">
+                        <Link href="/recovery" className="ag-form-footer-link">
                             Solicitar Acceso
-                        </a>
+                        </Link>
                     </div>
                 </div>
 

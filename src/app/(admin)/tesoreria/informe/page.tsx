@@ -1,9 +1,15 @@
 import { redirect } from 'next/navigation';
 
+import type { Metadata } from 'next';
+
 import { InformeTesoreria } from '@/features/tesoreria/components/InformeTesoreria';
 
 import { CATEGORIA, OFICIALIDAD } from '@/shared/constants/domain';
 import { auth } from '@/shared/lib/auth';
+
+export const metadata: Metadata = {
+    title: 'Informe — Logia Caleuche 250',
+};
 
 export default async function InformePage() {
     const session = await auth();

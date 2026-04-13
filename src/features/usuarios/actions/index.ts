@@ -296,6 +296,7 @@ export async function updatePassword(
     const hashed = await bcrypt.hash(parsed.data.password, 12);
     await prisma.user.update({ where: { id: user.id }, data: { password: hashed } });
 
+    revalidatePath('/usuarios');
     return { success: true, data: null };
 }
 

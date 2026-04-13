@@ -1,10 +1,16 @@
 import { redirect } from 'next/navigation';
 
+import type { Metadata } from 'next';
+
 import { getDocumentos } from '@/features/documentos/actions';
 import { DocumentoList } from '@/features/documentos/components/DocumentoList';
 import { UploadDocumentoModal } from '@/features/documentos/components/UploadDocumentoModal';
 
 import { auth } from '@/shared/lib/auth';
+
+export const metadata: Metadata = {
+    title: 'Documentos — Logia Caleuche 250',
+};
 
 export default async function DocumentosPage() {
     const session = await auth();

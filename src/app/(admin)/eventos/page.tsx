@@ -1,10 +1,16 @@
 import { redirect } from 'next/navigation';
 
+import type { Metadata } from 'next';
+
 import { getEventosCalendario, getGrados } from '@/features/eventos/actions';
 import { EventoCalendar } from '@/features/eventos/components/EventoCalendar';
 import { EventosAdminToolbar } from '@/features/eventos/components/EventosAdminToolbar';
 
 import { auth } from '@/shared/lib/auth';
+
+export const metadata: Metadata = {
+    title: 'Eventos — Logia Caleuche 250',
+};
 
 export default async function EventosPage() {
     const session = await auth();
