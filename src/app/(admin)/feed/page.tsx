@@ -41,9 +41,9 @@ export default async function FeedPage() {
         .map((u) => {
             const bday = u.dateBirthday as Date;
             const currentYear = today.getFullYear();
-            let next = new Date(currentYear, bday.getMonth(), bday.getDate());
+            let next = new Date(currentYear, bday.getUTCMonth(), bday.getUTCDate());
             if (next < startOfToday) {
-                next = new Date(currentYear + 1, bday.getMonth(), bday.getDate());
+                next = new Date(currentYear + 1, bday.getUTCMonth(), bday.getUTCDate());
             }
             const daysUntil = Math.round(
                 (next.getTime() - startOfToday.getTime()) / (1000 * 60 * 60 * 24),

@@ -19,9 +19,10 @@ import { toast } from 'sonner';
 
 import { updatePassword } from '@/features/usuarios/actions';
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar';
+import Image from 'next/image';
+
 import { Tooltip } from '@/shared/components/ui/tooltip';
-import { getCloudinaryImageUrl } from '@/shared/lib/cloudinary';
+import { getCloudinaryRawImageUrl } from '@/shared/lib/cloudinary';
 import { cn } from '@/shared/lib/utils';
 
 interface TopbarProps {
@@ -128,12 +129,21 @@ export function Topbar({ onToggleSidebar, onToggleMobileSidebar, userName, userI
                                 userDropdownOpen && 'bg-white/5 text-[#e7e6fc]',
                             )}
                         >
-                            <Avatar className="h-7 w-7 ring-1 ring-[#5a67d8]/40">
-                                <AvatarImage src={getCloudinaryImageUrl(userImage)} />
-                                <AvatarFallback className="bg-[rgba(90,103,216,0.55)] text-[10px] font-semibold text-white">
-                                    {initials}
-                                </AvatarFallback>
-                            </Avatar>
+                            <div className="relative h-7 w-7 shrink-0 overflow-hidden rounded-full ring-1 ring-[#5a67d8]/40">
+                                {userImage ? (
+                                    <Image
+                                        src={getCloudinaryRawImageUrl(userImage) as string}
+                                        alt={userName}
+                                        width={600}
+                                        height={600}
+                                        className="h-full w-full object-cover"
+                                    />
+                                ) : (
+                                    <div className="flex h-full w-full items-center justify-center bg-[rgba(90,103,216,0.55)] text-[10px] font-semibold text-white">
+                                        {initials}
+                                    </div>
+                                )}
+                            </div>
 
                             <span className="hidden max-w-[120px] truncate text-sm font-medium xl:block">
                                 Q∴H∴ {userName}

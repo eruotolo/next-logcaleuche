@@ -11,10 +11,9 @@ import { Calendar, Eye, Heart, MessageSquare, Pencil, Trash2 } from 'lucide-reac
 
 
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar';
 import { Badge } from '@/shared/components/ui/badge';
 import { Tooltip } from '@/shared/components/ui/tooltip';
-import { getCloudinaryImageUrl, getCloudinaryRawImageUrl } from '@/shared/lib/cloudinary';
+import { getCloudinaryRawImageUrl } from '@/shared/lib/cloudinary';
 
 import { formatDate, truncate } from '@/shared/lib/utils';
 
@@ -101,19 +100,11 @@ export function FeedCard({ post, canEdit = false, canDelete = false, categories 
                 <div className="flex gap-4">
                     <div className="h-11 w-11 rounded-full bg-gradient-to-tr from-[rgba(90,103,216,0.6)] to-[rgba(76,214,251,0.6)] p-[2px]">
                         <div className="h-full w-full overflow-hidden rounded-full border-2 border-[#17182a]">
-                            <Avatar className="h-full w-full">
-                                <AvatarImage
-                                    src={
-                                        post.user?.image
-                                            ? getCloudinaryImageUrl(post.user.image)
-                                            : undefined
-                                    }
-                                />
-                                <AvatarFallback className="text-cg-primary-tonal bg-[rgba(90,103,216,0.3)] text-sm font-bold">
-                                    {post.user?.name?.[0]}
-                                    {post.user?.lastName?.[0]}
-                                </AvatarFallback>
-                            </Avatar>
+                            {post.user?.image ? (
+                                <Image src={getCloudinaryRawImageUrl(post.user.image) as string} alt={`${post.user?.name} ${post.user?.lastName}`} width={600} height={600} className="h-full w-full object-cover" />
+                            ) : (
+                                <div className="text-cg-primary-tonal flex h-full w-full items-center justify-center bg-[rgba(90,103,216,0.3)] text-sm font-bold">{post.user?.name?.[0]}{post.user?.lastName?.[0]}</div>
+                            )}
                         </div>
                     </div>
                     <div>

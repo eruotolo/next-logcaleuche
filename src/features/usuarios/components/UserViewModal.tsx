@@ -5,13 +5,14 @@ import { useEffect, useState } from 'react';
 import { Eye } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar';
+import Image from 'next/image';
+
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
 import { Modal } from '@/shared/components/ui/modal';
 import { Tooltip } from '@/shared/components/ui/tooltip';
 import { useModal } from '@/shared/hooks/useModal';
-import { getCloudinaryImageUrl } from '@/shared/lib/cloudinary';
+import { getCloudinaryRawImageUrl } from '@/shared/lib/cloudinary';
 import { cn, formatDate } from '@/shared/lib/utils';
 
 import { getUsuarioById } from '../actions';
@@ -56,13 +57,13 @@ export function UserViewModal({ userId, userName }: UserViewModalProps) {
                     <div className="space-y-5">
                         {/* Avatar + nombre */}
                         <div className="flex items-center gap-4">
-                            <Avatar className="h-16 w-16 text-lg">
-                                <AvatarImage src={getCloudinaryImageUrl(usuario.image)} />
-                                <AvatarFallback className="text-cg-primary-tonal bg-[rgba(90,103,216,0.15)] font-semibold">
-                                    {usuario.name?.charAt(0)}
-                                    {usuario.lastName?.charAt(0)}
-                                </AvatarFallback>
-                            </Avatar>
+                            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full">
+                                {usuario.image ? (
+                                    <Image src={getCloudinaryRawImageUrl(usuario.image) as string} alt={`${usuario.name} ${usuario.lastName}`} width={600} height={600} className="h-full w-full object-cover" />
+                                ) : (
+                                    <div className="text-cg-primary-tonal flex h-full w-full items-center justify-center bg-[rgba(90,103,216,0.15)] text-lg font-semibold">{usuario.name?.charAt(0)}{usuario.lastName?.charAt(0)}</div>
+                                )}
+                            </div>
                             <div>
                                 <p className="text-cg-on-surface text-lg font-bold">
                                     {usuario.name} {usuario.lastName}

@@ -50,13 +50,17 @@ export async function uploadToCloudinary(
         }
     }
 
-    // Si es imagen, optimizar a WebP con sharp
+    // Si es imagen, optimizar a WebP con sharp (saltar si ya es WebP)
     if (resourceType === 'image') {
-        try {
-            buffer = await sharp(buffer).webp({ quality: 80, effort: 4 }).toBuffer();
-        } catch (error) {
-            console.error('Error optimizando la imagen con sharp:', error);
-            // Si el formato no es compatible continúa con el buffer original
+        const alreadyWebp =
+            buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50;
+        if (!alreadyWebp) {
+            try {
+                buffer = await sharp(buffer).webp({ quality: 80, effort: 4 }).toBuffer();
+            } catch (error) {
+                console.error('Error optimizando la imagen con sharp:', error);
+                // Si el formato no es compatible continúa con el buffer original
+            }
         }
     }
 

@@ -8,7 +8,8 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, ImageIcon, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar';
+import Image from 'next/image';
+
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Input } from '@/shared/components/ui/input';
@@ -91,12 +92,15 @@ export function UserForm({ grados, categories, onSuccess }: UserFormProps) {
                 <div className="space-y-3">
                     <label className="form-label">Foto de Perfil (Opcional)</label>
                     <div className="flex items-center gap-4">
-                        <Avatar className="h-16 w-16 border-2 border-[rgba(70,70,88,0.3)] shadow-sm">
-                            <AvatarImage src={previewUrl || ''} />
-                            <AvatarFallback className="bg-[rgba(255,255,255,0.03)] text-xl text-[#747487]">
-                                <UserPlus className="h-6 w-6 opacity-30" />
-                            </AvatarFallback>
-                        </Avatar>
+                        <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full border-2 border-[rgba(70,70,88,0.3)] shadow-sm">
+                            {previewUrl ? (
+                                <Image src={previewUrl} alt="Preview" width={600} height={600} className="h-full w-full object-cover" unoptimized />
+                            ) : (
+                                <div className="flex h-full w-full items-center justify-center bg-[rgba(255,255,255,0.03)] text-xl text-[#747487]">
+                                    <UserPlus className="h-6 w-6 opacity-30" />
+                                </div>
+                            )}
+                        </div>
 
                         <div className="flex flex-col gap-1">
                             <label className="text-cg-on-surface-variant flex w-fit cursor-pointer items-center gap-2 rounded-lg border border-[rgba(70,70,88,0.35)] bg-[rgba(255,255,255,0.04)] px-3 py-1.5 text-[13px] font-medium transition-colors hover:bg-[rgba(255,255,255,0.08)]">

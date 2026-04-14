@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useEffect, useState } from 'react';
+import { startTransition, useActionState, useCallback, useEffect, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
@@ -19,17 +19,19 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar';
+import Image from 'next/image';
+
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Input } from '@/shared/components/ui/input';
 import { Modal } from '@/shared/components/ui/modal';
 import { useModal } from '@/shared/hooks/useModal';
-import { getCloudinaryImageUrl } from '@/shared/lib/cloudinary';
+import { getCloudinaryRawImageUrl } from '@/shared/lib/cloudinary';
 import { cn, formatCLP, formatDate, getMesNombre } from '@/shared/lib/utils';
 
 import { assignTarifa, updateProfile } from '../actions';
+import { ImageCropperModal } from './ImageCropperModal';
 
 interface TarifaOption {
     id: number;
@@ -68,6 +70,8 @@ export function UserProfile({
     const router = useRouter();
     const [state, action, isPending] = useActionState(updateProfile, null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [cropSrc, setCropSrc] = useState<string | null>(null);
+    const [croppedBlob, setCroppedBlob] = useState<Blob | null>(null);
     const [selectedCuotaId, setSelectedCuotaId] = useState<number | ''>(user.cuotaId ?? '');
     const [isSavingCuota, setIsSavingCuota] = useState(false);
 
@@ -89,25 +93,44 @@ export function UserProfile({
         setIsSavingCuota(false);
     }
 
-    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
         const file = e.target.files?.[0];
-        if (file) {
-            setPreviewUrl(URL.createObjectURL(file));
-        } else {
-            setPreviewUrl(null);
-        }
+        if (!file) return;
+        e.target.value = '';
+        setCropSrc(URL.createObjectURL(file));
     };
 
+    const handleCropConfirm = useCallback((blob: Blob): void => {
+        setCroppedBlob(blob);
+        setPreviewUrl(URL.createObjectURL(blob));
+        setCropSrc(null);
+    }, []);
+
+    const handleCropCancel = useCallback((): void => {
+        setCropSrc(null);
+    }, []);
+
+    function handleFormSubmit(e: React.FormEvent<HTMLFormElement>): void {
+        e.preventDefault();
+        const formData = new FormData(e.currentTarget);
+        if (croppedBlob) {
+            formData.set('file', croppedBlob, 'avatar.webp');
+        }
+        startTransition(() => action(formData));
+    }
+
+    // biome-ignore lint/correctness/useExhaustiveDependencies: editModal.close y router.refresh son estables
     useEffect(() => {
         if (state?.success) {
             toast.success('Perfil actualizado');
             setPreviewUrl(null);
+            setCropSrc(null);
+            setCroppedBlob(null);
             editModal.close();
             router.refresh();
         } else if (state?.error) {
             toast.error(state.error);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [state]);
 
     return (
@@ -121,64 +144,73 @@ export function UserProfile({
                 title={`Editar Perfil: ${user.name} ${user.lastName}`}
                 size="xl"
             >
-                <form action={action} className="space-y-6">
+                <form onSubmit={handleFormSubmit} className="space-y-6">
                     <input type="hidden" name="userId" value={user.id} />
                     <div className="mb-6 flex flex-col items-center gap-4">
-                        <Avatar className="h-24 w-24 border-2 border-[rgba(70,70,88,0.3)] shadow-sm">
-                            <AvatarImage src={previewUrl || getCloudinaryImageUrl(user.image)} />
-                            <AvatarFallback className="text-xl">
-                                {user.name?.[0]}
-                                {user.lastName?.[0]}
-                            </AvatarFallback>
-                        </Avatar>
+                        <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-full border-2 border-[rgba(70,70,88,0.3)] shadow-sm">
+                            {(previewUrl || user.image) ? (
+                                <Image
+                                    src={previewUrl || (getCloudinaryRawImageUrl(user.image) as string)}
+                                    alt={`${user.name} ${user.lastName}`}
+                                    width={600}
+                                    height={600}
+                                    className="h-full w-full object-cover"
+                                    unoptimized={!!previewUrl}
+                                />
+                            ) : (
+                                <div className="bg-muted flex h-full w-full items-center justify-center text-xl">
+                                    {user.name?.[0]}{user.lastName?.[0]}
+                                </div>
+                            )}
+                        </div>
                         <div className="flex flex-col items-center gap-1">
                             <label className="text-cg-on-surface-variant flex cursor-pointer items-center gap-2 rounded-lg border border-[rgba(70,70,88,0.35)] bg-[rgba(255,255,255,0.04)] px-3 py-1.5 text-sm font-medium transition-colors hover:bg-[rgba(255,255,255,0.08)]">
                                 <ImageIcon className="h-4 w-4" />
                                 <span>Cambiar Foto</span>
                                 <input
                                     type="file"
-                                    name="file"
                                     className="hidden"
                                     accept="image/*"
                                     onChange={handleImageChange}
                                 />
                             </label>
                             <p className="text-cg-outline text-[10px]">
-                                Formatos: JPG, PNG. Máx 2MB.
+                                JPG, PNG o WebP. Se recortará en cuadrado.
                             </p>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <div className="space-y-2">
-                            <label className="form-label">Nombre</label>
-                            <Input name="name" defaultValue={user.name} required />
+                            <label htmlFor="edit-name" className="form-label">Nombre</label>
+                            <Input id="edit-name" name="name" defaultValue={user.name} required />
                         </div>
                         <div className="space-y-2">
-                            <label className="form-label">Apellido</label>
-                            <Input name="lastName" defaultValue={user.lastName} required />
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                        <div className="space-y-2">
-                            <label className="form-label">Email</label>
-                            <Input name="email" type="email" defaultValue={user.email} required />
-                        </div>
-                        <div className="space-y-2">
-                            <label className="form-label">Teléfono</label>
-                            <Input name="phone" defaultValue={user.phone} placeholder="+56 9 ..." />
+                            <label htmlFor="edit-lastName" className="form-label">Apellido</label>
+                            <Input id="edit-lastName" name="lastName" defaultValue={user.lastName} required />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <div className="space-y-2">
-                            <label className="form-label">Ciudad</label>
-                            <Input name="city" defaultValue={user.city} />
+                            <label htmlFor="edit-email" className="form-label">Email</label>
+                            <Input id="edit-email" name="email" type="email" defaultValue={user.email} required />
                         </div>
                         <div className="space-y-2">
-                            <label className="form-label">Fecha de Nacimiento</label>
+                            <label htmlFor="edit-phone" className="form-label">Teléfono</label>
+                            <Input id="edit-phone" name="phone" defaultValue={user.phone} placeholder="+56 9 ..." />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <div className="space-y-2">
+                            <label htmlFor="edit-city" className="form-label">Ciudad</label>
+                            <Input id="edit-city" name="city" defaultValue={user.city} />
+                        </div>
+                        <div className="space-y-2">
+                            <label htmlFor="edit-dateBirthday" className="form-label">Fecha de Nacimiento</label>
                             <Input
+                                id="edit-dateBirthday"
                                 name="dateBirthday"
                                 type="date"
                                 defaultValue={
@@ -191,8 +223,8 @@ export function UserProfile({
                     </div>
 
                     <div className="space-y-2">
-                        <label className="form-label">Dirección</label>
-                        <Input name="address" defaultValue={user.address} />
+                        <label htmlFor="edit-address" className="form-label">Dirección</label>
+                        <Input id="edit-address" name="address" defaultValue={user.address} />
                     </div>
 
                     <div className="flex justify-end gap-3 border-t border-[rgba(70,70,88,0.2)] pt-4">
@@ -203,19 +235,36 @@ export function UserProfile({
                 </form>
             </Modal>
 
+            {cropSrc && (
+                <ImageCropperModal
+                    open={true}
+                    imageSrc={cropSrc}
+                    onConfirm={handleCropConfirm}
+                    onCancel={handleCropCancel}
+                />
+            )}
+
             <div className="mx-auto max-w-4xl space-y-6 pb-12">
                 {/* Header Profile */}
                 <Card className="overflow-hidden border-none bg-transparent shadow-none">
                     <div className="h-32 rounded-t-xl bg-gradient-to-r from-[rgba(90,103,216,0.3)] to-[rgba(44,194,230,0.2)]" />
                     <CardContent className="-mt-12 px-6">
                         <div className="flex flex-col items-end gap-6 md:flex-row">
-                            <Avatar className="h-32 w-32 border-4 border-[rgba(70,70,88,0.3)] shadow-lg ring-1 ring-white/5">
-                                <AvatarImage src={getCloudinaryImageUrl(user.image)} />
-                                <AvatarFallback className="text-cg-primary-tonal bg-[rgba(90,103,216,0.15)] text-4xl font-bold">
-                                    {user.name?.[0]}
-                                    {user.lastName?.[0]}
-                                </AvatarFallback>
-                            </Avatar>
+                            <div className="relative h-32 w-32 shrink-0 overflow-hidden rounded-full border-4 border-[rgba(70,70,88,0.3)] shadow-lg ring-1 ring-white/5">
+                                {user.image ? (
+                                    <Image
+                                        src={getCloudinaryRawImageUrl(user.image) as string}
+                                        alt={`${user.name} ${user.lastName}`}
+                                        width={600}
+                                        height={600}
+                                        className="h-full w-full object-cover"
+                                    />
+                                ) : (
+                                    <div className="text-cg-primary-tonal flex h-full w-full items-center justify-center bg-[rgba(90,103,216,0.15)] text-4xl font-bold">
+                                        {user.name?.[0]}{user.lastName?.[0]}
+                                    </div>
+                                )}
+                            </div>
                             <div className="flex-1 pb-2">
                                 <div className="flex flex-wrap items-center gap-3">
                                     <h1 className="text-cg-on-surface text-3xl font-bold">

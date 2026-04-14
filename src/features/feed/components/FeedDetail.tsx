@@ -8,12 +8,13 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Calendar, MessageSquare, Send, Tag, Trash } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar';
+import Image from 'next/image';
+
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent } from '@/shared/components/ui/card';
 import { Tooltip } from '@/shared/components/ui/tooltip';
-import { getCloudinaryImageUrl, getCloudinaryRawImageUrl } from '@/shared/lib/cloudinary';
+import { getCloudinaryRawImageUrl } from '@/shared/lib/cloudinary';
 import { formatDate } from '@/shared/lib/utils';
 
 import type { getFeedPostBySlug } from '../actions';
@@ -104,13 +105,13 @@ export function FeedDetail({ post, others, currentUser }: FeedDetailProps) {
                         )}
                         <CardContent className="p-8">
                             <div className="mb-6 flex items-center gap-4 border-b border-[rgba(70,70,88,0.2)] pb-6">
-                                <Avatar className="h-12 w-12 ring-2 ring-[rgba(70,70,88,0.2)]">
-                                    <AvatarImage src={getCloudinaryImageUrl(post.user?.image)} />
-                                    <AvatarFallback className="text-cg-primary-tonal bg-[rgba(90,103,216,0.15)] font-bold">
-                                        {post.user?.name?.[0]}
-                                        {post.user?.lastName?.[0]}
-                                    </AvatarFallback>
-                                </Avatar>
+                                <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full ring-2 ring-[rgba(70,70,88,0.2)]">
+                                    {post.user?.image ? (
+                                        <Image src={getCloudinaryRawImageUrl(post.user.image) as string} alt={`${post.user?.name} ${post.user?.lastName}`} width={600} height={600} className="h-full w-full object-cover" />
+                                    ) : (
+                                        <div className="text-cg-primary-tonal flex h-full w-full items-center justify-center bg-[rgba(90,103,216,0.15)] font-bold">{post.user?.name?.[0]}{post.user?.lastName?.[0]}</div>
+                                    )}
+                                </div>
                                 <div>
                                     <p className="text-cg-on-surface font-bold">
                                         {post.user?.name} {post.user?.lastName}
@@ -169,15 +170,13 @@ export function FeedDetail({ post, others, currentUser }: FeedDetailProps) {
                                     key={comment.id}
                                     className="flex gap-4 rounded-xl border border-[rgba(70,70,88,0.2)] bg-[rgba(255,255,255,0.03)] p-4 shadow-sm"
                                 >
-                                    <Avatar className="h-10 w-10 shrink-0">
-                                        <AvatarImage
-                                            src={getCloudinaryImageUrl(comment.user?.image)}
-                                        />
-                                        <AvatarFallback className="text-cg-on-surface-variant bg-[rgba(255,255,255,0.06)] text-xs font-medium">
-                                            {comment.user?.name?.[0]}
-                                            {comment.user?.lastName?.[0]}
-                                        </AvatarFallback>
-                                    </Avatar>
+                                    <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full">
+                                        {comment.user?.image ? (
+                                            <Image src={getCloudinaryRawImageUrl(comment.user.image) as string} alt={`${comment.user?.name} ${comment.user?.lastName}`} width={600} height={600} className="h-full w-full object-cover" />
+                                        ) : (
+                                            <div className="text-cg-on-surface-variant flex h-full w-full items-center justify-center bg-[rgba(255,255,255,0.06)] text-xs font-medium">{comment.user?.name?.[0]}{comment.user?.lastName?.[0]}</div>
+                                        )}
+                                    </div>
                                     <div className="flex flex-col gap-1">
                                         <div className="flex items-center gap-2">
                                             <span className="text-cg-on-surface text-sm font-bold">

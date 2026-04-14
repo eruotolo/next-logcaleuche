@@ -7,14 +7,15 @@ import Link from 'next/link';
 import { Briefcase, ChevronDown, GraduationCap, Key, UserCog, UserMinus } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar';
+import Image from 'next/image';
+
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
 import { type ColumnDef, DataTable, type FilterDef } from '@/shared/components/ui/data-table';
 import { Modal } from '@/shared/components/ui/modal';
 import { Tooltip } from '@/shared/components/ui/tooltip';
 import { useModal } from '@/shared/hooks/useModal';
-import { getCloudinaryImageUrl } from '@/shared/lib/cloudinary';
+import { getCloudinaryRawImageUrl } from '@/shared/lib/cloudinary';
 import { cn } from '@/shared/lib/utils';
 
 import type { getUsuarios } from '../actions';
@@ -168,13 +169,13 @@ export function UserList({
             header: 'Foto',
             headerClassName: 'w-[80px]',
             cell: (u) => (
-                <Avatar>
-                    <AvatarImage src={getCloudinaryImageUrl(u.image)} />
-                    <AvatarFallback className="text-cg-primary-tonal bg-[rgba(90,103,216,0.15)] font-medium">
-                        {u.name?.charAt(0)}
-                        {u.lastName?.charAt(0)}
-                    </AvatarFallback>
-                </Avatar>
+                <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full">
+                    {u.image ? (
+                        <Image src={getCloudinaryRawImageUrl(u.image) as string} alt={`${u.name} ${u.lastName}`} width={600} height={600} className="h-full w-full object-cover" />
+                    ) : (
+                        <div className="text-cg-primary-tonal flex h-full w-full items-center justify-center bg-[rgba(90,103,216,0.15)] font-medium">{u.name?.charAt(0)}{u.lastName?.charAt(0)}</div>
+                    )}
+                </div>
             ),
         },
         {
@@ -376,13 +377,13 @@ export function UserList({
                 emptyFilteredMessage="Sin resultados para los filtros aplicados."
                 mobileCard={(u) => (
                     <div className="flex items-start gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
-                        <Avatar>
-                            <AvatarImage src={getCloudinaryImageUrl(u.image)} />
-                            <AvatarFallback className="text-cg-primary-tonal bg-[rgba(90,103,216,0.15)] font-medium">
-                                {u.name?.charAt(0)}
-                                {u.lastName?.charAt(0)}
-                            </AvatarFallback>
-                        </Avatar>
+                        <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full">
+                            {u.image ? (
+                                <Image src={getCloudinaryRawImageUrl(u.image) as string} alt={`${u.name} ${u.lastName}`} width={600} height={600} className="h-full w-full object-cover" />
+                            ) : (
+                                <div className="text-cg-primary-tonal flex h-full w-full items-center justify-center bg-[rgba(90,103,216,0.15)] font-medium">{u.name?.charAt(0)}{u.lastName?.charAt(0)}</div>
+                            )}
+                        </div>
                         <div className="min-w-0 flex-1">
                             <div className="flex items-start justify-between gap-2">
                                 <div className="min-w-0">

@@ -2,7 +2,7 @@ import Image from 'next/image';
 
 import { Cake } from 'lucide-react';
 
-import { getCloudinaryImageUrl } from '@/shared/lib/cloudinary';
+import { getCloudinaryRawImageUrl } from '@/shared/lib/cloudinary';
 import { getMesNombre } from '@/shared/lib/utils';
 
 interface BirthdayUser {
@@ -21,8 +21,8 @@ interface BirthdayCardProps {
 }
 
 function formatBirthdayDate(date: Date): string {
-    const day = date.getDate();
-    const month = getMesNombre(date.getMonth() + 1);
+    const day = date.getUTCDate();
+    const month = getMesNombre(date.getUTCMonth() + 1);
     return `${day} de ${month}`;
 }
 
@@ -74,7 +74,7 @@ export function BirthdayCard({ birthdays, maxItems = 6, className = '' }: Birthd
                                 {/* Avatar */}
                                 {user.image ? (
                                     <Image
-                                        src={getCloudinaryImageUrl(user.image) ?? ''}
+                                        src={getCloudinaryRawImageUrl(user.image) ?? ''}
                                         alt={`${user.name} ${user.lastName}`}
                                         width={36}
                                         height={36}

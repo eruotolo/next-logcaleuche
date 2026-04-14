@@ -50,10 +50,10 @@ export async function getDashboardData() {
             const bday = u.dateBirthday as Date;
             const currentYear = today.getFullYear();
             // Intentar con el año actual
-            let next = new Date(currentYear, bday.getMonth(), bday.getDate());
+            let next = new Date(currentYear, bday.getUTCMonth(), bday.getUTCDate());
             // Si ya pasó (estrictamente antes de hoy), usar el año siguiente
             if (next < startOfToday30) {
-                next = new Date(currentYear + 1, bday.getMonth(), bday.getDate());
+                next = new Date(currentYear + 1, bday.getUTCMonth(), bday.getUTCDate());
             }
             const daysUntil = Math.round(
                 (next.getTime() - startOfToday30.getTime()) / (1000 * 60 * 60 * 24),
