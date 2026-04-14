@@ -222,7 +222,7 @@ export async function createEntrada(
         });
     }
 
-    void logActivity({
+    await logActivity({
         action: ACTIVITY_ACTION.TESORERIA_ENTRADA_CREATE,
         entity: ACTIVITY_ENTITY.ENTRADA,
         entityId: entrada.id,
@@ -265,7 +265,7 @@ export async function updateEntrada(
         },
     });
 
-    void logActivity({
+    await logActivity({
         action: ACTIVITY_ACTION.TESORERIA_ENTRADA_UPDATE,
         entity: ACTIVITY_ENTITY.ENTRADA,
         entityId: id,
@@ -282,7 +282,7 @@ export async function deleteEntrada(id: number): Promise<ActionResult<null>> {
 
     await prisma.entradaDinero.delete({ where: { id } });
 
-    void logActivity({
+    await logActivity({
         action: ACTIVITY_ACTION.TESORERIA_ENTRADA_DELETE,
         entity: ACTIVITY_ENTITY.ENTRADA,
         entityId: id,
@@ -321,7 +321,7 @@ export async function createSalida(
         },
     });
 
-    void logActivity({
+    await logActivity({
         action: ACTIVITY_ACTION.TESORERIA_SALIDA_CREATE,
         entity: ACTIVITY_ENTITY.SALIDA,
         entityId: salida.id,
@@ -362,7 +362,7 @@ export async function updateSalida(
         },
     });
 
-    void logActivity({
+    await logActivity({
         action: ACTIVITY_ACTION.TESORERIA_SALIDA_UPDATE,
         entity: ACTIVITY_ENTITY.SALIDA,
         entityId: id,
@@ -379,7 +379,7 @@ export async function deleteSalida(id: number): Promise<ActionResult<null>> {
 
     await prisma.salidaDinero.delete({ where: { id } });
 
-    void logActivity({
+    await logActivity({
         action: ACTIVITY_ACTION.TESORERIA_SALIDA_DELETE,
         entity: ACTIVITY_ENTITY.SALIDA,
         entityId: id,
@@ -463,7 +463,7 @@ export async function createTarifaCuota(formData: FormData): Promise<ActionResul
         data: { nombre: parsed.data.nombre, monto: parsed.data.monto },
     });
 
-    void logActivity({
+    await logActivity({
         action: ACTIVITY_ACTION.TESORERIA_TARIFA_CREATE,
         entity: ACTIVITY_ENTITY.TARIFA,
         entityId: tarifa.id,
@@ -492,7 +492,7 @@ export async function updateTarifaCuota(
         data: { nombre: parsed.data.nombre, monto: parsed.data.monto },
     });
 
-    void logActivity({
+    await logActivity({
         action: ACTIVITY_ACTION.TESORERIA_TARIFA_UPDATE,
         entity: ACTIVITY_ENTITY.TARIFA,
         entityId: id,
@@ -518,7 +518,7 @@ export async function deleteTarifaCuota(id: number): Promise<ActionResult<null>>
 
     await prisma.tarifaCuota.delete({ where: { id } });
 
-    void logActivity({
+    await logActivity({
         action: ACTIVITY_ACTION.TESORERIA_TARIFA_DELETE,
         entity: ACTIVITY_ENTITY.TARIFA,
         entityId: id,
@@ -558,7 +558,7 @@ export async function createMultipleEntradas(
         })),
     });
 
-    void logActivity({
+    await logActivity({
         action: ACTIVITY_ACTION.TESORERIA_ENTRADA_BULK,
         entity: ACTIVITY_ENTITY.ENTRADA,
         description: `Registró ${meses.length} cuota(s) para usuario ID ${userId} — año ${ano}`,

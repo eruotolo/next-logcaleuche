@@ -114,7 +114,7 @@ export async function createFeedPost(
         },
     });
 
-    void logActivity({
+    await logActivity({
         action: ACTIVITY_ACTION.FEED_CREATE,
         entity: ACTIVITY_ENTITY.FEED,
         entityId: post.id,
@@ -164,7 +164,7 @@ export async function updateFeedPost(
         },
     });
 
-    void logActivity({
+    await logActivity({
         action: ACTIVITY_ACTION.FEED_UPDATE,
         entity: ACTIVITY_ENTITY.FEED,
         entityId: id,
@@ -181,7 +181,7 @@ export async function deleteFeedPost(id: number): Promise<ActionResult<null>> {
 
     await prisma.feed.update({ where: { id }, data: { active: 0 } });
 
-    void logActivity({
+    await logActivity({
         action: ACTIVITY_ACTION.FEED_DELETE,
         entity: ACTIVITY_ENTITY.FEED,
         entityId: id,

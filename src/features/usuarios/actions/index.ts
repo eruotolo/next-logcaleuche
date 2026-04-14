@@ -100,7 +100,7 @@ export async function assignTarifa(
 
     await prisma.user.update({ where: { id: userId }, data: { cuotaId } });
 
-    void logActivity({
+    await logActivity({
         action: ACTIVITY_ACTION.USER_ASSIGN_TARIFA,
         entity: ACTIVITY_ENTITY.USER,
         entityId: userId,
@@ -168,7 +168,7 @@ export async function createUser(
         },
     });
 
-    void logActivity({
+    await logActivity({
         action: ACTIVITY_ACTION.USER_CREATE,
         entity: ACTIVITY_ENTITY.USER,
         entityId: created.id,
@@ -274,7 +274,7 @@ export async function updateProfile(
         return { success: false, error: 'Error al guardar los datos. Intenta de nuevo.' };
     }
 
-    void logActivity({
+    await logActivity({
         action: ACTIVITY_ACTION.USER_UPDATE,
         entity: ACTIVITY_ENTITY.USER,
         entityId: targetUserId,
@@ -317,7 +317,7 @@ export async function updatePassword(
     const hashed = await bcrypt.hash(parsed.data.password, 12);
     await prisma.user.update({ where: { id: user.id }, data: { password: hashed } });
 
-    void logActivity({
+    await logActivity({
         action: ACTIVITY_ACTION.AUTH_PASSWORD_RESET,
         entity: ACTIVITY_ENTITY.USER,
         entityId: user.id,
@@ -335,7 +335,7 @@ export async function deactivateUsuario(id: number): Promise<ActionResult<null>>
     const hashed = await bcrypt.hash(process.env.DEFAULT_USER_PASSWORD ?? 'Cambiar2024!', 12);
     await prisma.user.update({ where: { id }, data: { active: false, password: hashed } });
 
-    void logActivity({
+    await logActivity({
         action: ACTIVITY_ACTION.USER_DEACTIVATE,
         entity: ACTIVITY_ENTITY.USER,
         entityId: id,
@@ -353,7 +353,7 @@ export async function resetPassword(id: number): Promise<ActionResult<null>> {
     const hashed = await bcrypt.hash(process.env.DEFAULT_USER_PASSWORD ?? 'Cambiar2024!', 12);
     await prisma.user.update({ where: { id }, data: { password: hashed } });
 
-    void logActivity({
+    await logActivity({
         action: ACTIVITY_ACTION.USER_RESET_PASSWORD,
         entity: ACTIVITY_ENTITY.USER,
         entityId: id,
@@ -371,7 +371,7 @@ export async function setAdmin(id: number): Promise<ActionResult<null>> {
 
     await prisma.user.update({ where: { id }, data: { categoryId: 2 } });
 
-    void logActivity({
+    await logActivity({
         action: ACTIVITY_ACTION.USER_CHANGE_CATEGORY,
         entity: ACTIVITY_ENTITY.USER,
         entityId: id,
@@ -399,7 +399,7 @@ export async function updateUserCategory(
 
     await prisma.user.update({ where: { id: userId }, data: { categoryId } });
 
-    void logActivity({
+    await logActivity({
         action: ACTIVITY_ACTION.USER_CHANGE_CATEGORY,
         entity: ACTIVITY_ENTITY.USER,
         entityId: userId,
@@ -417,7 +417,7 @@ export async function assignGrado(userId: number, gradoId: number): Promise<Acti
 
     await prisma.user.update({ where: { id: userId }, data: { gradoId } });
 
-    void logActivity({
+    await logActivity({
         action: ACTIVITY_ACTION.USER_CHANGE_GRADO,
         entity: ACTIVITY_ENTITY.USER,
         entityId: userId,
@@ -438,7 +438,7 @@ export async function assignOficialidad(
 
     await prisma.user.update({ where: { id: userId }, data: { oficialidadId } });
 
-    void logActivity({
+    await logActivity({
         action: ACTIVITY_ACTION.USER_CHANGE_OFICIALIDAD,
         entity: ACTIVITY_ENTITY.USER,
         entityId: userId,

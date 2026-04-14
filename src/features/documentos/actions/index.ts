@@ -56,7 +56,7 @@ export async function createLibro(
         },
     });
 
-    void logActivity({
+    await logActivity({
         action: ACTIVITY_ACTION.LIBRO_CREATE,
         entity: ACTIVITY_ENTITY.BIBLIOTECA,
         entityId: libro.id,
@@ -74,7 +74,7 @@ export async function deleteLibro(id: number): Promise<ActionResult<null>> {
     if (!session) return { success: false, error: 'No autorizado' };
     await prisma.biblioteca.delete({ where: { id } });
 
-    void logActivity({
+    await logActivity({
         action: ACTIVITY_ACTION.LIBRO_DELETE,
         entity: ACTIVITY_ENTITY.BIBLIOTECA,
         entityId: id,
@@ -122,7 +122,7 @@ export async function updateLibro(
         },
     });
 
-    void logActivity({
+    await logActivity({
         action: ACTIVITY_ACTION.LIBRO_UPDATE,
         entity: ACTIVITY_ENTITY.BIBLIOTECA,
         entityId: id,
@@ -184,7 +184,7 @@ export async function createTrazado(
         },
     });
 
-    void logActivity({
+    await logActivity({
         action: ACTIVITY_ACTION.TRAZADO_CREATE,
         entity: ACTIVITY_ENTITY.TRAZADO,
         entityId: trazado.id,
@@ -202,7 +202,7 @@ export async function deleteTrazado(id: number): Promise<ActionResult<null>> {
     if (!session) return { success: false, error: 'No autorizado' };
     await prisma.trazado.delete({ where: { id } });
 
-    void logActivity({
+    await logActivity({
         action: ACTIVITY_ACTION.TRAZADO_DELETE,
         entity: ACTIVITY_ENTITY.TRAZADO,
         entityId: id,
@@ -252,7 +252,7 @@ export async function updateTrazado(
         },
     });
 
-    void logActivity({
+    await logActivity({
         action: ACTIVITY_ACTION.TRAZADO_UPDATE,
         entity: ACTIVITY_ENTITY.TRAZADO,
         entityId: id,
@@ -299,7 +299,7 @@ export async function createDocumento(
         data: { nombre: parsed.data.nombre, fechaDoc: new Date(parsed.data.fecha), fileName },
     });
 
-    void logActivity({
+    await logActivity({
         action: ACTIVITY_ACTION.DOCUMENTO_CREATE,
         entity: ACTIVITY_ENTITY.DOCUMENTO,
         entityId: doc.id,
@@ -344,7 +344,7 @@ export async function updateDocumento(
         },
     });
 
-    void logActivity({
+    await logActivity({
         action: ACTIVITY_ACTION.DOCUMENTO_UPDATE,
         entity: ACTIVITY_ENTITY.DOCUMENTO,
         entityId: id,
@@ -360,7 +360,7 @@ export async function deleteDocumento(id: number): Promise<ActionResult<null>> {
     if (!session) return { success: false, error: 'No autorizado' };
     await prisma.document.delete({ where: { id } });
 
-    void logActivity({
+    await logActivity({
         action: ACTIVITY_ACTION.DOCUMENTO_DELETE,
         entity: ACTIVITY_ENTITY.DOCUMENTO,
         entityId: id,

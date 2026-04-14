@@ -104,7 +104,7 @@ export async function createEvento(
         },
     });
 
-    void logActivity({
+    await logActivity({
         action: ACTIVITY_ACTION.EVENTO_CREATE,
         entity: ACTIVITY_ENTITY.EVENTO,
         entityId: evento.id,
@@ -151,7 +151,7 @@ export async function updateEvento(
         },
     });
 
-    void logActivity({
+    await logActivity({
         action: ACTIVITY_ACTION.EVENTO_UPDATE,
         entity: ACTIVITY_ENTITY.EVENTO,
         entityId: id,
@@ -168,7 +168,7 @@ export async function deleteEvento(id: number): Promise<ActionResult<null>> {
 
     await prisma.evento.update({ where: { id }, data: { active: 0 } });
 
-    void logActivity({
+    await logActivity({
         action: ACTIVITY_ACTION.EVENTO_DELETE,
         entity: ACTIVITY_ENTITY.EVENTO,
         entityId: id,
@@ -266,7 +266,7 @@ export async function importEventos(formData: FormData): Promise<ActionResult<Im
         })),
     });
 
-    void logActivity({
+    await logActivity({
         action: ACTIVITY_ACTION.EVENTO_IMPORT,
         entity: ACTIVITY_ENTITY.EVENTO,
         description: `Importó ${validRows.length} eventos desde archivo Excel`,

@@ -55,7 +55,7 @@ export async function loginAction(
         return { success: true, data: null };
     } catch (error) {
         if (error instanceof AuthError) {
-            void logActivity({
+            await logActivity({
                 action: ACTIVITY_ACTION.AUTH_LOGIN_FAILED,
                 entity: ACTIVITY_ENTITY.AUTH,
                 description: `Login fallido para: ${parsed.data.identifier}`,
@@ -121,7 +121,7 @@ export async function recoveryAction(
         console.error('[recoveryAction] Fallo al enviar email de recuperación:', err);
     });
 
-    void logActivity({
+    await logActivity({
         action: ACTIVITY_ACTION.AUTH_PASSWORD_RECOVERY,
         entity: ACTIVITY_ENTITY.AUTH,
         description: `Solicitud de recuperación de contraseña para: ${parsed.data.email}`,
@@ -165,7 +165,7 @@ export async function confirmRecoveryAction(
         data: { password: hashed, token: null, tokenExpiry: null },
     });
 
-    void logActivity({
+    await logActivity({
         action: ACTIVITY_ACTION.AUTH_PASSWORD_RESET,
         entity: ACTIVITY_ENTITY.AUTH,
         description: 'Contraseña restablecida mediante token de recuperación',
