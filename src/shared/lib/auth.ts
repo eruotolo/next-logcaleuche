@@ -3,6 +3,8 @@ import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import { z } from 'zod';
 
+import { ACTIVITY_ACTION, ACTIVITY_ENTITY, ACTIVITY_STATUS } from '@/shared/constants/activity-log';
+
 import { prisma } from './db';
 
 const loginSchema = z.object({
@@ -62,6 +64,25 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             },
         }),
     ],
+    events: {
+        async signIn({ user }) {
+            try {
+                await prisma.activityLog.create({
+                    data: {
+                        userId: user.id ? Number(user.id) : null,
+                        userEmail: user.email ?? null,
+                        userName: user.name ?? null,
+                        action: ACTIVITY_ACTION.AUTH_LOGIN,
+                        entity: ACTIVITY_ENTITY.AUTH,
+                        description: `Inicio de sesión: ${user.email ?? user.name ?? 'usuario desconocido'}`,
+                        status: ACTIVITY_STATUS.SUCCESS,
+                    },
+                });
+            } catch {
+                // no romper el flujo de login por fallo de logging
+            }
+        },
+    },
     callbacks: {
         async jwt({ token, user }) {
             if (user) {

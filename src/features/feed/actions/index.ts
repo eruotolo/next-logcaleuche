@@ -2,7 +2,9 @@
 
 import { revalidatePath } from 'next/cache';
 
+import { ACTIVITY_ACTION, ACTIVITY_ENTITY } from '@/shared/constants/activity-log';
 import { auth } from '@/shared/lib/auth';
+import { logActivity } from '@/shared/lib/activity-log';
 import { requireAdmin } from '@/shared/lib/auth-guards';
 import { uploadToCloudinary } from '@/shared/lib/cloudinary-upload';
 import { prisma } from '@/shared/lib/db';
@@ -100,7 +102,7 @@ export async function createFeedPost(
     // Generar slug único
     const slug = await generateUniqueSlug('feed', parsed.data.titulo || 'publicacion');
 
-    await prisma.feed.create({
+    const post = await prisma.feed.create({
         data: {
             titulo: parsed.data.titulo,
             slug: slug,
@@ -110,6 +112,13 @@ export async function createFeedPost(
             userId: Number.parseInt(session.user.id, 10),
             active: 1,
         },
+    });
+
+    void logActivity({
+        action: ACTIVITY_ACTION.FEED_CREATE,
+        entity: ACTIVITY_ENTITY.FEED,
+        entityId: post.id,
+        description: `Creó publicación "${parsed.data.titulo}"`,
     });
 
     revalidatePath('/feed');
@@ -155,6 +164,13 @@ export async function updateFeedPost(
         },
     });
 
+    void logActivity({
+        action: ACTIVITY_ACTION.FEED_UPDATE,
+        entity: ACTIVITY_ENTITY.FEED,
+        entityId: id,
+        description: `Editó publicación "${parsed.data.titulo}"`,
+    });
+
     revalidatePath('/feed');
     return { success: true, data: null };
 }
@@ -164,6 +180,14 @@ export async function deleteFeedPost(id: number): Promise<ActionResult<null>> {
     if (!session) return { success: false, error: 'No autorizado' };
 
     await prisma.feed.update({ where: { id }, data: { active: 0 } });
+
+    void logActivity({
+        action: ACTIVITY_ACTION.FEED_DELETE,
+        entity: ACTIVITY_ENTITY.FEED,
+        entityId: id,
+        description: `Eliminó publicación con ID ${id}`,
+    });
+
     revalidatePath('/feed');
     return { success: true, data: null };
 }

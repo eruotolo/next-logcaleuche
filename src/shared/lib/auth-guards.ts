@@ -23,3 +23,9 @@ export async function requireTesorero(): Promise<Session | null> {
         return null;
     return session;
 }
+
+export async function requireSuperAdmin(): Promise<Session | null> {
+    const session = await auth();
+    if (!session || session.user.categoryId !== 1) return null;
+    return session;
+}

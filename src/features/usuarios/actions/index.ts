@@ -7,7 +7,9 @@ import { revalidatePath } from 'next/cache';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 
+import { ACTIVITY_ACTION, ACTIVITY_ENTITY } from '@/shared/constants/activity-log';
 import { auth } from '@/shared/lib/auth';
+import { logActivity } from '@/shared/lib/activity-log';
 import { requireAdmin, requireAuth } from '@/shared/lib/auth-guards';
 import { uploadToCloudinary } from '@/shared/lib/cloudinary-upload';
 import { prisma } from '@/shared/lib/db';
@@ -97,6 +99,15 @@ export async function assignTarifa(
     if (!session) return { success: false, error: 'No autorizado' };
 
     await prisma.user.update({ where: { id: userId }, data: { cuotaId } });
+
+    void logActivity({
+        action: ACTIVITY_ACTION.USER_ASSIGN_TARIFA,
+        entity: ACTIVITY_ENTITY.USER,
+        entityId: userId,
+        description: `Asignó tarifa (cuotaId=${cuotaId ?? 'ninguna'}) al usuario ${userId}`,
+        metadata: { cuotaId },
+    });
+
     revalidatePath(`/usuarios/${userId}`);
     revalidatePath('/usuarios');
     return { success: true, data: null };
@@ -142,7 +153,7 @@ export async function createUser(
     // Generar slug único para el perfil
     const slug = await generateUniqueSlug('user', `${parsed.data.name} ${parsed.data.lastName}`);
 
-    await prisma.user.create({
+    const created = await prisma.user.create({
         data: {
             name: parsed.data.name,
             lastName: parsed.data.lastName,
@@ -157,11 +168,12 @@ export async function createUser(
         },
     });
 
-    console.info('[AUDIT] createUser: nuevo usuario creado', {
-        by: session.user.id,
-        email: parsed.data.email,
-        username: parsed.data.username,
-        gradoId: parsed.data.gradoId,
+    void logActivity({
+        action: ACTIVITY_ACTION.USER_CREATE,
+        entity: ACTIVITY_ENTITY.USER,
+        entityId: created.id,
+        description: `Creó el usuario ${parsed.data.name} ${parsed.data.lastName} (${parsed.data.email})`,
+        metadata: { gradoId: parsed.data.gradoId, categoryId: parsed.data.categoryId },
     });
 
     revalidatePath('/usuarios');
@@ -262,6 +274,13 @@ export async function updateProfile(
         return { success: false, error: 'Error al guardar los datos. Intenta de nuevo.' };
     }
 
+    void logActivity({
+        action: ACTIVITY_ACTION.USER_UPDATE,
+        entity: ACTIVITY_ENTITY.USER,
+        entityId: targetUserId,
+        description: `Actualizó perfil del usuario ${parsed.data.name} ${parsed.data.lastName}`,
+    });
+
     revalidatePath('/perfil');
     revalidatePath('/usuarios');
     revalidatePath(`/usuarios/${targetUserId}`);
@@ -298,6 +317,13 @@ export async function updatePassword(
     const hashed = await bcrypt.hash(parsed.data.password, 12);
     await prisma.user.update({ where: { id: user.id }, data: { password: hashed } });
 
+    void logActivity({
+        action: ACTIVITY_ACTION.AUTH_PASSWORD_RESET,
+        entity: ACTIVITY_ENTITY.USER,
+        entityId: user.id,
+        description: 'Cambió su propia contraseña',
+    });
+
     revalidatePath('/usuarios');
     return { success: true, data: null };
 }
@@ -308,7 +334,14 @@ export async function deactivateUsuario(id: number): Promise<ActionResult<null>>
 
     const hashed = await bcrypt.hash(process.env.DEFAULT_USER_PASSWORD ?? 'Cambiar2024!', 12);
     await prisma.user.update({ where: { id }, data: { active: false, password: hashed } });
-    console.info('[AUDIT] deactivateUsuario:', { by: session.user.id, targetId: id });
+
+    void logActivity({
+        action: ACTIVITY_ACTION.USER_DEACTIVATE,
+        entity: ACTIVITY_ENTITY.USER,
+        entityId: id,
+        description: `Desactivó al usuario con ID ${id}`,
+    });
+
     revalidatePath('/usuarios');
     return { success: true, data: null };
 }
@@ -319,7 +352,14 @@ export async function resetPassword(id: number): Promise<ActionResult<null>> {
 
     const hashed = await bcrypt.hash(process.env.DEFAULT_USER_PASSWORD ?? 'Cambiar2024!', 12);
     await prisma.user.update({ where: { id }, data: { password: hashed } });
-    console.info('[AUDIT] resetPassword:', { by: session.user.id, targetId: id });
+
+    void logActivity({
+        action: ACTIVITY_ACTION.USER_RESET_PASSWORD,
+        entity: ACTIVITY_ENTITY.USER,
+        entityId: id,
+        description: `Reseteó la contraseña del usuario con ID ${id}`,
+    });
+
     revalidatePath('/usuarios');
     return { success: true, data: null };
 }
@@ -330,7 +370,14 @@ export async function setAdmin(id: number): Promise<ActionResult<null>> {
         return { success: false, error: 'No autorizado' };
 
     await prisma.user.update({ where: { id }, data: { categoryId: 2 } });
-    console.info('[AUDIT] setAdmin:', { by: session.user.id, targetId: id });
+
+    void logActivity({
+        action: ACTIVITY_ACTION.USER_CHANGE_CATEGORY,
+        entity: ACTIVITY_ENTITY.USER,
+        entityId: id,
+        description: `Ascendió al usuario ${id} a Admin (categoryId=2)`,
+    });
+
     revalidatePath('/usuarios');
     return { success: true, data: null };
 }
@@ -351,11 +398,15 @@ export async function updateUserCategory(
         return { success: false, error: 'No puedes cambiar tu propia categoría' };
 
     await prisma.user.update({ where: { id: userId }, data: { categoryId } });
-    console.info('[AUDIT] updateUserCategory:', {
-        by: session.user.id,
-        targetId: userId,
-        newCategoryId: categoryId,
+
+    void logActivity({
+        action: ACTIVITY_ACTION.USER_CHANGE_CATEGORY,
+        entity: ACTIVITY_ENTITY.USER,
+        entityId: userId,
+        description: `Cambió categoría del usuario ${userId} a categoryId=${categoryId}`,
+        metadata: { newCategoryId: categoryId },
     });
+
     revalidatePath('/usuarios');
     return { success: true, data: null };
 }
@@ -365,6 +416,15 @@ export async function assignGrado(userId: number, gradoId: number): Promise<Acti
     if (!session) return { success: false, error: 'No autorizado' };
 
     await prisma.user.update({ where: { id: userId }, data: { gradoId } });
+
+    void logActivity({
+        action: ACTIVITY_ACTION.USER_CHANGE_GRADO,
+        entity: ACTIVITY_ENTITY.USER,
+        entityId: userId,
+        description: `Asignó grado ${gradoId} al usuario ${userId}`,
+        metadata: { gradoId },
+    });
+
     revalidatePath('/usuarios');
     return { success: true, data: null };
 }
@@ -377,6 +437,15 @@ export async function assignOficialidad(
     if (!session) return { success: false, error: 'No autorizado' };
 
     await prisma.user.update({ where: { id: userId }, data: { oficialidadId } });
+
+    void logActivity({
+        action: ACTIVITY_ACTION.USER_CHANGE_OFICIALIDAD,
+        entity: ACTIVITY_ENTITY.USER,
+        entityId: userId,
+        description: `Asignó oficialidad ${oficialidadId} al usuario ${userId}`,
+        metadata: { oficialidadId },
+    });
+
     revalidatePath('/usuarios');
     return { success: true, data: null };
 }

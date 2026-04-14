@@ -15,6 +15,7 @@ import {
     FileText,
     FolderOpen,
     Home,
+    Settings,
     Sun,
     Users,
 } from 'lucide-react';
@@ -93,6 +94,15 @@ export function Sidebar({ collapsed, mobileOpen, onMobileClose, grado, oficialid
             label: 'Usuarios',
             href: '/usuarios',
             icon: <Users className="h-4 w-4 shrink-0" />,
+        },
+    ];
+
+    const configItems: NavItem[] = [
+        {
+            label: 'Configuración',
+            icon: <Settings className="h-4 w-4 shrink-0" />,
+            onlyIf: categoryId === CATEGORIA.SUPER_ADMIN,
+            children: [{ label: 'Logs', href: '/configuracion/logs' }],
         },
     ];
 
@@ -302,22 +312,38 @@ export function Sidebar({ collapsed, mobileOpen, onMobileClose, grado, oficialid
             </div>
 
             {/* Navegación */}
-            <nav className="flex-1 px-3 py-4">
-                {!collapsed && (
-                    <p className="mb-2 px-3 text-[10px] font-semibold tracking-[0.08em] text-[#747487] uppercase">
-                        Menú
-                    </p>
-                )}
-                <ul className="space-y-0.5">{mainItems.map(renderItem)}</ul>
+            <nav className="flex flex-1 flex-col justify-between px-3 py-4">
+                {/* Menú + Elementos */}
+                <div>
+                    {!collapsed && (
+                        <p className="mb-2 px-3 text-[10px] font-semibold tracking-[0.08em] text-[#747487] uppercase">
+                            Menú
+                        </p>
+                    )}
+                    <ul className="space-y-0.5">{mainItems.map(renderItem)}</ul>
 
-                <div className={cn('my-4 border-t border-white/[0.06]')} />
+                    <div className="my-4 border-t border-white/[0.06]" />
 
-                {!collapsed && (
-                    <p className="mb-2 px-3 text-[10px] font-semibold tracking-[0.08em] text-[#747487] uppercase">
-                        Elementos
-                    </p>
+                    {!collapsed && (
+                        <p className="mb-2 px-3 text-[10px] font-semibold tracking-[0.08em] text-[#747487] uppercase">
+                            Elementos
+                        </p>
+                    )}
+                    <ul className="space-y-0.5">{degreeItems.map(renderItem)}</ul>
+                </div>
+
+                {/* Sistema — anclado al fondo */}
+                {categoryId === CATEGORIA.SUPER_ADMIN && (
+                    <div>
+                        <div className="mb-4 border-t border-white/[0.06]" />
+                        {!collapsed && (
+                            <p className="mb-2 px-3 text-[10px] font-semibold tracking-[0.08em] text-[#747487] uppercase">
+                                Sistema
+                            </p>
+                        )}
+                        <ul className="space-y-0.5">{configItems.map(renderItem)}</ul>
+                    </div>
                 )}
-                <ul className="space-y-0.5">{degreeItems.map(renderItem)}</ul>
             </nav>
 
             {/* Footer del sidebar */}

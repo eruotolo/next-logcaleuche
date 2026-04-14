@@ -47,11 +47,12 @@ model User {
     createdAt DateTime @default(now()) @map("created_at")
 
     // Back relations
-    feeds    Feed[]
-    comments CommentFeed[]
-    trazados Trazado[]
-    entradas EntradaDinero[]
-    salidas  SalidaDinero[]
+    feeds        Feed[]
+    comments     CommentFeed[]
+    trazados     Trazado[]
+    entradas     EntradaDinero[]
+    salidas      SalidaDinero[]
+    activityLogs ActivityLog[]
 
     @@map("users")
 }
@@ -272,4 +273,28 @@ model SalidaMotivo {
     salidas SalidaDinero[]
 
     @@map("salidamotivo")
+}
+
+// 1.22 Tabla: activity_log
+model ActivityLog {
+    id          Int      @id @default(autoincrement())
+    userId      Int?     @map("user_id")
+    user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+    userEmail   String?  @map("user_email")
+    userName    String?  @map("user_name")
+    action      String
+    entity      String?
+    entityId    String?  @map("entity_id")
+    description String
+    metadata    Json?
+    ipAddress   String?  @map("ip_address")
+    userAgent   String?  @map("user_agent") @db.VarChar(500)
+    status      String   @default("success")
+    createdAt   DateTime @default(now()) @map("created_at")
+
+    @@index([userId])
+    @@index([action])
+    @@index([entity])
+    @@index([createdAt])
+    @@map("activity_log")
 }

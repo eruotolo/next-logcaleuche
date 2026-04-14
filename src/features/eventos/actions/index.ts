@@ -2,7 +2,9 @@
 
 import { revalidatePath } from 'next/cache';
 
+import { ACTIVITY_ACTION, ACTIVITY_ENTITY } from '@/shared/constants/activity-log';
 import { auth } from '@/shared/lib/auth';
+import { logActivity } from '@/shared/lib/activity-log';
 import { requireAdmin } from '@/shared/lib/auth-guards';
 import { prisma } from '@/shared/lib/db';
 import type { ActionResult } from '@/shared/types/actions';
@@ -89,7 +91,7 @@ export async function createEvento(
         return { success: false, error: 'Verifica los datos del formulario.' };
     }
 
-    await prisma.evento.create({
+    const evento = await prisma.evento.create({
         data: {
             nombre: parsed.data.nombre,
             trabajo: parsed.data.trabajo,
@@ -100,6 +102,14 @@ export async function createEvento(
             gradoId: parsed.data.grado,
             active: 1,
         },
+    });
+
+    void logActivity({
+        action: ACTIVITY_ACTION.EVENTO_CREATE,
+        entity: ACTIVITY_ENTITY.EVENTO,
+        entityId: evento.id,
+        description: `Creó evento "${parsed.data.nombre}" (${parsed.data.fecha})`,
+        metadata: { gradoId: parsed.data.grado },
     });
 
     revalidatePath('/eventos');
@@ -141,6 +151,13 @@ export async function updateEvento(
         },
     });
 
+    void logActivity({
+        action: ACTIVITY_ACTION.EVENTO_UPDATE,
+        entity: ACTIVITY_ENTITY.EVENTO,
+        entityId: id,
+        description: `Editó evento "${parsed.data.nombre}"`,
+    });
+
     revalidatePath('/eventos');
     return { success: true, data: null };
 }
@@ -150,6 +167,14 @@ export async function deleteEvento(id: number): Promise<ActionResult<null>> {
     if (!session) return { success: false, error: 'No autorizado' };
 
     await prisma.evento.update({ where: { id }, data: { active: 0 } });
+
+    void logActivity({
+        action: ACTIVITY_ACTION.EVENTO_DELETE,
+        entity: ACTIVITY_ENTITY.EVENTO,
+        entityId: id,
+        description: `Eliminó evento con ID ${id}`,
+    });
+
     revalidatePath('/eventos');
     return { success: true, data: null };
 }
@@ -239,6 +264,13 @@ export async function importEventos(formData: FormData): Promise<ActionResult<Im
             gradoId: r.grado,
             active: 1,
         })),
+    });
+
+    void logActivity({
+        action: ACTIVITY_ACTION.EVENTO_IMPORT,
+        entity: ACTIVITY_ENTITY.EVENTO,
+        description: `Importó ${validRows.length} eventos desde archivo Excel`,
+        metadata: { count: validRows.length },
     });
 
     revalidatePath('/eventos');

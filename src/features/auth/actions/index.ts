@@ -4,7 +4,9 @@ import { headers } from 'next/headers';
 
 import { AuthError } from 'next-auth';
 
+import { ACTIVITY_ACTION, ACTIVITY_ENTITY, ACTIVITY_STATUS } from '@/shared/constants/activity-log';
 import { signIn } from '@/shared/lib/auth';
+import { logActivity } from '@/shared/lib/activity-log';
 import { prisma } from '@/shared/lib/db';
 import { sendRecovery } from '@/shared/lib/email';
 import type { ActionResult } from '@/shared/types/actions';
@@ -53,6 +55,14 @@ export async function loginAction(
         return { success: true, data: null };
     } catch (error) {
         if (error instanceof AuthError) {
+            void logActivity({
+                action: ACTIVITY_ACTION.AUTH_LOGIN_FAILED,
+                entity: ACTIVITY_ENTITY.AUTH,
+                description: `Login fallido para: ${parsed.data.identifier}`,
+                status: ACTIVITY_STATUS.FAILURE,
+                overrideUserId: null,
+                overrideUserEmail: parsed.data.identifier,
+            });
             return {
                 success: false,
                 error: 'Credenciales incorrectas. Verifica tu email o RUT y contraseña.',
@@ -111,6 +121,13 @@ export async function recoveryAction(
         console.error('[recoveryAction] Fallo al enviar email de recuperación:', err);
     });
 
+    void logActivity({
+        action: ACTIVITY_ACTION.AUTH_PASSWORD_RECOVERY,
+        entity: ACTIVITY_ENTITY.AUTH,
+        description: `Solicitud de recuperación de contraseña para: ${parsed.data.email}`,
+        overrideUserId: user.id,
+    });
+
     return { success: true, data: null };
 }
 
@@ -146,6 +163,13 @@ export async function confirmRecoveryAction(
     await prisma.user.update({
         where: { id: user.id },
         data: { password: hashed, token: null, tokenExpiry: null },
+    });
+
+    void logActivity({
+        action: ACTIVITY_ACTION.AUTH_PASSWORD_RESET,
+        entity: ACTIVITY_ENTITY.AUTH,
+        description: 'Contraseña restablecida mediante token de recuperación',
+        overrideUserId: user.id,
     });
 
     return { success: true, data: null };

@@ -4,8 +4,10 @@ import { revalidatePath } from 'next/cache';
 
 import { z } from 'zod';
 
+import { ACTIVITY_ACTION, ACTIVITY_ENTITY } from '@/shared/constants/activity-log';
 import { CATEGORIA, MESES_NOMBRE, MOTIVO_ENTRADA, MOTIVO_SALIDA, OFICIALIDAD } from '@/shared/constants/domain';
 import { auth } from '@/shared/lib/auth';
+import { logActivity } from '@/shared/lib/activity-log';
 import { prisma } from '@/shared/lib/db';
 import { sendBoleta, sendRecordatorioCuotas } from '@/shared/lib/email';
 import type { ActionResult } from '@/shared/types/actions';
@@ -220,6 +222,14 @@ export async function createEntrada(
         });
     }
 
+    void logActivity({
+        action: ACTIVITY_ACTION.TESORERIA_ENTRADA_CREATE,
+        entity: ACTIVITY_ENTITY.ENTRADA,
+        entityId: entrada.id,
+        description: `Registró ingreso de $${parsed.data.monto} (${entrada.motivo?.nombre ?? 'sin motivo'}) — usuario ID ${parsed.data.userId}`,
+        metadata: { userId: parsed.data.userId, mes: parsed.data.mes, ano: parsed.data.ano, monto: parsed.data.monto },
+    });
+
     revalidatePath('/tesoreria/ingresos');
     return { success: true, data: null };
 }
@@ -255,6 +265,13 @@ export async function updateEntrada(
         },
     });
 
+    void logActivity({
+        action: ACTIVITY_ACTION.TESORERIA_ENTRADA_UPDATE,
+        entity: ACTIVITY_ENTITY.ENTRADA,
+        entityId: id,
+        description: `Editó ingreso ID ${id} — $${parsed.data.monto}`,
+    });
+
     revalidatePath('/tesoreria/ingresos');
     return { success: true, data: null };
 }
@@ -264,6 +281,14 @@ export async function deleteEntrada(id: number): Promise<ActionResult<null>> {
     if (!session || !isTesorero(session)) return { success: false, error: 'No autorizado' };
 
     await prisma.entradaDinero.delete({ where: { id } });
+
+    void logActivity({
+        action: ACTIVITY_ACTION.TESORERIA_ENTRADA_DELETE,
+        entity: ACTIVITY_ENTITY.ENTRADA,
+        entityId: id,
+        description: `Eliminó ingreso con ID ${id}`,
+    });
+
     revalidatePath('/tesoreria/ingresos');
     return { success: true, data: null };
 }
@@ -285,7 +310,7 @@ export async function createSalida(
 
     if (!parsed.success) return { success: false, error: 'Verifica los datos.' };
 
-    await prisma.salidaDinero.create({
+    const salida = await prisma.salidaDinero.create({
         data: {
             userId: Number.parseInt(session.user.id, 10),
             mes: parsed.data.mes,
@@ -294,6 +319,14 @@ export async function createSalida(
             monto: parsed.data.monto,
             fechaMov: new Date(parsed.data.fecha),
         },
+    });
+
+    void logActivity({
+        action: ACTIVITY_ACTION.TESORERIA_SALIDA_CREATE,
+        entity: ACTIVITY_ENTITY.SALIDA,
+        entityId: salida.id,
+        description: `Registró egreso de $${parsed.data.monto} — ${parsed.data.mes}/${parsed.data.ano}`,
+        metadata: { mes: parsed.data.mes, ano: parsed.data.ano, monto: parsed.data.monto },
     });
 
     revalidatePath('/tesoreria/egresos');
@@ -329,6 +362,13 @@ export async function updateSalida(
         },
     });
 
+    void logActivity({
+        action: ACTIVITY_ACTION.TESORERIA_SALIDA_UPDATE,
+        entity: ACTIVITY_ENTITY.SALIDA,
+        entityId: id,
+        description: `Editó egreso ID ${id} — $${parsed.data.monto}`,
+    });
+
     revalidatePath('/tesoreria/egresos');
     return { success: true, data: null };
 }
@@ -338,6 +378,14 @@ export async function deleteSalida(id: number): Promise<ActionResult<null>> {
     if (!session || !isTesorero(session)) return { success: false, error: 'No autorizado' };
 
     await prisma.salidaDinero.delete({ where: { id } });
+
+    void logActivity({
+        action: ACTIVITY_ACTION.TESORERIA_SALIDA_DELETE,
+        entity: ACTIVITY_ENTITY.SALIDA,
+        entityId: id,
+        description: `Eliminó egreso con ID ${id}`,
+    });
+
     revalidatePath('/tesoreria/egresos');
     return { success: true, data: null };
 }
@@ -411,9 +459,17 @@ export async function createTarifaCuota(formData: FormData): Promise<ActionResul
             error: parsed.error.flatten().fieldErrors.nombre?.[0] ?? 'Verifica los datos.',
         };
 
-    await prisma.tarifaCuota.create({
+    const tarifa = await prisma.tarifaCuota.create({
         data: { nombre: parsed.data.nombre, monto: parsed.data.monto },
     });
+
+    void logActivity({
+        action: ACTIVITY_ACTION.TESORERIA_TARIFA_CREATE,
+        entity: ACTIVITY_ENTITY.TARIFA,
+        entityId: tarifa.id,
+        description: `Creó tarifa "${parsed.data.nombre}" ($${parsed.data.monto})`,
+    });
+
     revalidatePath('/tesoreria/ingresos');
     return { success: true, data: null };
 }
@@ -435,6 +491,14 @@ export async function updateTarifaCuota(
         where: { id },
         data: { nombre: parsed.data.nombre, monto: parsed.data.monto },
     });
+
+    void logActivity({
+        action: ACTIVITY_ACTION.TESORERIA_TARIFA_UPDATE,
+        entity: ACTIVITY_ENTITY.TARIFA,
+        entityId: id,
+        description: `Editó tarifa "${parsed.data.nombre}" ($${parsed.data.monto})`,
+    });
+
     revalidatePath('/tesoreria/ingresos');
     return { success: true, data: null };
 }
@@ -453,6 +517,14 @@ export async function deleteTarifaCuota(id: number): Promise<ActionResult<null>>
     }
 
     await prisma.tarifaCuota.delete({ where: { id } });
+
+    void logActivity({
+        action: ACTIVITY_ACTION.TESORERIA_TARIFA_DELETE,
+        entity: ACTIVITY_ENTITY.TARIFA,
+        entityId: id,
+        description: `Eliminó tarifa con ID ${id}`,
+    });
+
     revalidatePath('/tesoreria/ingresos');
     return { success: true, data: null };
 }
@@ -484,6 +556,13 @@ export async function createMultipleEntradas(
             monto,
             fechaMov: new Date(fecha),
         })),
+    });
+
+    void logActivity({
+        action: ACTIVITY_ACTION.TESORERIA_ENTRADA_BULK,
+        entity: ACTIVITY_ENTITY.ENTRADA,
+        description: `Registró ${meses.length} cuota(s) para usuario ID ${userId} — año ${ano}`,
+        metadata: { userId, ano, meses, monto },
     });
 
     revalidatePath('/tesoreria/ingresos');

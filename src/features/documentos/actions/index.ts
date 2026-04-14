@@ -2,7 +2,9 @@
 
 import { revalidatePath } from 'next/cache';
 
+import { ACTIVITY_ACTION, ACTIVITY_ENTITY } from '@/shared/constants/activity-log';
 import { auth } from '@/shared/lib/auth';
+import { logActivity } from '@/shared/lib/activity-log';
 import { requireAdmin } from '@/shared/lib/auth-guards';
 import { uploadToCloudinary } from '@/shared/lib/cloudinary-upload';
 import { prisma } from '@/shared/lib/db';
@@ -45,13 +47,20 @@ export async function createLibro(
         return { success: false, error: 'Error al subir el archivo. Intenta de nuevo.' };
     }
 
-    await prisma.biblioteca.create({
+    const libro = await prisma.biblioteca.create({
         data: {
             nombre: parsed.data.nombre,
             autor: parsed.data.autor,
             gradoId: parsed.data.grado,
             fileName,
         },
+    });
+
+    void logActivity({
+        action: ACTIVITY_ACTION.LIBRO_CREATE,
+        entity: ACTIVITY_ENTITY.BIBLIOTECA,
+        entityId: libro.id,
+        description: `Agregó libro "${parsed.data.nombre}" a biblioteca (grado ${parsed.data.grado})`,
     });
 
     revalidatePath('/aprendiz/biblioteca');
@@ -64,6 +73,14 @@ export async function deleteLibro(id: number): Promise<ActionResult<null>> {
     const session = await requireAdmin();
     if (!session) return { success: false, error: 'No autorizado' };
     await prisma.biblioteca.delete({ where: { id } });
+
+    void logActivity({
+        action: ACTIVITY_ACTION.LIBRO_DELETE,
+        entity: ACTIVITY_ENTITY.BIBLIOTECA,
+        entityId: id,
+        description: `Eliminó libro con ID ${id} de biblioteca`,
+    });
+
     revalidatePath('/aprendiz/biblioteca');
     revalidatePath('/companero/biblioteca');
     revalidatePath('/maestro/biblioteca');
@@ -103,6 +120,13 @@ export async function updateLibro(
             gradoId: parsed.data.grado,
             ...(fileName !== undefined && { fileName }),
         },
+    });
+
+    void logActivity({
+        action: ACTIVITY_ACTION.LIBRO_UPDATE,
+        entity: ACTIVITY_ENTITY.BIBLIOTECA,
+        entityId: id,
+        description: `Editó libro "${parsed.data.nombre}"`,
     });
 
     revalidatePath('/aprendiz/biblioteca');
@@ -150,7 +174,7 @@ export async function createTrazado(
         return { success: false, error: 'Error al subir el archivo. Intenta de nuevo.' };
     }
 
-    await prisma.trazado.create({
+    const trazado = await prisma.trazado.create({
         data: {
             nombre: parsed.data.nombre,
             autorId: parsed.data.autor,
@@ -158,6 +182,13 @@ export async function createTrazado(
             fecha: new Date(parsed.data.fecha),
             fileName,
         },
+    });
+
+    void logActivity({
+        action: ACTIVITY_ACTION.TRAZADO_CREATE,
+        entity: ACTIVITY_ENTITY.TRAZADO,
+        entityId: trazado.id,
+        description: `Subió trazado "${parsed.data.nombre}" (grado ${parsed.data.grado})`,
     });
 
     revalidatePath('/aprendiz/trazados');
@@ -170,6 +201,14 @@ export async function deleteTrazado(id: number): Promise<ActionResult<null>> {
     const session = await requireAdmin();
     if (!session) return { success: false, error: 'No autorizado' };
     await prisma.trazado.delete({ where: { id } });
+
+    void logActivity({
+        action: ACTIVITY_ACTION.TRAZADO_DELETE,
+        entity: ACTIVITY_ENTITY.TRAZADO,
+        entityId: id,
+        description: `Eliminó trazado con ID ${id}`,
+    });
+
     revalidatePath('/aprendiz/trazados');
     revalidatePath('/companero/trazados');
     revalidatePath('/maestro/trazados');
@@ -213,6 +252,13 @@ export async function updateTrazado(
         },
     });
 
+    void logActivity({
+        action: ACTIVITY_ACTION.TRAZADO_UPDATE,
+        entity: ACTIVITY_ENTITY.TRAZADO,
+        entityId: id,
+        description: `Editó trazado "${parsed.data.nombre}"`,
+    });
+
     revalidatePath('/aprendiz/trazados');
     revalidatePath('/companero/trazados');
     revalidatePath('/maestro/trazados');
@@ -249,8 +295,15 @@ export async function createDocumento(
         return { success: false, error: 'Error al subir el archivo. Intenta de nuevo.' };
     }
 
-    await prisma.document.create({
+    const doc = await prisma.document.create({
         data: { nombre: parsed.data.nombre, fechaDoc: new Date(parsed.data.fecha), fileName },
+    });
+
+    void logActivity({
+        action: ACTIVITY_ACTION.DOCUMENTO_CREATE,
+        entity: ACTIVITY_ENTITY.DOCUMENTO,
+        entityId: doc.id,
+        description: `Subió documento "${parsed.data.nombre}"`,
     });
 
     revalidatePath('/documentos');
@@ -291,6 +344,13 @@ export async function updateDocumento(
         },
     });
 
+    void logActivity({
+        action: ACTIVITY_ACTION.DOCUMENTO_UPDATE,
+        entity: ACTIVITY_ENTITY.DOCUMENTO,
+        entityId: id,
+        description: `Editó documento "${parsed.data.nombre}"`,
+    });
+
     revalidatePath('/documentos');
     return { success: true, data: null };
 }
@@ -299,6 +359,14 @@ export async function deleteDocumento(id: number): Promise<ActionResult<null>> {
     const session = await requireAdmin();
     if (!session) return { success: false, error: 'No autorizado' };
     await prisma.document.delete({ where: { id } });
+
+    void logActivity({
+        action: ACTIVITY_ACTION.DOCUMENTO_DELETE,
+        entity: ACTIVITY_ENTITY.DOCUMENTO,
+        entityId: id,
+        description: `Eliminó documento con ID ${id}`,
+    });
+
     revalidatePath('/documentos');
     return { success: true, data: null };
 }
