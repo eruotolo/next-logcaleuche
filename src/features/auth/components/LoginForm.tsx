@@ -7,11 +7,18 @@ import Link from 'next/link';
 import * as Tabs from '@radix-ui/react-tabs';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 
+import { cleanRut, formatRut } from '@/shared/lib/rut';
+
 import { loginAction } from '../actions';
 
 export function LoginForm() {
     const [state, formAction, isPending] = useActionState(loginAction, null);
     const [showPassword, setShowPassword] = useState(false);
+    const [rutDisplay, setRutDisplay] = useState('');
+
+    function handleRutChange(e: React.ChangeEvent<HTMLInputElement>): void {
+        setRutDisplay(formatRut(e.target.value));
+    }
 
     return (
         <form action={formAction} className="space-y-5">
@@ -67,12 +74,16 @@ export function LoginForm() {
                     </label>
                     <input
                         id="identifier-rut"
-                        name="identifier"
                         type="text"
+                        inputMode="numeric"
                         placeholder="12.345.678-9"
                         autoComplete="username"
                         className="ag-input"
+                        value={rutDisplay}
+                        onChange={handleRutChange}
+                        maxLength={12}
                     />
+                    <input type="hidden" name="identifier" value={cleanRut(rutDisplay)} />
                 </Tabs.Content>
             </Tabs.Root>
 

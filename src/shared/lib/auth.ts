@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { ACTIVITY_ACTION, ACTIVITY_ENTITY, ACTIVITY_STATUS } from '@/shared/constants/activity-log';
 
 import { prisma } from './db';
+import { cleanRut } from './rut';
 
 const loginSchema = z.object({
     identifier: z.string().min(1),
@@ -28,10 +29,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 const parsed = loginSchema.safeParse(credentials);
                 if (!parsed.success) return null;
 
-                const { identifier, password } = parsed.data;
+                const { identifier: rawIdentifier, password } = parsed.data;
 
                 // Detectar si es email (contiene @) o RUT (username en BD)
-                const isEmail = identifier.includes('@');
+                const isEmail = rawIdentifier.includes('@');
+                const identifier = isEmail ? rawIdentifier : cleanRut(rawIdentifier);
 
                 const user = await prisma.user.findUnique({
                     where: isEmail ? { email: identifier } : { username: identifier },
