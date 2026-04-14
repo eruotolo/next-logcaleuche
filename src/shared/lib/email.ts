@@ -223,17 +223,17 @@ export async function sendInvitacionEvento(params: {
 
     const autorLinea = evento.autor
         ? `<div style="margin:0 0 16px 0;padding:12px 20px;border-left:3px solid #2980b9;background:#f0f7ff;">
-               <p style="margin:0 0 6px 0;"><strong>Tema:</strong> <em>"${esc(evento.trabajo)}"</em></p>
+               <p style="margin:0 0 6px 0;"><strong>Tema:</strong> <em>"${esc(evento.nombre)}"</em></p>
                <p style="margin:0;"><strong>Autor:</strong> ${esc(tratamientoAutor)} ${esc(evento.autor)}</p>
            </div>`
         : `<div style="margin:0 0 16px 0;padding:12px 20px;border-left:3px solid #2980b9;background:#f0f7ff;">
-               <p style="margin:0;"><strong>Tema:</strong> <em>"${esc(evento.trabajo)}"</em></p>
+               <p style="margin:0;"><strong>Tema:</strong> <em>"${esc(evento.nombre)}"</em></p>
            </div>`;
 
     const html = `
     <div style="max-width:600px;margin:0 auto;font-family:Georgia,serif;color:#1a1a1a;">
         <div style="text-align:center;padding:24px 0 16px 0;border-bottom:2px solid #2980b9;">
-            <img src="https://intranet.logiacaleuche.cl/admin/assets/images/logo.jpg"
+            <img src="https://www.logiacaleuche.cl/logo.jpg"
                  style="max-width:120px;width:100%;height:auto;" alt="R∴L∴ Caleuche 250">
             <p style="margin:8px 0 0 0;font-size:13px;letter-spacing:2px;color:#2980b9;text-transform:uppercase;">
                 Respetable Logia Caleuche N°250
@@ -261,7 +261,7 @@ export async function sendInvitacionEvento(params: {
             <div style="margin-top:32px;padding-top:20px;border-top:1px solid #ddd;">
                 <p style="margin:0 0 12px 0;">Les saluda fraternalmente,</p>
                 <p style="margin:0;font-weight:bold;">Q∴H∴ Secretario ${nombreSecretario ? ` ${nombreSecretario}` : ''}</p>
-                <p style="margin:0;color:#2980b9;">R∴L∴ Caleuche N°250 del Or∴ de Castro</p>
+                <p style="margin:0;color:#2980b9;">R∴L∴ Caleuche N°250 del Valle de Castro</p>
             </div>
         </div>
 
