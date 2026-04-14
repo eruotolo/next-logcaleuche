@@ -74,7 +74,7 @@ export async function getDashboardData() {
             fecha: { gte: startOfToday },
             ...eventGradoFilter,
         },
-        include: { grado: true },
+        include: { grado: true, tipoActividad: true },
         orderBy: { fecha: 'asc' },
         take: 7,
     });

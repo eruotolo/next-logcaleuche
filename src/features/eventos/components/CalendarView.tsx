@@ -8,7 +8,7 @@ import FullCalendar from '@fullcalendar/react';
 interface CalendarEvento {
     id: number;
     nombre: string | null;
-    trabajo: string | null;
+    tipoActividad: { id: number; nombre: string } | null;
     fecha: Date | null;
     inicio: Date | null;
     fin: Date | null;
@@ -45,7 +45,7 @@ export function CalendarView({ eventos }: CalendarViewProps) {
         backgroundColor: getColor(e.category?.id ?? null),
         borderColor: getColor(e.category?.id ?? null),
         extendedProps: {
-            trabajo: e.trabajo,
+            tipoActividad: e.tipoActividad?.nombre ?? null,
             horario:
                 e.inicio && e.fin
                     ? `${formatTime(e.inicio)} - ${formatTime(e.fin)}`
@@ -72,7 +72,7 @@ export function CalendarView({ eventos }: CalendarViewProps) {
                 eventClick={(info) => {
                     const p = info.event.extendedProps;
                     alert(
-                        `${info.event.title}\n\nTrabajo: ${p.trabajo ?? '—'}\nCategoría: ${p.categoria}\nHorario: ${p.horario || '—'}`,
+                        `${info.event.title}\n\nTipo: ${p.tipoActividad ?? '—'}\nCategoría: ${p.categoria}\nHorario: ${p.horario || '—'}`,
                     );
                 }}
                 buttonText={{

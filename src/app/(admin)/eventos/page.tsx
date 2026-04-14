@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 
 import type { Metadata } from 'next';
 
-import { getEventosCalendario, getGrados } from '@/features/eventos/actions';
+import { getEventosCalendario, getGrados, getTiposActividad } from '@/features/eventos/actions';
 import { EventoCalendar } from '@/features/eventos/components/EventoCalendar';
 import { EventosAdminToolbar } from '@/features/eventos/components/EventosAdminToolbar';
 
@@ -19,9 +19,10 @@ export default async function EventosPage() {
     const grado = session.user.grado ?? 1;
     const isAdmin = session.user.categoryId <= 2;
 
-    const [eventos, grados] = await Promise.all([
+    const [eventos, grados, tiposActividad] = await Promise.all([
         getEventosCalendario(grado),
         isAdmin ? getGrados() : Promise.resolve([]),
+        isAdmin ? getTiposActividad() : Promise.resolve([]),
     ]);
 
     return (
@@ -35,10 +36,10 @@ export default async function EventosPage() {
                         Eventos y tenidas de la logia.
                     </p>
                 </div>
-                {isAdmin && <EventosAdminToolbar grados={grados} />}
+                {isAdmin && <EventosAdminToolbar grados={grados} tiposActividad={tiposActividad} />}
             </div>
 
-            <EventoCalendar eventos={eventos} isAdmin={isAdmin} grados={grados} />
+            <EventoCalendar eventos={eventos} isAdmin={isAdmin} grados={grados} tiposActividad={tiposActividad} />
         </div>
     );
 }

@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const EventoSchema = z.object({
     nombre: z.string().min(1, 'El nombre es requerido'),
-    trabajo: z.string().min(1, 'El tipo de trabajo es requerido'),
+    tipoActividadId: z.coerce.number().int().positive('Selecciona un tipo de actividad'),
     autor: z.string().optional(),
     fecha: z.string().min(1, 'La fecha es requerida'),
     hora: z.string().optional(),
@@ -14,7 +14,7 @@ export type EventoInput = z.infer<typeof EventoSchema>;
 
 export const EventoImportRowSchema = z.object({
     nombre: z.string().min(1, 'El nombre es requerido'),
-    trabajo: z.string().min(1, 'El tipo de trabajo es requerido'),
+    tipoActividadId: z.coerce.number().int().min(1, 'Tipo de actividad requerido').max(17, 'ID de tipo de actividad inválido'),
     autor: z.string().optional().default(''),
     fecha: z
         .string()

@@ -14,10 +14,11 @@ import { createEvento } from '../actions';
 
 interface EventoFormProps {
     grados: { id: number; nombre: string }[];
+    tiposActividad: { id: number; nombre: string }[];
     onSuccess?: () => void;
 }
 
-export function EventoForm({ grados, onSuccess }: EventoFormProps) {
+export function EventoForm({ grados, tiposActividad, onSuccess }: EventoFormProps) {
     const router = useRouter();
     const [state, formAction, isPending] = useActionState<ActionResult<null> | null, FormData>(
         createEvento,
@@ -42,8 +43,15 @@ export function EventoForm({ grados, onSuccess }: EventoFormProps) {
             </div>
 
             <div className="space-y-1">
-                <label className="form-label">Tipo de Trabajo *</label>
-                <Input name="trabajo" placeholder="Ej: Trazado, Tenida Administrativa" required />
+                <label className="form-label">Tipo de Actividad *</label>
+                <select name="tipoActividadId" required className="form-select">
+                    <option value="">Seleccionar…</option>
+                    {tiposActividad.map((t) => (
+                        <option key={t.id} value={t.id}>
+                            {t.nombre}
+                        </option>
+                    ))}
+                </select>
             </div>
 
             <div className="space-y-1">

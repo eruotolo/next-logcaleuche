@@ -9,7 +9,7 @@ import { getMesNombre } from '@/shared/lib/utils';
 export type UpcomingEventItem = {
     id: number;
     nombre: string;
-    trabajo?: string | null;
+    tipoActividad?: { id: number; nombre: string } | null;
     fecha: Date | null;
     hora?: string | null;
     grado?: { id: number; nombre: string } | null;
@@ -18,7 +18,7 @@ export type UpcomingEventItem = {
 interface UpcomingEventsListProps {
     eventos: UpcomingEventItem[];
     maxItems?: number;
-    showTrabajo?: boolean;
+    showTipoActividad?: boolean;
     showHora?: boolean;
     showGradoBadge?: boolean;
     showLink?: boolean;
@@ -45,7 +45,7 @@ function getGradoColor(id: number) {
 export function UpcomingEventsList({
     eventos,
     maxItems = 6,
-    showTrabajo = true,
+    showTipoActividad = true,
     showHora = false,
     showGradoBadge = true,
     showLink = true,
@@ -102,8 +102,8 @@ export function UpcomingEventsList({
                             <h4 className="text-cg-on-surface truncate text-sm font-bold">
                                 {ev.nombre}
                             </h4>
-                            {showTrabajo && ev.trabajo && (
-                                <p className="text-cg-outline truncate text-xs">{ev.trabajo}</p>
+                            {showTipoActividad && ev.tipoActividad && (
+                                <p className="text-cg-outline truncate text-xs">{ev.tipoActividad.nombre}</p>
                             )}
                             {showGradoBadge && ev.grado && gradoColor && (
                                 <span

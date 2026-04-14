@@ -11,6 +11,7 @@ export const TrazadoSchema = z.object({
     autor: z.coerce.number().int().positive('Selecciona un autor'),
     grado: z.coerce.number().int().min(1).max(3),
     fecha: z.string().min(1),
+    tipoActividadId: z.coerce.number().int().positive().optional(),
 });
 
 export const DocumentoSchema = z.object({

@@ -6,12 +6,13 @@ import { ImportEventosButton } from './ImportEventosButton';
 
 interface EventosAdminToolbarProps {
     grados: { id: number; nombre: string }[];
+    tiposActividad: { id: number; nombre: string }[];
 }
 
-export function EventosAdminToolbar({ grados }: EventosAdminToolbarProps) {
+export function EventosAdminToolbar({ grados, tiposActividad }: EventosAdminToolbarProps) {
     return (
         <div className="flex flex-wrap items-center gap-2">
-            <CreateEventoModal grados={grados} />
+            <CreateEventoModal grados={grados} tiposActividad={tiposActividad} />
             <ImportEventosButton />
             <DownloadTemplateButton />
         </div>

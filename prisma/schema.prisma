@@ -152,16 +152,18 @@ model CommentFeed {
 
 // 1.8 Tabla: evento
 model Evento {
-    id      Int       @id @default(autoincrement()) @map("id_Evento")
-    nombre  String    @map("nombre_Evento")
-    trabajo String    @map("trabajo_Evento")
-    autor   String?   @map("autor_Evento")
-    fecha   DateTime? @map("fecha_Evento") @db.Date
-    hora    String?   @map("hora_Evento")
-    lugar   String?   @map("lugar_Evento")
+    id    Int    @id @default(autoincrement()) @map("id_Evento")
+    nombre String @map("nombre_Evento")
+    autor  String? @map("autor_Evento")
+    fecha  DateTime? @map("fecha_Evento") @db.Date
+    hora   String?   @map("hora_Evento")
+    lugar  String?   @map("lugar_Evento")
 
     gradoId Int?   @map("cat_Evento")
     grado   Grado? @relation(fields: [gradoId], references: [id])
+
+    tipoActividadId Int?           @map("tipo_actividad_id")
+    tipoActividad   TipoActividad? @relation(fields: [tipoActividadId], references: [id])
 
     active Int? @map("estado_Evento") // 0=Cancelado, 1=Activo
 
@@ -174,6 +176,17 @@ model CategoryEvent {
     nombre String @map("nombre_Category")
 
     @@map("categoryevent")
+}
+
+// 1.10 Tabla: tipo_actividad
+model TipoActividad {
+    id     Int    @id @map("id_TipoActividad")
+    nombre String @map("nombre_TipoActividad")
+
+    eventos  Evento[]
+    trazados Trazado[]
+
+    @@map("tipo_actividad")
 }
 
 // 1.11 Tabla: biblioteca
@@ -200,6 +213,9 @@ model Trazado {
 
     gradoId Int?   @map("grado_Trazado")
     grado   Grado? @relation(fields: [gradoId], references: [id])
+
+    tipoActividadId Int?           @map("tipo_actividad_id")
+    tipoActividad   TipoActividad? @relation(fields: [tipoActividadId], references: [id])
 
     fecha DateTime? @map("fecha_Trazado") @db.Date
 

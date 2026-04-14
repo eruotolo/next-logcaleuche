@@ -195,7 +195,7 @@ export async function sendInvitacionEvento(params: {
     nombreSecretario: string | null;
     evento: {
         nombre: string;
-        trabajo: string;
+        tipoActividad: string;
         autor?: string | null;
         fecha: Date;
         hora?: string | null;
@@ -246,7 +246,7 @@ export async function sendInvitacionEvento(params: {
 
             <p style="margin:0 0 16px 0;line-height:1.7;">
                 Por especial encargo de nuestro <strong>${tratamientoRM}${nombreVM ? ` ${nombreVM}` : ''}</strong>, cito a ustedes a
-                <strong>Tenida de ${tenida}</strong>, a realizarse el día
+                <strong>${esc(evento.tipoActividad)}</strong>, a realizarse el día
                 <strong>${diaNombre} ${diaNum} de ${mesNombre} de ${anio}</strong>,
                 a las <strong>${horaStr} hrs.</strong>, en <strong>${lugarStr}</strong>.
             </p>
@@ -278,7 +278,7 @@ export async function sendInvitacionEvento(params: {
         from: NOREPLY_FROM,
         to: NOREPLY_EMAIL,
         bcc: bccEmails,
-        subject: `Convocatoria — Tenida de ${tenida} · ${diaNombre} ${diaNum} de ${mesNombre}`,
+        subject: `Convocatoria — ${evento.tipoActividad} · ${diaNombre} ${diaNum} de ${mesNombre}`,
         html,
     });
 }

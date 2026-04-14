@@ -13,7 +13,7 @@ import { EventoDetailModal } from './EventoDetailModal';
 type EventoItem = {
     id: number;
     nombre: string;
-    trabajo: string;
+    tipoActividad: { id: number; nombre: string } | null;
     autor: string | null;
     fecha: Date | null;
     hora: string | null;
@@ -25,6 +25,7 @@ interface EventoCalendarProps {
     eventos: EventoItem[];
     isAdmin: boolean;
     grados?: { id: number; nombre: string }[];
+    tiposActividad?: { id: number; nombre: string }[];
 }
 
 const DAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
@@ -110,7 +111,7 @@ function isSameDay(dbDate: Date, localDate: Date) {
     );
 }
 
-export function EventoCalendar({ eventos, isAdmin, grados = [] }: EventoCalendarProps) {
+export function EventoCalendar({ eventos, isAdmin, grados = [], tiposActividad = [] }: EventoCalendarProps) {
     const today = new Date();
     const [currentMonth, setCurrentMonth] = useState(today.getMonth());
     const [currentYear, setCurrentYear] = useState(today.getFullYear());
@@ -297,9 +298,9 @@ export function EventoCalendar({ eventos, isAdmin, grados = [] }: EventoCalendar
                                 <h3 className="font-display text-cg-on-surface text-xl font-bold">
                                     {nextEvent.nombre}
                                 </h3>
-                                {nextEvent.trabajo && (
+                                {nextEvent.tipoActividad && (
                                     <p className="text-cg-on-surface-variant text-sm">
-                                        {nextEvent.trabajo}
+                                        {nextEvent.tipoActividad.nombre}
                                     </p>
                                 )}
                                 {nextEvent.autor && (
@@ -333,6 +334,7 @@ export function EventoCalendar({ eventos, isAdmin, grados = [] }: EventoCalendar
                 onClose={() => setSelectedEvento(null)}
                 isAdmin={isAdmin}
                 grados={grados}
+                tiposActividad={tiposActividad}
             />
         </>
     );

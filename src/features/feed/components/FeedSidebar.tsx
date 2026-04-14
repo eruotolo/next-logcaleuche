@@ -23,7 +23,7 @@ interface FeedSidebarProps {
     eventos: {
         id: number;
         nombre: string;
-        trabajo: string | null;
+        tipoActividad: { id: number; nombre: string } | null;
         fecha: Date | null;
         hora: string | null;
         gradoId: number | null;
@@ -58,7 +58,7 @@ export function FeedSidebar({ posts, eventos, upcomingBirthdays, totalPosts }: F
                 eventos={eventos.slice(0, 6).map((ev) => ({
                     id: ev.id,
                     nombre: ev.nombre,
-                    trabajo: ev.trabajo,
+                    tipoActividad: ev.tipoActividad ?? null,
                     fecha: ev.fecha ? new Date(ev.fecha) : null,
                     hora: ev.hora ?? null,
                     grado: ev.gradoId

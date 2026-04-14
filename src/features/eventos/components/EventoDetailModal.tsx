@@ -17,7 +17,7 @@ import { updateEvento } from '../actions';
 type Evento = {
     id: number;
     nombre: string;
-    trabajo: string;
+    tipoActividad: { id: number; nombre: string } | null;
     autor: string | null;
     fecha: Date | null;
     hora: string | null;
@@ -49,10 +49,12 @@ const categoryColors: Record<number, { bg: string; text: string }> = {
 function EditForm({
     evento,
     grados,
+    tiposActividad,
     onSuccess,
 }: {
     evento: Evento;
     grados: { id: number; nombre: string }[];
+    tiposActividad: { id: number; nombre: string }[];
     onSuccess: () => void;
 }) {
     const router = useRouter();
@@ -81,8 +83,20 @@ function EditForm({
                 <Input name="nombre" defaultValue={evento.nombre} required />
             </div>
             <div className="space-y-1">
-                <label className="form-label">Tipo de Trabajo *</label>
-                <Input name="trabajo" defaultValue={evento.trabajo} required />
+                <label className="form-label">Tipo de Actividad *</label>
+                <select
+                    name="tipoActividadId"
+                    required
+                    className="form-select"
+                    defaultValue={evento.tipoActividad?.id}
+                >
+                    <option value="">Seleccionar…</option>
+                    {tiposActividad.map((t) => (
+                        <option key={t.id} value={t.id}>
+                            {t.nombre}
+                        </option>
+                    ))}
+                </select>
             </div>
             <div className="space-y-1">
                 <label className="form-label">Autor / Responsable</label>
@@ -137,6 +151,7 @@ interface EventoDetailModalProps {
     onClose: () => void;
     isAdmin: boolean;
     grados: { id: number; nombre: string }[];
+    tiposActividad?: { id: number; nombre: string }[];
 }
 
 export function EventoDetailModal({
@@ -145,6 +160,7 @@ export function EventoDetailModal({
     onClose,
     isAdmin,
     grados,
+    tiposActividad = [],
 }: EventoDetailModalProps) {
     const [editing, setEditing] = useState(false);
 
@@ -174,7 +190,7 @@ export function EventoDetailModal({
             size="sm"
         >
             {editing ? (
-                <EditForm evento={evento} grados={grados} onSuccess={onClose} />
+                <EditForm evento={evento} grados={grados} tiposActividad={tiposActividad} onSuccess={onClose} />
             ) : (
                 <div className="space-y-5">
                     <div className="space-y-1">
@@ -183,12 +199,14 @@ export function EventoDetailModal({
                         </p>
                         <p className="text-cg-on-surface text-lg font-bold">{evento.nombre}</p>
                     </div>
-                    <div className="space-y-1">
-                        <p className="text-cg-outline text-xs font-semibold tracking-widest uppercase">
-                            Tipo de Trabajo
-                        </p>
-                        <p className="text-cg-on-surface-variant text-sm">{evento.trabajo}</p>
-                    </div>
+                    {evento.tipoActividad && (
+                        <div className="space-y-1">
+                            <p className="text-cg-outline text-xs font-semibold tracking-widest uppercase">
+                                Tipo de Actividad
+                            </p>
+                            <p className="text-cg-on-surface-variant text-sm">{evento.tipoActividad.nombre}</p>
+                        </div>
+                    )}
                     {evento.autor && (
                         <div className="space-y-1">
                             <p className="text-cg-outline text-xs font-semibold tracking-widest uppercase">

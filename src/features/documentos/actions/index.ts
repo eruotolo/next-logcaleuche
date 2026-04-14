@@ -145,6 +145,7 @@ export async function getTrazados(gradoTarget: number) {
         include: {
             grado: true,
             autor: { select: { name: true, lastName: true } },
+            tipoActividad: true,
         },
         orderBy: { fecha: 'desc' },
     });
@@ -162,6 +163,7 @@ export async function createTrazado(
         autor: formData.get('autor'),
         grado: formData.get('grado'),
         fecha: formData.get('fecha'),
+        tipoActividadId: formData.get('tipoActividadId'),
     });
     if (!parsed.success) return { success: false, error: 'Verifica los datos.' };
 
@@ -180,6 +182,7 @@ export async function createTrazado(
             autorId: parsed.data.autor,
             gradoId: parsed.data.grado,
             fecha: new Date(parsed.data.fecha),
+            tipoActividadId: parsed.data.tipoActividadId ?? null,
             fileName,
         },
     });
@@ -228,6 +231,7 @@ export async function updateTrazado(
         autor: formData.get('autor'),
         grado: formData.get('grado'),
         fecha: formData.get('fecha'),
+        tipoActividadId: formData.get('tipoActividadId'),
     });
     if (!parsed.success) return { success: false, error: 'Verifica los datos.' };
 
@@ -248,6 +252,7 @@ export async function updateTrazado(
             autorId: parsed.data.autor,
             gradoId: parsed.data.grado,
             fecha: new Date(parsed.data.fecha),
+            tipoActividadId: parsed.data.tipoActividadId ?? null,
             ...(fileName !== undefined && { fileName }),
         },
     });

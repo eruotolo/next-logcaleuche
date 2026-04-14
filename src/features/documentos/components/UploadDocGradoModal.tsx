@@ -15,6 +15,7 @@ interface UploadDocGradoModalProps {
     tipo: DocTipo;
     grados: { id: number; nombre: string }[];
     usuarios?: { id: number; name: string | null; lastName: string | null }[];
+    tiposActividad?: { id: number; nombre: string }[];
     redirectTo: string;
 }
 
@@ -27,6 +28,7 @@ export function UploadDocGradoModal({
     tipo,
     grados,
     usuarios,
+    tiposActividad,
     redirectTo,
 }: UploadDocGradoModalProps) {
     const { isOpen, open, close } = useModal();
@@ -48,6 +50,7 @@ export function UploadDocGradoModal({
                     tipo={tipo}
                     grados={grados}
                     usuarios={usuarios}
+                    tiposActividad={tiposActividad}
                     redirectTo={redirectTo}
                     onSuccess={handleSuccess}
                 />

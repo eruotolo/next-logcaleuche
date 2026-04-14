@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 
+import { getTiposActividad } from '@/features/eventos/actions';
 import { getGrados, getUsuarios } from '@/features/usuarios/actions';
 
 import { auth } from '@/shared/lib/auth';
@@ -37,16 +38,17 @@ export async function DocGradoPage({
 
     if (userGrado < gradoMin && !isAdmin) redirect('/dashboard');
 
-    const [rawItems, grados, allUsers] = await Promise.all([
+    const [rawItems, grados, allUsers, tiposActividad] = await Promise.all([
         fetchers[tipo](gradoMin),
         getGrados(),
         tipo === 'trazado' ? getUsuarios() : Promise.resolve([]),
+        tipo === 'trazado' ? getTiposActividad() : Promise.resolve([]),
     ]);
 
     // Biblioteca: Prisma returns `autor` (TS field name) but DocItem expects `autor_Libro`
     const items =
         tipo === 'biblioteca'
-            ? (rawItems as Array<Record<string, unknown>>).map(({ autor, ...rest }) => ({
+            ? (rawItems as Record<string, unknown>[]).map(({ autor, ...rest }) => ({
                   ...rest,
                   autor_Libro: autor,
               }))
@@ -66,6 +68,7 @@ export async function DocGradoPage({
                         tipo={tipo}
                         grados={grados}
                         usuarios={usuarios}
+                        tiposActividad={tiposActividad as { id: number; nombre: string }[]}
                         redirectTo={redirectTo}
                     />
                 )}
@@ -78,6 +81,7 @@ export async function DocGradoPage({
                 canEdit={canEdit}
                 grados={grados}
                 usuarios={usuarios}
+                tiposActividad={tiposActividad as { id: number; nombre: string }[]}
             />
         </div>
     );

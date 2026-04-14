@@ -28,6 +28,7 @@ interface TrazadoItem {
     autorId?: number;
     gradoId?: number;
     fecha?: Date | null;
+    tipoActividadId?: number | null;
 }
 
 interface EditBibliotecaProps {
@@ -42,6 +43,7 @@ interface EditTrazadoProps {
     item: TrazadoItem;
     grados: { id: number; nombre: string }[];
     usuarios: { id: number; name: string | null; lastName: string | null }[];
+    tiposActividad?: { id: number; nombre: string }[];
 }
 
 type EditDocGradoModalProps = EditBibliotecaProps | EditTrazadoProps;
@@ -158,6 +160,28 @@ export function EditDocGradoModal(props: EditDocGradoModalProps) {
                             ))}
                         </select>
                     </div>
+
+                    {/* Tipo de Actividad — solo para trazado */}
+                    {tipo === 'trazado' && props.tiposActividad && props.tiposActividad.length > 0 && (
+                        <div className="space-y-2">
+                            <label htmlFor={`edit-traz-tipo-${item.id}`} className="form-label">
+                                Tipo de Actividad
+                            </label>
+                            <select
+                                id={`edit-traz-tipo-${item.id}`}
+                                name="tipoActividadId"
+                                defaultValue={(item as TrazadoItem).tipoActividadId ?? ''}
+                                className="text-cg-on-surface block w-full rounded-lg border border-[rgba(70,70,88,0.35)] bg-[rgba(255,255,255,0.04)] px-3 py-2 text-[13px]"
+                            >
+                                <option value="">Sin tipo</option>
+                                {props.tiposActividad.map((t) => (
+                                    <option key={t.id} value={t.id}>
+                                        {t.nombre}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
 
                     {/* Fecha — solo para trazado */}
                     {tipo === 'trazado' && (

@@ -16,7 +16,7 @@ import { deleteEvento } from '../actions';
 interface Evento {
     id: number;
     nombre: string;
-    trabajo: string;
+    tipoActividad: { id: number; nombre: string } | null;
     fecha: Date | null;
     category: { id: number; nombre: string } | null;
 }
@@ -86,9 +86,9 @@ export function EventoList({ eventos, isAdmin }: EventoListProps) {
             cell: (e) => e.nombre,
         },
         {
-            header: 'Tipo de Trabajo',
+            header: 'Tipo de Actividad',
             cellClassName: 'text-sm text-cg-on-surface-variant',
-            cell: (e) => e.trabajo,
+            cell: (e) => e.tipoActividad?.nombre ?? '—',
         },
         {
             header: 'Fecha',

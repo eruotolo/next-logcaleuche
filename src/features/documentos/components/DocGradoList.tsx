@@ -27,6 +27,8 @@ interface DocItem {
     autor?: { name: string | null; lastName: string | null } | null;
     autorId?: number;
     autor_Libro?: string | null;
+    tipoActividadId?: number | null;
+    tipoActividad?: { id: number; nombre: string } | null;
 }
 
 interface DocGradoListProps {
@@ -36,6 +38,7 @@ interface DocGradoListProps {
     canEdit?: boolean;
     grados?: { id: number; nombre: string }[];
     usuarios?: { id: number; name: string | null; lastName: string | null }[];
+    tiposActividad?: { id: number; nombre: string }[];
 }
 
 const deleteActions: Record<
@@ -63,6 +66,7 @@ export function DocGradoList({
     canEdit = false,
     grados = [],
     usuarios = [],
+    tiposActividad = [],
 }: DocGradoListProps) {
     const [preview, setPreview] = useState<PreviewDoc | null>(null);
 
@@ -134,6 +138,13 @@ export function DocGradoList({
                                 )}
                             </div>
 
+                            {/* Tipo de actividad (solo trazado) */}
+                            {tipo === 'trazado' && item.tipoActividad && (
+                                <span className="mb-2 inline-block rounded-full border border-[rgba(155,255,206,0.2)] bg-[rgba(155,255,206,0.08)] px-2 py-0.5 text-[9px] font-semibold text-cg-tertiary-tonal">
+                                    {item.tipoActividad.nombre}
+                                </span>
+                            )}
+
                             {/* Author if applicable */}
                             {author && (
                                 <p className="text-cg-on-surface-variant mb-3 truncate text-[10px]">
@@ -202,9 +213,11 @@ export function DocGradoList({
                                                     autorId: item.autorId,
                                                     gradoId: item.gradoId,
                                                     fecha: item.fecha,
+                                                    tipoActividadId: item.tipoActividadId,
                                                 }}
                                                 grados={grados}
                                                 usuarios={usuarios}
+                                                tiposActividad={tiposActividad}
                                             />
                                         ))}
                                     {isAdmin && (

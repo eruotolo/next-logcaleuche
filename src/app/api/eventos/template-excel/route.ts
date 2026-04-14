@@ -17,7 +17,7 @@ export async function GET() {
 
     ws.columns = [
         { header: 'Nombre', key: 'nombre', width: 35 },
-        { header: 'Tipo de Trabajo', key: 'trabajo', width: 25 },
+        { header: 'Tipo de Actividad (ID 1-17)', key: 'tipoActividadId', width: 25 },
         { header: 'Autor / Responsable', key: 'autor', width: 30 },
         { header: 'Fecha (dd/mm/yyyy)', key: 'fecha', width: 18 },
         { header: 'Hora (HH:mm)', key: 'hora', width: 14 },
@@ -41,13 +41,25 @@ export async function GET() {
     // Fila de ejemplo
     ws.addRow({
         nombre: 'La Búsqueda de la Verdad',
-        trabajo: 'Trazado',
+        tipoActividadId: 15,
         autor: 'Q.H. Pedro Bravo',
         fecha: new Date(2026, 3, 15),
         hora: '20:00',
         lugar: 'Casa Masónica de Castro',
         grado: 1,
     });
+
+    // Validación de datos en columna Tipo de Actividad (filas 2 a 201)
+    for (let row = 2; row <= 201; row++) {
+        ws.getCell(`B${row}`).dataValidation = {
+            type: 'whole',
+            operator: 'between',
+            formulae: [1, 17],
+            showErrorMessage: true,
+            errorTitle: 'Tipo de Actividad inválido',
+            error: 'Ingresa un ID entre 1 y 17. Ver hoja "Referencia Tipos".',
+        };
+    }
 
     // Formato fecha en columna D
     ws.getColumn('fecha').numFmt = 'dd/mm/yyyy';
@@ -64,7 +76,43 @@ export async function GET() {
         };
     }
 
-    // ── Hoja de referencia ────────────────────────────────────────────────────
+    // ── Hoja de referencia: Tipos de Actividad ───────────────────────────────
+    const refTipos = workbook.addWorksheet('Referencia Tipos');
+    refTipos.columns = [
+        { header: 'ID', key: 'id', width: 8 },
+        { header: 'Tipo de Actividad', key: 'nombre', width: 30 },
+    ];
+
+    const refTiposHeader = refTipos.getRow(1);
+    refTiposHeader.eachCell((cell) => {
+        cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F2937' } };
+    });
+
+    const tiposActividad = [
+        { id: 1, nombre: 'Tenida' },
+        { id: 2, nombre: 'Cámara' },
+        { id: 3, nombre: 'Tenida Administrativa' },
+        { id: 4, nombre: 'Tenida Iniciación' },
+        { id: 5, nombre: 'Tenida Aumento de Salario' },
+        { id: 6, nombre: 'Tenida Jurisdiccional' },
+        { id: 7, nombre: 'Tenida Aniversario' },
+        { id: 8, nombre: 'Tenida Conjunta' },
+        { id: 9, nombre: 'Cámara Conjunta' },
+        { id: 10, nombre: 'Reunión Blanca' },
+        { id: 11, nombre: 'Tenida Exaltación' },
+        { id: 12, nombre: 'Fiesta del Aprendiz' },
+        { id: 13, nombre: 'Fiesta del Compañero' },
+        { id: 14, nombre: 'Fiesta del Maestro' },
+        { id: 15, nombre: 'Trazado' },
+        { id: 16, nombre: 'Ceremonia' },
+        { id: 17, nombre: 'Tenida Solsticial' },
+    ];
+    for (const t of tiposActividad) {
+        refTipos.addRow(t);
+    }
+
+    // ── Hoja de referencia: Grados ────────────────────────────────────────────
     const ref = workbook.addWorksheet('Referencia Grados');
     ref.columns = [
         { header: 'Grado', key: 'grado', width: 10 },

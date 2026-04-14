@@ -56,7 +56,7 @@ export async function GET(request: Request) {
         nombreSecretario,
         evento: {
             nombre: evento.nombre,
-            trabajo: evento.trabajo,
+            tipoActividad: evento.tipoActividad?.nombre ?? '',
             autor: evento.autor,
             fecha: evento.fecha,
             hora: evento.hora,

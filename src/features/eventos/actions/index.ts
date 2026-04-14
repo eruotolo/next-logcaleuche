@@ -19,6 +19,12 @@ export async function getGrados() {
     return prisma.grado.findMany({ orderBy: { id: 'asc' } });
 }
 
+export async function getTiposActividad() {
+    const session = await auth();
+    if (!session) throw new Error('No autorizado');
+    return prisma.tipoActividad.findMany({ orderBy: { id: 'asc' } });
+}
+
 export async function getEventos(grado: number) {
     const session = await auth();
     if (!session) throw new Error('No autorizado');
@@ -33,7 +39,7 @@ export async function getEventos(grado: number) {
             fecha: { gte: today },
             ...gradoFilter,
         },
-        include: { grado: true },
+        include: { grado: true, tipoActividad: true },
         orderBy: { fecha: 'asc' },
         take: 100,
     });
@@ -47,7 +53,7 @@ export async function getEventosCalendario(grado: number) {
 
     return prisma.evento.findMany({
         where: { active: 1, ...gradoFilter },
-        include: { grado: true },
+        include: { grado: true, tipoActividad: true },
         orderBy: { fecha: 'asc' },
     });
 }
@@ -55,7 +61,7 @@ export async function getEventosCalendario(grado: number) {
 export async function getProximoEvento() {
     return prisma.evento.findFirst({
         where: { active: 1, fecha: { gte: new Date() } },
-        include: { grado: true },
+        include: { grado: true, tipoActividad: true },
         orderBy: { fecha: 'asc' },
     });
 }
@@ -79,7 +85,7 @@ export async function createEvento(
 
     const parsed = EventoSchema.safeParse({
         nombre: formData.get('nombre'),
-        trabajo: formData.get('trabajo'),
+        tipoActividadId: formData.get('tipoActividadId'),
         autor: formData.get('autor'),
         fecha: formData.get('fecha'),
         hora: formData.get('hora'),
@@ -94,7 +100,7 @@ export async function createEvento(
     const evento = await prisma.evento.create({
         data: {
             nombre: parsed.data.nombre,
-            trabajo: parsed.data.trabajo,
+            tipoActividadId: parsed.data.tipoActividadId,
             autor: parsed.data.autor || null,
             fecha: new Date(parsed.data.fecha),
             hora: parsed.data.hora || null,
@@ -126,7 +132,7 @@ export async function updateEvento(
 
     const parsed = EventoSchema.safeParse({
         nombre: formData.get('nombre'),
-        trabajo: formData.get('trabajo'),
+        tipoActividadId: formData.get('tipoActividadId'),
         autor: formData.get('autor'),
         fecha: formData.get('fecha'),
         hora: formData.get('hora'),
@@ -142,7 +148,7 @@ export async function updateEvento(
         where: { id },
         data: {
             nombre: parsed.data.nombre,
-            trabajo: parsed.data.trabajo,
+            tipoActividadId: parsed.data.tipoActividadId,
             autor: parsed.data.autor || null,
             fecha: new Date(parsed.data.fecha),
             hora: parsed.data.hora || null,
@@ -217,7 +223,7 @@ export async function importEventos(formData: FormData): Promise<ActionResult<Im
 
     const validRows: Array<{
         nombre: string;
-        trabajo: string;
+        tipoActividadId: number;
         autor: string;
         fecha: string;
         hora: string;
@@ -231,7 +237,7 @@ export async function importEventos(formData: FormData): Promise<ActionResult<Im
 
         const rawData = {
             nombre: String(row.getCell(1).value ?? '').trim(),
-            trabajo: String(row.getCell(2).value ?? '').trim(),
+            tipoActividadId: row.getCell(2).value,
             autor: String(row.getCell(3).value ?? '').trim(),
             fecha: parseDateCell(row.getCell(4)),
             hora: String(row.getCell(5).value ?? '').trim(),
@@ -256,7 +262,7 @@ export async function importEventos(formData: FormData): Promise<ActionResult<Im
     await prisma.evento.createMany({
         data: validRows.map((r) => ({
             nombre: r.nombre,
-            trabajo: r.trabajo,
+            tipoActividadId: r.tipoActividadId,
             autor: r.autor || null,
             fecha: new Date(r.fecha),
             hora: r.hora || null,

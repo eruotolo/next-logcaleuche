@@ -18,6 +18,7 @@ interface DocGradoFormProps {
     tipo: DocTipo;
     grados: { id: number; nombre: string }[];
     usuarios?: { id: number; name: string | null; lastName: string | null }[];
+    tiposActividad?: { id: number; nombre: string }[];
     redirectTo: string;
     onSuccess?: () => void;
 }
@@ -39,6 +40,7 @@ export function DocGradoForm({
     tipo,
     grados,
     usuarios = [],
+    tiposActividad = [],
     redirectTo,
     onSuccess,
 }: DocGradoFormProps) {
@@ -86,6 +88,21 @@ export function DocGradoForm({
                         {usuarios.map((u) => (
                             <option key={u.id} value={u.id}>
                                 {u.name} {u.lastName}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+            )}
+
+            {/* Tipo de Actividad (solo trazado) */}
+            {tipo === 'trazado' && tiposActividad.length > 0 && (
+                <div className="space-y-1">
+                    <label className="form-label">Tipo de Actividad</label>
+                    <select name="tipoActividadId" className="form-select">
+                        <option value="">Seleccionar…</option>
+                        {tiposActividad.map((t) => (
+                            <option key={t.id} value={t.id}>
+                                {t.nombre}
                             </option>
                         ))}
                     </select>

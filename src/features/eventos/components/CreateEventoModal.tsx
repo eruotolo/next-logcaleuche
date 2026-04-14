@@ -12,9 +12,10 @@ import { EventoForm } from './EventoForm';
 
 interface CreateEventoModalProps {
     grados: { id: number; nombre: string }[];
+    tiposActividad: { id: number; nombre: string }[];
 }
 
-export function CreateEventoModal({ grados }: CreateEventoModalProps) {
+export function CreateEventoModal({ grados, tiposActividad }: CreateEventoModalProps) {
     const { isOpen, open, close } = useModal();
     const router = useRouter();
 
@@ -30,7 +31,7 @@ export function CreateEventoModal({ grados }: CreateEventoModalProps) {
                 Nuevo Evento
             </Button>
             <Modal open={isOpen} onClose={close} title="Nuevo Evento" size="sm">
-                <EventoForm grados={grados} onSuccess={handleSuccess} />
+                <EventoForm grados={grados} tiposActividad={tiposActividad} onSuccess={handleSuccess} />
             </Modal>
         </>
     );

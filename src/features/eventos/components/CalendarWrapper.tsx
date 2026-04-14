@@ -14,7 +14,7 @@ const CalendarView = dynamic(() => import('./CalendarView').then((m) => m.Calend
 interface CalendarEvento {
     id: number;
     nombre: string | null;
-    trabajo: string | null;
+    tipoActividad: { id: number; nombre: string } | null;
     fecha: Date | null;
     inicio: Date | null;
     fin: Date | null;

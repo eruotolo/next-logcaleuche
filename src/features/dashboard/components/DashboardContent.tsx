@@ -402,7 +402,7 @@ export function DashboardContent({ data, categoryId }: DashboardContentProps) {
                         eventos={eventos.slice(0, 7).map((ev) => ({
                             id: ev.id,
                             nombre: ev.nombre,
-                            trabajo: ev.trabajo,
+                            tipoActividad: ev.tipoActividad ?? null,
                             fecha: ev.fecha ? new Date(ev.fecha) : null,
                             hora: ev.hora ?? null,
                             grado: ev.gradoId
