@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 
-import { Search } from 'lucide-react';
+import { Download, Search } from 'lucide-react';
 
 import {
     Table,
@@ -40,6 +40,11 @@ export interface FilterDef<T> {
     minOptions?: number;
 }
 
+export interface CsvColumnDef<T> {
+    header: string;
+    getValue: (item: T) => string | number;
+}
+
 export interface DataTableProps<T> {
     data: T[];
     columns: ColumnDef<T>[];
@@ -60,6 +65,28 @@ export interface DataTableProps<T> {
      * como cards apiladas en mobile. En desktop (md+) se muestra la tabla normal.
      */
     mobileCard?: (item: T) => React.ReactNode;
+    /**
+     * Si se provee, aparece un botón "Exportar CSV" que descarga los datos filtrados.
+     * Cada entrada define el encabezado de columna y cómo extraer el valor del ítem.
+     */
+    csvColumns?: CsvColumnDef<T>[];
+    /** Nombre del archivo CSV sin extensión. Por defecto "exportacion". */
+    csvFilename?: string;
+}
+
+function exportToCsv<T>(data: T[], cols: CsvColumnDef<T>[], filename: string): void {
+    const header = cols.map((c) => `"${c.header}"`).join(',');
+    const rows = data.map((item) =>
+        cols.map((c) => `"${String(c.getValue(item)).replace(/"/g, '""')}"`).join(','),
+    );
+    const csv = [header, ...rows].join('\r\n');
+    const blob = new Blob([`\ufeff${csv}`], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${filename}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
 }
 
 export function DataTable<T>({
@@ -75,6 +102,8 @@ export function DataTable<T>({
     page: externalPage,
     onPageChange: externalOnPageChange,
     mobileCard,
+    csvColumns,
+    csvFilename = 'exportacion',
 }: DataTableProps<T>) {
     const [query, setQuery] = useState('');
     // Un estado de filtro por cada FilterDef ('' = sin filtrar)
@@ -187,6 +216,18 @@ export function DataTable<T>({
                     <span className="text-cg-outline text-xs">
                         {filtered.length} resultado{filtered.length !== 1 ? 's' : ''}
                     </span>
+                )}
+
+                {csvColumns && (
+                    <button
+                        type="button"
+                        onClick={() => exportToCsv(filtered, csvColumns, csvFilename)}
+                        className="ml-auto flex h-9 items-center gap-1.5 rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] px-3 text-xs text-[#aaa9be] transition-colors hover:bg-[rgba(255,255,255,0.08)] hover:text-[#e7e6fc]"
+                        aria-label="Exportar datos como CSV"
+                    >
+                        <Download className="h-3.5 w-3.5" />
+                        Exportar CSV
+                    </button>
                 )}
             </div>
 

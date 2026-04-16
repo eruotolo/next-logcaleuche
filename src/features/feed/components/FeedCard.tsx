@@ -7,13 +7,13 @@ import Link from 'next/link';
 
 
 
-import { Calendar, Eye, Heart, MessageSquare, Pencil, Trash2 } from 'lucide-react';
+import { Calendar, Eye, Heart, MessageSquare, Paperclip, Pencil, Trash2 } from 'lucide-react';
 
 
 
 import { Badge } from '@/shared/components/ui/badge';
 import { Tooltip } from '@/shared/components/ui/tooltip';
-import { getCloudinaryRawImageUrl } from '@/shared/lib/cloudinary';
+import { getCloudinaryPdfUrl, getCloudinaryRawImageUrl, isImageFile } from '@/shared/lib/cloudinary';
 
 import { formatDate, truncate } from '@/shared/lib/utils';
 
@@ -136,18 +136,30 @@ export function FeedCard({ post, canEdit = false, canDelete = false, categories 
                 </p>
             </Link>
 
-            {/* Image */}
+            {/* Image / Attachment */}
             {post.fileName && (
-                <Link href={`/feed/${post.slug}`}>
-                    <div className="relative mb-4 aspect-video overflow-hidden rounded-xl border border-[rgba(255,255,255,0.05)]">
-                        <Image
-                            src={getCloudinaryRawImageUrl(post.fileName) ?? ''}
-                            alt={post.titulo ?? ''}
-                            fill
-                            className="object-cover transition-transform duration-700 group-hover:scale-105"
-                        />
-                    </div>
-                </Link>
+                isImageFile(post.fileName) ? (
+                    <Link href={`/feed/${post.slug}`}>
+                        <div className="relative mb-4 aspect-video overflow-hidden rounded-xl border border-[rgba(255,255,255,0.05)]">
+                            <Image
+                                src={getCloudinaryRawImageUrl(post.fileName) ?? ''}
+                                alt={post.titulo ?? ''}
+                                fill
+                                className="object-cover transition-transform duration-700 group-hover:scale-105"
+                            />
+                        </div>
+                    </Link>
+                ) : (
+                    <a
+                        href={getCloudinaryPdfUrl(post.fileName)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-cg-on-surface-variant hover:text-cg-primary-tonal mb-4 flex items-center gap-2 rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] px-3 py-2 text-sm transition-colors hover:bg-[rgba(158,167,255,0.1)]"
+                    >
+                        <Paperclip className="h-4 w-4 shrink-0" />
+                        <span className="truncate">{post.fileName}</span>
+                    </a>
+                )
             )}
 
             {/* Title */}

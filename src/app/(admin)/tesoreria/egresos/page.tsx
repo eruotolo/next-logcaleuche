@@ -34,7 +34,11 @@ function formatClp(val: number) {
     return val.toLocaleString('es-CL', { style: 'currency', currency: 'CLP' });
 }
 
-export default async function EgresosPage() {
+export default async function EgresosPage({
+    searchParams,
+}: {
+    searchParams: Promise<Record<string, string | undefined>>;
+}) {
     const session = await auth();
     if (!session) redirect('/login');
 
@@ -43,8 +47,10 @@ export default async function EgresosPage() {
         session.user.categoryId === CATEGORIA.SUPER_ADMIN;
     if (!isTesorero) redirect('/dashboard');
 
-    const [salidas, resumen, motivos] = await Promise.all([
-        getSalidas(),
+    const sp = await searchParams;
+
+    const [salidasResult, resumen, motivos] = await Promise.all([
+        getSalidas(sp),
         getResumenTesoreria(),
         getMotivoSalidas(),
     ]);
@@ -80,7 +86,14 @@ export default async function EgresosPage() {
                 />
             </div>
 
-            <TesoreriaTable rows={salidas} tipo="egreso" motivos={motivos} />
+            <TesoreriaTable
+                rows={salidasResult.items}
+                tipo="egreso"
+                motivos={motivos}
+                total={salidasResult.total}
+                page={salidasResult.page}
+                totalPages={salidasResult.totalPages}
+            />
         </div>
     );
 }

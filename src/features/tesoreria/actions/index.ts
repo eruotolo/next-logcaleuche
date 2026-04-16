@@ -1,6 +1,8 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
+import { cache } from 'react';
+
+import { revalidatePath, revalidateTag } from 'next/cache';
 
 import { z } from 'zod';
 
@@ -11,6 +13,8 @@ import { logActivity } from '@/shared/lib/activity-log';
 import { prisma } from '@/shared/lib/db';
 import { sendBoleta, sendRecordatorioCuotas } from '@/shared/lib/email';
 import type { ActionResult } from '@/shared/types/actions';
+
+import { TesoreriaQuerySchema } from '../schemas';
 
 const EntradaSchema = z.object({
     userId: z.coerce.number().int().positive(),
@@ -96,32 +100,86 @@ export async function getResumenTesoreria() {
     return { ingresos, egresos, saldo: ingresos - egresos, hospitalaria };
 }
 
-export async function getEntradas() {
-    const session = await auth();
-    if (!session || !isTesorero(session)) throw new Error('No autorizado');
-
-    const rows = await prisma.entradaDinero.findMany({
-        include: {
-            user: { select: { name: true, lastName: true } },
-            motivo: true,
-        },
-        orderBy: { fechaMov: 'desc' },
-    });
-    return rows.map((r) => ({ ...r, monto: Number(r.monto ?? 0) }));
+interface MovimientoRow {
+    id: number;
+    mes: string | null;
+    ano: string | null;
+    monto: number;
+    fechaMov: Date;
+    userId?: number | null;
+    motivoId?: number | null;
+    user: { name: string | null; lastName: string | null } | null;
+    motivo: { id: number; nombre: string } | null;
 }
 
-export async function getSalidas() {
+interface PagedResult<T> {
+    items: T[];
+    total: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
+}
+
+export async function getEntradas(
+    rawQuery: Record<string, string | undefined> = {},
+): Promise<PagedResult<MovimientoRow>> {
     const session = await auth();
     if (!session || !isTesorero(session)) throw new Error('No autorizado');
 
-    const rows = await prisma.salidaDinero.findMany({
-        include: {
-            user: { select: { name: true, lastName: true } },
-            motivo: true,
-        },
-        orderBy: { fechaMov: 'desc' },
-    });
-    return rows.map((r) => ({ ...r, monto: Number(r.monto ?? 0) }));
+    const { page, pageSize } = TesoreriaQuerySchema.parse(rawQuery);
+    const skip = (page - 1) * pageSize;
+
+    const [rows, total] = await Promise.all([
+        prisma.entradaDinero.findMany({
+            include: {
+                user: { select: { name: true, lastName: true } },
+                motivo: true,
+            },
+            orderBy: { fechaMov: 'desc' },
+            skip,
+            take: pageSize,
+        }),
+        prisma.entradaDinero.count(),
+    ]);
+
+    return {
+        items: rows.map((r) => ({ ...r, monto: Number(r.monto ?? 0) })),
+        total,
+        page,
+        pageSize,
+        totalPages: Math.max(1, Math.ceil(total / pageSize)),
+    };
+}
+
+export async function getSalidas(
+    rawQuery: Record<string, string | undefined> = {},
+): Promise<PagedResult<MovimientoRow>> {
+    const session = await auth();
+    if (!session || !isTesorero(session)) throw new Error('No autorizado');
+
+    const { page, pageSize } = TesoreriaQuerySchema.parse(rawQuery);
+    const skip = (page - 1) * pageSize;
+
+    const [rows, total] = await Promise.all([
+        prisma.salidaDinero.findMany({
+            include: {
+                user: { select: { name: true, lastName: true } },
+                motivo: true,
+            },
+            orderBy: { fechaMov: 'desc' },
+            skip,
+            take: pageSize,
+        }),
+        prisma.salidaDinero.count(),
+    ]);
+
+    return {
+        items: rows.map((r) => ({ ...r, monto: Number(r.monto ?? 0) })),
+        total,
+        page,
+        pageSize,
+        totalPages: Math.max(1, Math.ceil(total / pageSize)),
+    };
 }
 
 export async function getEntradaById(id: number) {
@@ -154,17 +212,13 @@ export async function getSalidaById(id: number) {
     return { ...row, monto: Number(row.monto ?? 0) };
 }
 
-export async function getMotivoEntradas() {
-    const session = await auth();
-    if (!session) throw new Error('No autorizado');
+export const getMotivoEntradas = cache(async function getMotivoEntradas() {
     return prisma.entradaMotivo.findMany({ orderBy: { id: 'asc' } });
-}
+});
 
-export async function getMotivoSalidas() {
-    const session = await auth();
-    if (!session) throw new Error('No autorizado');
+export const getMotivoSalidas = cache(async function getMotivoSalidas() {
     return prisma.salidaMotivo.findMany({ orderBy: { id: 'asc' } });
-}
+});
 
 export async function createEntrada(
     _prev: ActionResult<null> | null,
@@ -231,6 +285,7 @@ export async function createEntrada(
     });
 
     revalidatePath('/tesoreria/ingresos');
+    revalidateTag('motivos-entrada', 'days');
     return { success: true, data: null };
 }
 
@@ -273,6 +328,7 @@ export async function updateEntrada(
     });
 
     revalidatePath('/tesoreria/ingresos');
+    revalidateTag('motivos-entrada', 'days');
     return { success: true, data: null };
 }
 
@@ -290,6 +346,7 @@ export async function deleteEntrada(id: number): Promise<ActionResult<null>> {
     });
 
     revalidatePath('/tesoreria/ingresos');
+    revalidateTag('motivos-entrada', 'days');
     return { success: true, data: null };
 }
 
@@ -330,6 +387,7 @@ export async function createSalida(
     });
 
     revalidatePath('/tesoreria/egresos');
+    revalidateTag('motivos-salida', 'days');
     return { success: true, data: null };
 }
 
@@ -370,6 +428,7 @@ export async function updateSalida(
     });
 
     revalidatePath('/tesoreria/egresos');
+    revalidateTag('motivos-salida', 'days');
     return { success: true, data: null };
 }
 
@@ -387,6 +446,7 @@ export async function deleteSalida(id: number): Promise<ActionResult<null>> {
     });
 
     revalidatePath('/tesoreria/egresos');
+    revalidateTag('motivos-salida', 'days');
     return { success: true, data: null };
 }
 
@@ -718,42 +778,34 @@ export async function getInforme(
     // ── Movimientos por mes (solo informe anual) ──
     let movimientosPorMes: { mes: string; ingresos: number; egresos: number; saldo: number }[] = [];
     if (tipo === 'anual' && params.ano) {
-        const mesRows = await Promise.all(
-            MESES_NOMBRE.map(async (mesNombre, i) => {
-                const mesNum = String(i + 1).padStart(2, '0');
-                const mesWhere = { mes: `${mesNum} - ${mesNombre}`, ano: params.ano };
-                const ingWhere = tesorero
-                    ? {
-                          ...mesWhere,
-                          NOT: [
-                              {
-                                  AND: [
-                                      { userId: tesorero.id },
-                                      { motivoId: MOTIVO_ENTRADA.CUOTA_MENSUAL },
-                                  ],
-                              },
-                              { motivoId: MOTIVO_ENTRADA.CAJA_HOSPITALARIA },
-                          ],
-                      }
-                    : { ...mesWhere, NOT: { motivoId: MOTIVO_ENTRADA.CAJA_HOSPITALARIA } };
-                const [ing, egr] = await Promise.all([
-                    prisma.entradaDinero.aggregate({
-                        where: ingWhere,
-                        _sum: { monto: true },
-                    }),
-                    prisma.salidaDinero.aggregate({
-                        where: { ...mesWhere, NOT: { motivoId: MOTIVO_SALIDA.CAJA_HOSPITALARIA } },
-                        _sum: { monto: true },
-                    }),
-                ]);
-                const ing_ = Number(ing._sum.monto ?? 0);
-                const egr_ = Number(egr._sum.monto ?? 0);
-                return ing_ > 0 || egr_ > 0
-                    ? { mes: mesNombre, ingresos: ing_, egresos: egr_, saldo: ing_ - egr_ }
-                    : null;
+        const ingNotCondition = tesorero
+            ? [
+                  { AND: [{ userId: tesorero.id }, { motivoId: MOTIVO_ENTRADA.CUOTA_MENSUAL }] },
+                  { motivoId: MOTIVO_ENTRADA.CAJA_HOSPITALARIA },
+              ]
+            : [{ motivoId: MOTIVO_ENTRADA.CAJA_HOSPITALARIA }];
+        const [ingGrouped, egrGrouped] = await Promise.all([
+            prisma.entradaDinero.groupBy({
+                by: ['mes'],
+                where: { ano: params.ano, NOT: ingNotCondition },
+                _sum: { monto: true },
             }),
-        );
-        movimientosPorMes = mesRows.filter(Boolean) as typeof movimientosPorMes;
+            prisma.salidaDinero.groupBy({
+                by: ['mes'],
+                where: { ano: params.ano, NOT: { motivoId: MOTIVO_SALIDA.CAJA_HOSPITALARIA } },
+                _sum: { monto: true },
+            }),
+        ]);
+        const ingMap = new Map(ingGrouped.map((r) => [r.mes, Number(r._sum.monto ?? 0)]));
+        const egrMap = new Map(egrGrouped.map((r) => [r.mes, Number(r._sum.monto ?? 0)]));
+        movimientosPorMes = MESES_NOMBRE.map((mesNombre, i) => {
+            const mesKey = `${String(i + 1).padStart(2, '0')} - ${mesNombre}`;
+            const ing_ = ingMap.get(mesKey) ?? 0;
+            const egr_ = egrMap.get(mesKey) ?? 0;
+            return ing_ > 0 || egr_ > 0
+                ? { mes: mesNombre, ingresos: ing_, egresos: egr_, saldo: ing_ - egr_ }
+                : null;
+        }).filter(Boolean) as typeof movimientosPorMes;
     }
 
     // ── Top 5 motivos ──

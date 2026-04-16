@@ -7,9 +7,11 @@ import { useRouter } from 'next/navigation';
 import { ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { AutosaveIndicator } from '@/shared/components/ui/autosave-indicator';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { Modal } from '@/shared/components/ui/modal';
+import { useAutosave } from '@/shared/hooks/useAutosave';
 import { useModal } from '@/shared/hooks/useModal';
 import { getCloudinaryRawImageUrl } from '@/shared/lib/cloudinary';
 
@@ -27,6 +29,12 @@ interface EditFeedModalProps {
     trigger: React.ReactNode;
 }
 
+interface EditFeedDraft {
+    titulo: string;
+    category: string;
+    contenido: string;
+}
+
 export function EditFeedModal({ post, categories, trigger }: EditFeedModalProps) {
     const { isOpen, open, close } = useModal();
     const router = useRouter();
@@ -39,15 +47,38 @@ export function EditFeedModal({ post, categories, trigger }: EditFeedModalProps)
     // Ref para resetear el input de archivo al cerrar
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    // Controlled state for autosave — initialized from existing post values
+    const [draftValues, setDraftValues] = useState<EditFeedDraft>({
+        titulo: post.titulo,
+        category: String(post.categoryId),
+        contenido: post.contenido,
+    });
+
+    const autosaveKey = `draft-feed-edit-${post.id}`;
+    const { status: autosaveStatus, restore, clear } = useAutosave<EditFeedDraft>(
+        autosaveKey,
+        draftValues,
+    );
+
+    // Restore draft on mount (one-time effect)
+    // biome-ignore lint/correctness/useExhaustiveDependencies: restore is stable across renders
+    useEffect(() => {
+        const draft = restore();
+        if (draft) {
+            setDraftValues(draft);
+        }
+    }, []);
+
     useEffect(() => {
         if (state?.success) {
+            clear();
             toast.success('Publicación actualizada');
             close();
             router.refresh();
         } else if (state && !state.success) {
             toast.error(typeof state.error === 'string' ? state.error : 'Error al actualizar.');
         }
-    }, [state, close, router]);
+    }, [state, close, router, clear]);
 
     function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0];
@@ -66,8 +97,14 @@ export function EditFeedModal({ post, categories, trigger }: EditFeedModalProps)
     }
 
     function handleClose() {
-        // Resetear preview al original si se cierra sin guardar
+        // Resetear preview al original y borrador al valor del post si se cierra sin guardar
         setPreviewUrl(post.fileName ? (getCloudinaryRawImageUrl(post.fileName) ?? null) : null);
+        setDraftValues({
+            titulo: post.titulo,
+            category: String(post.categoryId),
+            contenido: post.contenido,
+        });
+        clear();
         if (fileInputRef.current) fileInputRef.current.value = '';
         close();
     }
@@ -88,9 +125,12 @@ export function EditFeedModal({ post, categories, trigger }: EditFeedModalProps)
                         <Input
                             id="edit-feed-titulo"
                             name="titulo"
-                            defaultValue={post.titulo}
                             placeholder="Título de la publicación"
                             required
+                            value={draftValues.titulo}
+                            onChange={(e) =>
+                                setDraftValues((prev) => ({ ...prev, titulo: e.target.value }))
+                            }
                         />
                     </div>
 
@@ -104,8 +144,14 @@ export function EditFeedModal({ post, categories, trigger }: EditFeedModalProps)
                                 id="edit-feed-category"
                                 name="category"
                                 className="form-select"
-                                defaultValue={post.categoryId}
                                 required
+                                value={draftValues.category}
+                                onChange={(e) =>
+                                    setDraftValues((prev) => ({
+                                        ...prev,
+                                        category: e.target.value,
+                                    }))
+                                }
                             >
                                 <option value="" disabled>
                                     Selecciona una categoría
@@ -159,23 +205,29 @@ export function EditFeedModal({ post, categories, trigger }: EditFeedModalProps)
                             name="contenido"
                             rows={6}
                             className="form-textarea"
-                            defaultValue={post.contenido}
                             required
+                            value={draftValues.contenido}
+                            onChange={(e) =>
+                                setDraftValues((prev) => ({ ...prev, contenido: e.target.value }))
+                            }
                         />
                     </div>
 
-                    <div className="flex justify-end gap-3 border-t border-[rgba(70,70,88,0.2)] pt-4">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={handleClose}
-                            disabled={isPending}
-                        >
-                            Cancelar
-                        </Button>
-                        <Button type="submit" disabled={isPending}>
-                            {isPending ? 'Guardando...' : 'Guardar Cambios'}
-                        </Button>
+                    <div className="flex items-center justify-between border-t border-[rgba(70,70,88,0.2)] pt-4">
+                        <AutosaveIndicator status={autosaveStatus} />
+                        <div className="flex gap-3">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={handleClose}
+                                disabled={isPending}
+                            >
+                                Cancelar
+                            </Button>
+                            <Button type="submit" disabled={isPending}>
+                                {isPending ? 'Guardando...' : 'Guardar Cambios'}
+                            </Button>
+                        </div>
                     </div>
                 </form>
             </Modal>

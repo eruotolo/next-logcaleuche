@@ -1,3 +1,5 @@
+import { Suspense } from 'react';
+
 import { Inter, Space_Grotesk } from 'next/font/google';
 
 import type { Metadata } from 'next';
@@ -31,8 +33,11 @@ export default function RootLayout({
     return (
         <html lang="es" className={`${inter.variable} ${spaceGrotesk.variable} h-full antialiased`}>
             <body className="bg-background text-foreground flex min-h-full flex-col">
-                <TooltipProvider delayDuration={200}>{children}</TooltipProvider>
-                <Toaster position="top-right" richColors />
+                {/* Suspense wraps dynamic segments (admin) so cacheComponents can prerender static shells */}
+                <Suspense fallback={null}>
+                    <TooltipProvider delayDuration={200}>{children}</TooltipProvider>
+                    <Toaster position="top-right" richColors />
+                </Suspense>
             </body>
         </html>
     );

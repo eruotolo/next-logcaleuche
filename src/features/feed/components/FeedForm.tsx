@@ -8,9 +8,11 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, ImageIcon, Send } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { AutosaveIndicator } from '@/shared/components/ui/autosave-indicator';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Input } from '@/shared/components/ui/input';
+import { useAutosave } from '@/shared/hooks/useAutosave';
 
 import { createFeedPost } from '../actions';
 
@@ -19,10 +21,37 @@ interface FeedFormProps {
     onSuccess?: () => void;
 }
 
+interface FeedDraft {
+    titulo: string;
+    category: string;
+    contenido: string;
+}
+
 export function FeedForm({ categories, onSuccess }: FeedFormProps) {
     const router = useRouter();
     const [state, action, isPending] = useActionState(createFeedPost, null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+    // Controlled state for autosave — tracks textarea/input values without RHF
+    const [draftValues, setDraftValues] = useState<FeedDraft>({
+        titulo: '',
+        category: '',
+        contenido: '',
+    });
+
+    const { status: autosaveStatus, restore, clear } = useAutosave<FeedDraft>(
+        'draft-feed',
+        draftValues,
+    );
+
+    // Restore draft on mount (one-time effect)
+    // biome-ignore lint/correctness/useExhaustiveDependencies: restore is stable across renders
+    useEffect(() => {
+        const draft = restore();
+        if (draft) {
+            setDraftValues(draft);
+        }
+    }, []);
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -44,25 +73,42 @@ export function FeedForm({ categories, onSuccess }: FeedFormProps) {
 
     useEffect(() => {
         if (state?.success) {
+            clear();
             toast.success('Publicación creada exitosamente');
             if (onSuccess) onSuccess();
             else router.push('/feed');
         } else if (state?.error) {
             toast.error(state.error);
         }
-    }, [state, router, onSuccess]);
+    }, [state, router, onSuccess, clear]);
 
     const formContent = (
         <form action={action} className="space-y-6">
             <div className="space-y-2">
                 <label className="form-label">Título</label>
-                <Input name="titulo" placeholder="Ej: Resumen de la última Tenida" required />
+                <Input
+                    name="titulo"
+                    placeholder="Ej: Resumen de la última Tenida"
+                    required
+                    value={draftValues.titulo}
+                    onChange={(e) =>
+                        setDraftValues((prev) => ({ ...prev, titulo: e.target.value }))
+                    }
+                />
             </div>
 
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <div className="space-y-2">
                     <label className="form-label">Categoría</label>
-                    <select name="category" className="form-select" required>
+                    <select
+                        name="category"
+                        className="form-select"
+                        required
+                        value={draftValues.category}
+                        onChange={(e) =>
+                            setDraftValues((prev) => ({ ...prev, category: e.target.value }))
+                        }
+                    >
                         <option value="" disabled>
                             Selecciona una categoría
                         </option>
@@ -113,18 +159,25 @@ export function FeedForm({ categories, onSuccess }: FeedFormProps) {
                     className="form-textarea"
                     placeholder="Escribe aquí el contenido de tu publicación..."
                     required
+                    value={draftValues.contenido}
+                    onChange={(e) =>
+                        setDraftValues((prev) => ({ ...prev, contenido: e.target.value }))
+                    }
                 />
             </div>
 
-            <div className="flex justify-end gap-3 border-t border-[rgba(70,70,88,0.2)] pt-4">
-                {!onSuccess && (
-                    <Button variant="outline" type="button" asChild disabled={isPending}>
-                        <Link href="/feed">Cancelar</Link>
+            <div className="flex items-center justify-between border-t border-[rgba(70,70,88,0.2)] pt-4">
+                <AutosaveIndicator status={autosaveStatus} />
+                <div className="flex gap-3">
+                    {!onSuccess && (
+                        <Button variant="outline" type="button" asChild disabled={isPending}>
+                            <Link href="/feed">Cancelar</Link>
+                        </Button>
+                    )}
+                    <Button type="submit" disabled={isPending}>
+                        {isPending ? 'Publicando...' : 'Publicar ahora'}
                     </Button>
-                )}
-                <Button type="submit" disabled={isPending}>
-                    {isPending ? 'Publicando...' : 'Publicar ahora'}
-                </Button>
+                </div>
             </div>
         </form>
     );

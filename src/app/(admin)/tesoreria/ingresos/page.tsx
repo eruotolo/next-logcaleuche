@@ -8,11 +8,10 @@ import { MultiCuotaModal } from '@/features/tesoreria/components/MultiCuotaModal
 import { RecordatorioButton } from '@/features/tesoreria/components/RecordatorioButton';
 import { TarifaCuotaModal } from '@/features/tesoreria/components/TarifaCuotaModal';
 import { TesoreriaTable } from '@/features/tesoreria/components/TesoreriaTable';
-import { getUsuarios } from '@/features/usuarios/actions';
+import { getUsuarios, getUsuariosConTarifa } from '@/features/usuarios/actions';
 
 import { CATEGORIA, OFICIALIDAD } from '@/shared/constants/domain';
 import { auth } from '@/shared/lib/auth';
-import { prisma } from '@/shared/lib/db';
 
 export const metadata: Metadata = {
     title: 'Ingresos — Logia Caleuche 250',
@@ -39,7 +38,11 @@ function formatClp(val: number) {
     return val.toLocaleString('es-CL', { style: 'currency', currency: 'CLP' });
 }
 
-export default async function IngresosPage() {
+export default async function IngresosPage({
+    searchParams,
+}: {
+    searchParams: Promise<Record<string, string | undefined>>;
+}) {
     const session = await auth();
     if (!session) redirect('/login');
 
@@ -48,21 +51,15 @@ export default async function IngresosPage() {
         session.user.categoryId === CATEGORIA.SUPER_ADMIN;
     if (!isTesorero) redirect('/dashboard');
 
-    const [entradas, resumen, motivos, usuariosRaw] = await Promise.all([
-        getEntradas(),
+    const sp = await searchParams;
+
+    const [entradasResult, resumen, motivos, usuariosRaw, tarifaMap] = await Promise.all([
+        getEntradas(sp),
         getResumenTesoreria(),
         getMotivoEntradas(),
         getUsuarios(),
+        getUsuariosConTarifa(),
     ]);
-
-    // Incluir tarifa para auto-fill en el formulario de cuotas
-    const usuariosConTarifa = await prisma.user.findMany({
-        where: { active: true },
-        select: { id: true, tarifa: { select: { monto: true } } },
-    });
-    const tarifaMap = Object.fromEntries(
-        usuariosConTarifa.map((u) => [u.id, Number(u.tarifa?.monto ?? 0)]),
-    );
 
     const usuarios = usuariosRaw.map((u) => ({
         id: u.id,
@@ -88,7 +85,7 @@ export default async function IngresosPage() {
                 </div>
             </div>
 
-            {/* Resumen — 4 tarjetas idénticas al PHP */}
+            {/* Resumen — 4 tarjetas */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <StatCard
                     label="Total Entrada de Dinero"
@@ -112,7 +109,15 @@ export default async function IngresosPage() {
                 />
             </div>
 
-            <TesoreriaTable rows={entradas} tipo="ingreso" motivos={motivos} usuarios={usuarios} />
+            <TesoreriaTable
+                rows={entradasResult.items}
+                tipo="ingreso"
+                motivos={motivos}
+                usuarios={usuarios}
+                total={entradasResult.total}
+                page={entradasResult.page}
+                totalPages={entradasResult.totalPages}
+            />
         </div>
     );
 }

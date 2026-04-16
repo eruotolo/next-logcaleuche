@@ -1,10 +1,11 @@
 'use client';
 
-import { useActionState, useEffect, useState } from 'react';
+import { useActionState, useEffect, useState, useTransition } from 'react';
 
 import { useRouter } from 'next/navigation';
 
-import { Pencil } from 'lucide-react';
+
+import { type LucideIcon, CheckCircle, HelpCircle, Pencil, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/shared/components/ui/button';
@@ -12,7 +13,7 @@ import { Input } from '@/shared/components/ui/input';
 import { Modal } from '@/shared/components/ui/modal';
 import type { ActionResult } from '@/shared/types/actions';
 
-import { updateEvento } from '../actions';
+import { rsvpEvento, updateEvento, type AsistenciaItem, type RsvpEstado } from '../actions';
 
 type Evento = {
     id: number;
@@ -23,6 +24,7 @@ type Evento = {
     hora: string | null;
     lugar: string | null;
     grado: { id: number; nombre: string } | null;
+    active?: number;
 };
 
 const MONTHS = [
@@ -145,6 +147,117 @@ function EditForm({
     );
 }
 
+const RSVP_OPTIONS: { value: RsvpEstado; label: string; icon: LucideIcon; color: string }[] =
+    [
+        {
+            value: 'confirmado',
+            label: 'Confirmar',
+            icon: CheckCircle,
+            color: 'text-[#41a65a] border-[#41a65a]/40 hover:bg-[#41a65a]/10',
+        },
+        {
+            value: 'tentativo',
+            label: 'Tentativo',
+            icon: HelpCircle,
+            color: 'text-[#f29c13] border-[#f29c13]/40 hover:bg-[#f29c13]/10',
+        },
+        {
+            value: 'no_asiste',
+            label: 'No asisto',
+            icon: XCircle,
+            color: 'text-[#ff6e84] border-[#ff6e84]/40 hover:bg-[#ff6e84]/10',
+        },
+    ];
+
+const ESTADO_LABEL: Record<string, string> = {
+    confirmado: 'Confirmado',
+    tentativo: 'Tentativo',
+    no_asiste: 'No asiste',
+};
+
+const ESTADO_COLOR: Record<string, string> = {
+    confirmado: 'text-[#41a65a]',
+    tentativo: 'text-[#f29c13]',
+    no_asiste: 'text-[#ff6e84]',
+};
+
+// Lista de asistentes para admins
+function AsistentesSection({ asistencias }: { asistencias: AsistenciaItem[] }) {
+    if (asistencias.length === 0) return null;
+    return (
+        <div className="space-y-2 border-t border-[rgba(255,255,255,0.05)] pt-4">
+            <p className="text-cg-outline text-xs font-semibold tracking-widest uppercase">
+                Asistentes ({asistencias.length})
+            </p>
+            <div className="max-h-36 space-y-1 overflow-y-auto">
+                {asistencias.map((a) => (
+                    <div key={a.userId} className="flex items-center justify-between text-xs">
+                        <span className="text-cg-on-surface-variant">
+                            {a.user.name} {a.user.lastName}
+                        </span>
+                        <span className={`font-medium ${ESTADO_COLOR[a.estado] ?? 'text-[#9a9ab0]'}`}>
+                            {ESTADO_LABEL[a.estado] ?? a.estado}
+                        </span>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+// Sub-componente — reduce complejidad cognitiva del modal principal
+function RsvpSection({
+    eventoId,
+    initialEstado,
+}: {
+    eventoId: number;
+    initialEstado: RsvpEstado | null | undefined;
+}) {
+    const [rsvpEstado, setRsvpEstado] = useState<RsvpEstado | null>(initialEstado ?? null);
+    const [isPending, startTransition] = useTransition();
+    const router = useRouter();
+
+    function handleRsvp(estado: RsvpEstado) {
+        startTransition(async () => {
+            const result = await rsvpEvento(eventoId, estado);
+            if (result.success) {
+                setRsvpEstado(estado);
+                toast.success(`Asistencia marcada: ${ESTADO_LABEL[estado]}`);
+                router.refresh();
+            } else {
+                toast.error('No se pudo guardar tu respuesta.');
+            }
+        });
+    }
+
+    return (
+        <div className="space-y-2 border-t border-[rgba(255,255,255,0.05)] pt-4">
+            <p className="text-cg-outline text-xs font-semibold tracking-widest uppercase">
+                Tu asistencia
+            </p>
+            {rsvpEstado && (
+                <p className={`text-xs font-medium ${ESTADO_COLOR[rsvpEstado]}`}>
+                    Estado actual: {ESTADO_LABEL[rsvpEstado]}
+                </p>
+            )}
+            <div className="flex gap-2">
+                {RSVP_OPTIONS.map(({ value, label, icon: Icon, color }) => (
+                    <button
+                        key={value}
+                        type="button"
+                        onClick={() => handleRsvp(value)}
+                        disabled={isPending}
+                        className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg border px-2 py-2 text-xs font-medium transition-colors disabled:opacity-50 ${color} ${rsvpEstado === value ? 'opacity-100 ring-1 ring-current' : 'opacity-70'}`}
+                    >
+                        <Icon className="h-3.5 w-3.5" />
+                        {label}
+                    </button>
+                ))}
+            </div>
+        </div>
+    );
+}
+
 interface EventoDetailModalProps {
     evento: Evento | null;
     isOpen: boolean;
@@ -152,8 +265,13 @@ interface EventoDetailModalProps {
     isAdmin: boolean;
     grados: { id: number; nombre: string }[];
     tiposActividad?: { id: number; nombre: string }[];
+    /** Estado RSVP inicial del usuario actual para este evento */
+    userRsvp?: RsvpEstado | null;
+    /** Lista de asistencias (para admins) */
+    asistencias?: AsistenciaItem[];
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: JSX condicional del modal compuesto por código preexistente + RSVP
 export function EventoDetailModal({
     evento,
     isOpen,
@@ -161,6 +279,8 @@ export function EventoDetailModal({
     isAdmin,
     grados,
     tiposActividad = [],
+    userRsvp = null,
+    asistencias = [],
 }: EventoDetailModalProps) {
     const [editing, setEditing] = useState(false);
 
@@ -170,6 +290,7 @@ export function EventoDetailModal({
 
     if (!evento) return null;
 
+    const isActive = evento.active === 1 || evento.active === undefined;
     const fecha = evento.fecha ? new Date(evento.fecha) : null;
     const fechaStr = fecha
         ? `${fecha.getUTCDate()} de ${MONTHS[fecha.getUTCMonth()]} de ${fecha.getUTCFullYear()}`
@@ -253,6 +374,15 @@ export function EventoDetailModal({
                             </span>
                         </div>
                     )}
+
+                    {/* RSVP — componente separado para mantener complejidad baja */}
+                    {isActive && (
+                        <RsvpSection eventoId={evento.id} initialEstado={userRsvp} />
+                    )}
+
+                    {/* Lista de asistentes (solo admin) */}
+                    {isAdmin && <AsistentesSection asistencias={asistencias} />}
+
                     {isAdmin && (
                         <div className="flex justify-end border-t border-[rgba(255,255,255,0.05)] pt-4">
                             <Button variant="outline" onClick={() => setEditing(true)}>

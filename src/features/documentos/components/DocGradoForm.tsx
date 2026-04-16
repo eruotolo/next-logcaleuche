@@ -50,6 +50,7 @@ export function DocGradoForm({
         null,
     );
     const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
+    const [uploadMode, setUploadMode] = useState<'file' | 'url'>('file');
 
     useEffect(() => {
         if (state?.success) {
@@ -130,50 +131,98 @@ export function DocGradoForm({
                 </select>
             </div>
 
-            {/* Archivo PDF */}
+            {/* Archivo — selector de modo solo para biblioteca */}
             <div className="space-y-3">
-                <label className="form-label">Archivo PDF *</label>
-                <div className="flex flex-col gap-3">
-                    {selectedFileName && (
-                        <div className="flex items-center gap-3 rounded-lg border border-[rgba(70,70,88,0.3)] bg-[rgba(255,255,255,0.02)] p-3 shadow-sm">
-                            <FileText className="h-6 w-6 text-[#ff6e84]" />
-                            <span className="w-full truncate text-sm font-medium text-[#e7e6fc]">
-                                {selectedFileName}
-                            </span>
+                {tipo === 'biblioteca' && (
+                    <div className="flex rounded-lg border border-[rgba(70,70,88,0.35)] bg-[rgba(255,255,255,0.02)] p-1">
+                        <button
+                            type="button"
+                            onClick={() => setUploadMode('file')}
+                            className={`flex-1 rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors ${
+                                uploadMode === 'file'
+                                    ? 'bg-[rgba(158,167,255,0.2)] text-[#e7e6fc]'
+                                    : 'text-cg-outline hover:text-cg-on-surface'
+                            }`}
+                        >
+                            Subir archivo
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setUploadMode('url')}
+                            className={`flex-1 rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors ${
+                                uploadMode === 'url'
+                                    ? 'bg-[rgba(158,167,255,0.2)] text-[#e7e6fc]'
+                                    : 'text-cg-outline hover:text-cg-on-surface'
+                            }`}
+                        >
+                            Link Google Drive
+                        </button>
+                    </div>
+                )}
+
+                {(tipo !== 'biblioteca' || uploadMode === 'file') && (
+                    <>
+                        <p className="form-label">Archivo PDF *</p>
+                        <div className="flex flex-col gap-3">
+                            {selectedFileName && (
+                                <div className="flex items-center gap-3 rounded-lg border border-[rgba(70,70,88,0.3)] bg-[rgba(255,255,255,0.02)] p-3 shadow-sm">
+                                    <FileText className="h-6 w-6 text-[#ff6e84]" />
+                                    <span className="w-full truncate text-sm font-medium text-[#e7e6fc]">
+                                        {selectedFileName}
+                                    </span>
+                                </div>
+                            )}
+                            <label className="text-cg-on-surface-variant flex w-fit cursor-pointer items-center gap-2 rounded-lg border border-[rgba(70,70,88,0.35)] bg-[rgba(255,255,255,0.04)] px-3 py-1.5 text-[13px] font-medium transition-colors hover:bg-[rgba(255,255,255,0.08)]">
+                                <FileText className="h-4 w-4" />
+                                <span>{selectedFileName ? 'Cambiar PDF' : 'Seleccionar PDF'}</span>
+                                <input
+                                    type="file"
+                                    name="file"
+                                    accept=".pdf"
+                                    required
+                                    className="hidden"
+                                    onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) {
+                                            if (file.size > 15 * 1024 * 1024) {
+                                                toast.error('El documento no debe superar los 15MB');
+                                                e.target.value = '';
+                                                setSelectedFileName(null);
+                                                return;
+                                            }
+                                            if (file.type !== 'application/pdf') {
+                                                toast.error('El archivo debe ser un formato PDF válido');
+                                                e.target.value = '';
+                                                setSelectedFileName(null);
+                                                return;
+                                            }
+                                            setSelectedFileName(file.name);
+                                        } else {
+                                            setSelectedFileName(null);
+                                        }
+                                    }}
+                                />
+                            </label>
                         </div>
-                    )}
-                    <label className="text-cg-on-surface-variant flex w-fit cursor-pointer items-center gap-2 rounded-lg border border-[rgba(70,70,88,0.35)] bg-[rgba(255,255,255,0.04)] px-3 py-1.5 text-[13px] font-medium transition-colors hover:bg-[rgba(255,255,255,0.08)]">
-                        <FileText className="h-4 w-4" />
-                        <span>{selectedFileName ? 'Cambiar PDF' : 'Seleccionar PDF'}</span>
+                    </>
+                )}
+
+                {tipo === 'biblioteca' && uploadMode === 'url' && (
+                    <div className="space-y-1">
+                        <label htmlFor="externalUrl" className="form-label">URL de Google Drive *</label>
                         <input
-                            type="file"
-                            name="file"
-                            accept=".pdf"
+                            id="externalUrl"
+                            type="url"
+                            name="externalUrl"
                             required
-                            className="hidden"
-                            onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                    if (file.size > 15 * 1024 * 1024) {
-                                        toast.error('El documento no debe superar los 15MB');
-                                        e.target.value = '';
-                                        setSelectedFileName(null);
-                                        return;
-                                    }
-                                    if (file.type !== 'application/pdf') {
-                                        toast.error('El archivo debe ser un formato PDF válido');
-                                        e.target.value = '';
-                                        setSelectedFileName(null);
-                                        return;
-                                    }
-                                    setSelectedFileName(file.name);
-                                } else {
-                                    setSelectedFileName(null);
-                                }
-                            }}
+                            placeholder="https://drive.google.com/file/d/.../view"
+                            className="text-cg-on-surface block w-full rounded-lg border border-[rgba(70,70,88,0.35)] bg-[rgba(255,255,255,0.04)] px-3 py-2 text-[13px] placeholder:text-[rgba(255,255,255,0.25)] focus:outline-none focus:ring-1 focus:ring-[rgba(158,167,255,0.4)]"
                         />
-                    </label>
-                </div>
+                        <p className="text-cg-outline text-[11px]">
+                            El archivo debe estar compartido como "Cualquiera con el link".
+                        </p>
+                    </div>
+                )}
             </div>
 
             <div className="flex justify-end gap-3 pt-2">

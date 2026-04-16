@@ -57,7 +57,7 @@
     --color-cg-on-bg: #e7e6fc;
     --color-cg-on-surface: #e7e6fc; /* Texto principal */
     --color-cg-on-surface-variant: #aaa9be; /* Texto secundario / muted */
-    --color-cg-outline: #747487; /* Bordes funcionales (accesibilidad) */
+    --color-cg-outline: #9a9ab0; /* Bordes funcionales (accesibilidad) — WCAG AA ≥4.5:1 sobre #0c0d1c */
     --color-cg-outline-variant: #464658; /* Ghost border */
     --color-cg-inverse-surface: #fbf8ff;
     --color-cg-inverse-on-surface: #535466;

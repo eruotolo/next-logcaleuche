@@ -1,6 +1,8 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
+import { cache } from 'react';
+
+import { revalidatePath, revalidateTag } from 'next/cache';
 
 import { ACTIVITY_ACTION, ACTIVITY_ENTITY } from '@/shared/constants/activity-log';
 import { auth } from '@/shared/lib/auth';
@@ -11,9 +13,11 @@ import { prisma } from '@/shared/lib/db';
 import { generateUniqueSlug } from '@/shared/lib/slugs';
 import type { ActionResult } from '@/shared/types/actions';
 
+import { createNotifications } from '@/features/notificaciones/actions';
+
 import { CommentSchema, FeedPostSchema } from '../schemas';
 
-export async function getFeedPosts(limit = 50) {
+export const getFeedPosts = cache(async function getFeedPosts(limit = 50) {
     const session = await auth();
     if (!session) throw new Error('No autorizado');
     return prisma.feed.findMany({
@@ -34,9 +38,9 @@ export async function getFeedPosts(limit = 50) {
         orderBy: { createdAt: 'desc' },
         take: limit,
     });
-}
+});
 
-export async function getFeedPostBySlug(slug: string) {
+export const getFeedPostBySlug = cache(async function getFeedPostBySlug(slug: string) {
     const session = await auth();
     if (!session) throw new Error('No autorizado');
     const post = await prisma.feed.findUnique({
@@ -63,13 +67,11 @@ export async function getFeedPostBySlug(slug: string) {
     });
 
     return { post, others };
-}
+});
 
-export async function getCategoryFeeds() {
-    const session = await auth();
-    if (!session) throw new Error('No autorizado');
+export const getCategoryFeeds = cache(async function getCategoryFeeds() {
     return prisma.categoryFeed.findMany({ orderBy: { id: 'asc' } });
-}
+});
 
 export async function createFeedPost(
     _prev: ActionResult<null> | null,
@@ -121,7 +123,29 @@ export async function createFeedPost(
         description: `Creó publicación "${parsed.data.titulo}"`,
     });
 
+    // Notificar a todos los usuarios activos (silencioso — no reventa la acción)
+    try {
+        const activeUsers = await prisma.user.findMany({
+            where: { active: true },
+            select: { id: true },
+        });
+        const userIds = activeUsers
+            .map((u) => u.id)
+            .filter((id) => id !== Number.parseInt(session.user.id, 10));
+
+        await createNotifications(
+            userIds,
+            'feed',
+            'Nueva publicación',
+            parsed.data.titulo,
+            `/feed/${slug}`,
+        );
+    } catch {
+        // Notificaciones no son críticas — continúa sin error
+    }
+
     revalidatePath('/feed');
+    revalidateTag('category-feeds', 'days');
     return { success: true, data: null };
 }
 
@@ -172,6 +196,7 @@ export async function updateFeedPost(
     });
 
     revalidatePath('/feed');
+    revalidateTag('category-feeds', 'days');
     return { success: true, data: null };
 }
 
@@ -189,6 +214,7 @@ export async function deleteFeedPost(id: number): Promise<ActionResult<null>> {
     });
 
     revalidatePath('/feed');
+    revalidateTag('category-feeds', 'days');
     return { success: true, data: null };
 }
 
@@ -206,13 +232,35 @@ export async function addComment(
 
     if (!parsed.success) return { success: false, error: 'Comentario inválido.' };
 
+    const commenterId = Number.parseInt(session.user.id, 10);
+
     await prisma.commentFeed.create({
         data: {
-            userId: Number.parseInt(session.user.id, 10),
+            userId: commenterId,
             feedId: parsed.data.feedId,
             message: parsed.data.message,
         },
     });
+
+    // Notificar al autor del post solo si no es el mismo que comenta
+    try {
+        const feedPost = await prisma.feed.findUnique({
+            where: { id: parsed.data.feedId },
+            select: { userId: true, slug: true },
+        });
+
+        if (feedPost && feedPost.userId !== null && feedPost.userId !== commenterId) {
+            await createNotifications(
+                [feedPost.userId],
+                'comment',
+                'Nuevo comentario en tu publicación',
+                parsed.data.message.slice(0, 100),
+                `/feed/${feedPost.slug}`,
+            );
+        }
+    } catch {
+        // Notificaciones no son críticas — continúa sin error
+    }
 
     revalidatePath('/feed');
     return { success: true, data: null };

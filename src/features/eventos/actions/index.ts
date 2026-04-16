@@ -1,6 +1,8 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
+import { cache } from 'react';
+
+import { revalidatePath, revalidateTag } from 'next/cache';
 
 import { ACTIVITY_ACTION, ACTIVITY_ENTITY } from '@/shared/constants/activity-log';
 import { auth } from '@/shared/lib/auth';
@@ -9,23 +11,19 @@ import { requireAdmin } from '@/shared/lib/auth-guards';
 import { prisma } from '@/shared/lib/db';
 import type { ActionResult } from '@/shared/types/actions';
 
-import ExcelJS from 'exceljs';
+import { createNotifications } from '@/features/notificaciones/actions';
 
 import { EventoImportRowSchema, type ImportResult, EventoSchema } from '../schemas';
 
-export async function getGrados() {
-    const session = await auth();
-    if (!session) throw new Error('No autorizado');
+export const getGrados = cache(async function getGrados() {
     return prisma.grado.findMany({ orderBy: { id: 'asc' } });
-}
+});
 
-export async function getTiposActividad() {
-    const session = await auth();
-    if (!session) throw new Error('No autorizado');
+export const getTiposActividad = cache(async function getTiposActividad() {
     return prisma.tipoActividad.findMany({ orderBy: { id: 'asc' } });
-}
+});
 
-export async function getEventos(grado: number) {
+export const getEventos = cache(async function getEventos(grado: number) {
     const session = await auth();
     if (!session) throw new Error('No autorizado');
     const today = new Date();
@@ -43,9 +41,9 @@ export async function getEventos(grado: number) {
         orderBy: { fecha: 'asc' },
         take: 100,
     });
-}
+});
 
-export async function getEventosCalendario(grado: number) {
+export const getEventosCalendario = cache(async function getEventosCalendario(grado: number) {
     const session = await auth();
     if (!session) throw new Error('No autorizado');
     const gradoFilter =
@@ -56,15 +54,15 @@ export async function getEventosCalendario(grado: number) {
         include: { grado: true, tipoActividad: true },
         orderBy: { fecha: 'asc' },
     });
-}
+});
 
-export async function getProximoEvento() {
+export const getProximoEvento = cache(async function getProximoEvento() {
     return prisma.evento.findFirst({
         where: { active: 1, fecha: { gte: new Date() } },
         include: { grado: true, tipoActividad: true },
         orderBy: { fecha: 'asc' },
     });
-}
+});
 
 export async function getUsuariosParaEvento(gradoId: number) {
     const gradoWhere =
@@ -118,7 +116,35 @@ export async function createEvento(
         metadata: { gradoId: parsed.data.grado },
     });
 
+    // Notificar a usuarios con gradoId <= gradoId del evento (silencioso)
+    try {
+        const gradoId = parsed.data.grado;
+        const gradoWhere =
+            gradoId === 1
+                ? { gradoId: 1 }
+                : gradoId === 2
+                  ? { gradoId: { in: [1, 2] } }
+                  : {};
+
+        const targetUsers = await prisma.user.findMany({
+            where: { active: true, ...gradoWhere },
+            select: { id: true },
+        });
+
+        await createNotifications(
+            targetUsers.map((u) => u.id),
+            'evento',
+            'Nuevo evento programado',
+            parsed.data.nombre,
+            '/eventos',
+        );
+    } catch {
+        // Notificaciones no son críticas — continúa sin error
+    }
+
     revalidatePath('/eventos');
+    revalidateTag('grados', 'days');
+    revalidateTag('tipos-actividad', 'days');
     return { success: true, data: null };
 }
 
@@ -165,6 +191,8 @@ export async function updateEvento(
     });
 
     revalidatePath('/eventos');
+    revalidateTag('grados', 'days');
+    revalidateTag('tipos-actividad', 'days');
     return { success: true, data: null };
 }
 
@@ -182,10 +210,12 @@ export async function deleteEvento(id: number): Promise<ActionResult<null>> {
     });
 
     revalidatePath('/eventos');
+    revalidateTag('grados', 'days');
+    revalidateTag('tipos-actividad', 'days');
     return { success: true, data: null };
 }
 
-function parseDateCell(cell: ExcelJS.Cell): string {
+function parseDateCell(cell: { value: unknown }): string {
     const value = cell.value;
     if (value instanceof Date) {
         return value.toISOString().split('T')[0];
@@ -209,7 +239,8 @@ export async function importEventos(formData: FormData): Promise<ActionResult<Im
     if (!file) return { success: false, error: 'No se recibió archivo' };
 
     const arrayBuffer = await file.arrayBuffer();
-    const workbook = new ExcelJS.Workbook();
+    const ExcelJS = await import('exceljs');
+    const workbook = new ExcelJS.default.Workbook();
     await workbook.xlsx.load(arrayBuffer);
 
     const worksheet = workbook.getWorksheet(1);
@@ -282,3 +313,49 @@ export async function importEventos(formData: FormData): Promise<ActionResult<Im
     revalidatePath('/eventos');
     return { success: true, data: { imported: validRows.length, errors: [] } };
 }
+
+// ── RSVP ─────────────────────────────────────────────────────────────────────
+
+export type RsvpEstado = 'confirmado' | 'tentativo' | 'no_asiste';
+
+export interface AsistenciaItem {
+    userId: number;
+    estado: string;
+    user: { name: string | null; lastName: string | null };
+}
+
+export async function rsvpEvento(
+    eventoId: number,
+    estado: RsvpEstado,
+): Promise<ActionResult<null>> {
+    const session = await auth();
+    if (!session) return { success: false, error: 'No autorizado' };
+
+    const userId = Number.parseInt(session.user.id, 10);
+
+    await prisma.eventoAsistencia.upsert({
+        where: { eventoId_userId: { eventoId, userId } },
+        update: { estado },
+        create: { eventoId, userId, estado },
+    });
+
+    revalidatePath('/eventos');
+    return { success: true, data: null };
+}
+
+export const getAsistenciaEvento = cache(async function getAsistenciaEvento(
+    eventoId: number,
+): Promise<AsistenciaItem[]> {
+    const session = await auth();
+    if (!session) return [];
+
+    return prisma.eventoAsistencia.findMany({
+        where: { eventoId },
+        select: {
+            userId: true,
+            estado: true,
+            user: { select: { name: true, lastName: true } },
+        },
+        orderBy: { estado: 'asc' },
+    });
+});

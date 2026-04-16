@@ -14,8 +14,10 @@ import {
     DollarSign,
     FileText,
     FolderOpen,
+    HelpCircle,
     Home,
     Settings,
+    Shield,
     Sun,
     Users,
 } from 'lucide-react';
@@ -99,6 +101,16 @@ export function Sidebar({ collapsed, mobileOpen, onMobileClose, grado, oficialid
 
     const configItems: NavItem[] = [
         {
+            label: 'Ayuda',
+            href: '/ayuda',
+            icon: <HelpCircle className="h-4 w-4 shrink-0" />,
+        },
+        {
+            label: 'Seguridad',
+            href: '/perfil/seguridad',
+            icon: <Shield className="h-4 w-4 shrink-0" />,
+        },
+        {
             label: 'Configuración',
             icon: <Settings className="h-4 w-4 shrink-0" />,
             onlyIf: categoryId === CATEGORIA.SUPER_ADMIN,
@@ -156,7 +168,7 @@ export function Sidebar({ collapsed, mobileOpen, onMobileClose, grado, oficialid
                             className={cn(
                                 active
                                     ? 'text-[#9ea7ff]'
-                                    : 'text-[#747487] group-hover:text-[#aaa9be]',
+                                    : 'text-[#9a9ab0] group-hover:text-[#aaa9be]',
                             )}
                         >
                             {item.icon}
@@ -195,7 +207,7 @@ export function Sidebar({ collapsed, mobileOpen, onMobileClose, grado, oficialid
                             className={cn(
                                 hasActiveChild || isOpen
                                     ? 'text-[#9ea7ff]'
-                                    : 'text-[#747487] group-hover:text-[#aaa9be]',
+                                    : 'text-[#9a9ab0] group-hover:text-[#aaa9be]',
                             )}
                         >
                             {item.icon}
@@ -212,7 +224,7 @@ export function Sidebar({ collapsed, mobileOpen, onMobileClose, grado, oficialid
                     {!collapsed && (
                         <ChevronRight
                             className={cn(
-                                'h-3 w-3 shrink-0 text-[#747487] transition-transform duration-200',
+                                'h-3 w-3 shrink-0 text-[#9a9ab0] transition-transform duration-200',
                                 isOpen && 'rotate-90 text-[#9ea7ff]',
                             )}
                         />
@@ -275,8 +287,8 @@ export function Sidebar({ collapsed, mobileOpen, onMobileClose, grado, oficialid
                 // Mobile: drawer fijo (slide desde la izquierda)
                 'fixed inset-y-0 left-0 z-50 w-[260px] transition-[width,transform] duration-300',
                 mobileOpen ? 'translate-x-0' : '-translate-x-full',
-                // Desktop: sidebar sticky (override mobile fixed)
-                'md:static md:inset-auto md:z-40 md:min-h-screen md:translate-x-0',
+                // Desktop: sidebar fijo al viewport, no crece con el contenido
+                'md:sticky md:top-0 md:h-screen md:translate-x-0 md:shrink-0',
                 collapsed ? 'md:w-[70px]' : 'md:w-[250px]',
             )}
         >
@@ -294,6 +306,7 @@ export function Sidebar({ collapsed, mobileOpen, onMobileClose, grado, oficialid
                         width={640}
                         height={640}
                         className="h-8 w-8 shrink-0 object-contain"
+                        priority
                     />
                     {!collapsed && (
                         <div className="min-w-0">
@@ -303,7 +316,7 @@ export function Sidebar({ collapsed, mobileOpen, onMobileClose, grado, oficialid
                             >
                                 Caleuche 250
                             </p>
-                            <p className="text-[10px] font-medium tracking-widest text-[#747487] uppercase">
+                            <p className="text-[10px] font-medium tracking-widest text-[#9a9ab0] uppercase">
                                 Intranet
                             </p>
                         </div>
@@ -312,11 +325,11 @@ export function Sidebar({ collapsed, mobileOpen, onMobileClose, grado, oficialid
             </div>
 
             {/* Navegación */}
-            <nav className="flex flex-1 flex-col justify-between px-3 py-4">
+            <nav aria-label="Navegación principal" className="flex flex-1 flex-col justify-between px-3 py-4">
                 {/* Menú + Elementos */}
                 <div>
                     {!collapsed && (
-                        <p className="mb-2 px-3 text-[10px] font-semibold tracking-[0.08em] text-[#747487] uppercase">
+                        <p className="mb-2 px-3 text-[10px] font-semibold tracking-[0.08em] text-[#9a9ab0] uppercase">
                             Menú
                         </p>
                     )}
@@ -325,31 +338,29 @@ export function Sidebar({ collapsed, mobileOpen, onMobileClose, grado, oficialid
                     <div className="my-4 border-t border-white/[0.06]" />
 
                     {!collapsed && (
-                        <p className="mb-2 px-3 text-[10px] font-semibold tracking-[0.08em] text-[#747487] uppercase">
+                        <p className="mb-2 px-3 text-[10px] font-semibold tracking-[0.08em] text-[#9a9ab0] uppercase">
                             Elementos
                         </p>
                     )}
                     <ul className="space-y-0.5">{degreeItems.map(renderItem)}</ul>
                 </div>
 
-                {/* Sistema — anclado al fondo */}
-                {categoryId === CATEGORIA.SUPER_ADMIN && (
-                    <div>
-                        <div className="mb-4 border-t border-white/[0.06]" />
-                        {!collapsed && (
-                            <p className="mb-2 px-3 text-[10px] font-semibold tracking-[0.08em] text-[#747487] uppercase">
-                                Sistema
-                            </p>
-                        )}
-                        <ul className="space-y-0.5">{configItems.map(renderItem)}</ul>
-                    </div>
-                )}
+                {/* Sistema — visible para todos los usuarios */}
+                <div>
+                    <div className="mb-4 border-t border-white/[0.06]" />
+                    {!collapsed && (
+                        <p className="mb-2 px-3 text-[10px] font-semibold tracking-[0.08em] text-[#9a9ab0] uppercase">
+                            Sistema
+                        </p>
+                    )}
+                    <ul className="space-y-0.5">{configItems.map(renderItem)}</ul>
+                </div>
             </nav>
 
             {/* Footer del sidebar */}
             {!collapsed && (
                 <div className="shrink-0 border-t border-white/[0.06] px-4 py-3">
-                    <p className="text-[10px] text-[#464658]">
+                    <p className="text-[10px] text-[#9a9ab0]">
                         © {new Date().getFullYear()} Logia Caleuche 250
                     </p>
                 </div>

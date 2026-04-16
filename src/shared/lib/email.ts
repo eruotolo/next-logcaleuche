@@ -216,7 +216,7 @@ export async function sendInvitacionEvento(params: {
     const horaStr = evento.hora ?? '20:00';
     const lugarStr = evento.lugar ?? 'Casa Masónica de Castro';
     const saludo = saludoPorGrado(evento.gradoId);
-    const tenida = nombreTenida(evento.gradoId);
+    const _tenida = nombreTenida(evento.gradoId);
 
     const tratamientoAutor = evento.gradoId === 3 ? 'V∴M∴' : 'Q∴H∴';
     const tratamientoRM = evento.gradoId === 3 ? 'R∴M∴' : 'V∴M∴';
@@ -280,6 +280,35 @@ export async function sendInvitacionEvento(params: {
         bcc: bccEmails,
         subject: `Convocatoria — ${evento.tipoActividad} · ${diaNombre} ${diaNum} de ${mesNombre}`,
         html,
+    });
+}
+
+export async function sendCumpleanos({
+    email,
+    nombre,
+}: {
+    email: string;
+    nombre: string;
+}): Promise<void> {
+    await transporter.sendMail({
+        from: NOREPLY_FROM,
+        to: `"${nombre}" <${email}>`,
+        subject: 'Feliz Cumpleaños — R∴L∴ Caleuche 250',
+        html: `
+            <div style="max-width:600px;margin:0 auto;font-family:sans-serif;">
+                <div style="text-align:center;padding:20px;">
+                    <img src="https://intranet.logiacaleuche.cl/admin/assets/images/logo.jpg" style="max-width:120px;height:auto;" alt="Logo">
+                </div>
+                <h2 style="color:#2980b9;text-align:center;">¡Feliz Cumpleaños, Q∴H∴ ${esc(nombre)}!</h2>
+                <p style="text-align:center;font-size:16px;">
+                    En este día especial, todos tus hermanos de la<br>
+                    <strong>R∴ L∴ Caleuche 250</strong> te desean un feliz cumpleaños<br>
+                    lleno de fraternidad, salud y prosperidad.
+                </p>
+                <p style="text-align:center;margin-top:30px;">Un Triple Abrazo Fraternal.</p>
+                <p style="text-align:center;"><b>R∴ L∴ Caleuche 250 — Valle de Castro, Chiloé</b></p>
+            </div>
+        `,
     });
 }
 

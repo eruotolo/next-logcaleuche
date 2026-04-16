@@ -1,5 +1,7 @@
 'use server';
 
+import { cache } from 'react';
+
 import { revalidatePath } from 'next/cache';
 
 import { ACTIVITY_ACTION, ACTIVITY_ENTITY } from '@/shared/constants/activity-log';
@@ -14,7 +16,7 @@ import { DocumentoSchema, LibroSchema, TrazadoSchema } from '../schemas';
 
 // ── BIBLIOTECA ────────────────────────────────────────────────────────────
 
-export async function getBiblioteca(gradoTarget: number) {
+export const getBiblioteca = cache(async function getBiblioteca(gradoTarget: number) {
     const session = await auth();
     if (!session) throw new Error('No autorizado');
     return prisma.biblioteca.findMany({
@@ -22,7 +24,7 @@ export async function getBiblioteca(gradoTarget: number) {
         include: { grado: true },
         orderBy: { id: 'desc' },
     });
-}
+});
 
 export async function createLibro(
     _prev: ActionResult<null> | null,
@@ -38,13 +40,20 @@ export async function createLibro(
     });
     if (!parsed.success) return { success: false, error: 'Verifica los datos.' };
 
+    const externalUrl = (formData.get('externalUrl') as string | null)?.trim() ?? '';
     const file = formData.get('file') as File;
-    if (!file || file.size === 0) return { success: false, error: 'Selecciona un archivo PDF.' };
+
     let fileName: string;
-    try {
-        fileName = await uploadToCloudinary(file, 'logiacaleuche/biblioteca', 'raw');
-    } catch {
-        return { success: false, error: 'Error al subir el archivo. Intenta de nuevo.' };
+    if (externalUrl?.startsWith('https://drive.google.com')) {
+        fileName = externalUrl;
+    } else if (file && file.size > 0) {
+        try {
+            fileName = await uploadToCloudinary(file, 'logiacaleuche/biblioteca', 'raw');
+        } catch {
+            return { success: false, error: 'Error al subir el archivo. Intenta de nuevo.' };
+        }
+    } else {
+        return { success: false, error: 'Selecciona un archivo PDF o ingresa un link de Google Drive.' };
     }
 
     const libro = await prisma.biblioteca.create({
@@ -102,13 +111,19 @@ export async function updateLibro(
     });
     if (!parsed.success) return { success: false, error: 'Verifica los datos.' };
 
+    const externalUrl = (formData.get('externalUrl') as string | null)?.trim() ?? '';
     let fileName: string | undefined;
-    const file = formData.get('file') as File | null;
-    if (file && file.size > 0) {
-        try {
-            fileName = await uploadToCloudinary(file, 'logiacaleuche/biblioteca', 'raw');
-        } catch {
-            return { success: false, error: 'Error al subir el archivo. Intenta de nuevo.' };
+
+    if (externalUrl?.startsWith('https://drive.google.com')) {
+        fileName = externalUrl;
+    } else {
+        const file = formData.get('file') as File | null;
+        if (file && file.size > 0) {
+            try {
+                fileName = await uploadToCloudinary(file, 'logiacaleuche/biblioteca', 'raw');
+            } catch {
+                return { success: false, error: 'Error al subir el archivo. Intenta de nuevo.' };
+            }
         }
     }
 
@@ -137,7 +152,7 @@ export async function updateLibro(
 
 // ── TRAZADOS ──────────────────────────────────────────────────────────────
 
-export async function getTrazados(gradoTarget: number) {
+export const getTrazados = cache(async function getTrazados(gradoTarget: number) {
     const session = await auth();
     if (!session) throw new Error('No autorizado');
     return prisma.trazado.findMany({
@@ -149,7 +164,7 @@ export async function getTrazados(gradoTarget: number) {
         },
         orderBy: { fecha: 'desc' },
     });
-}
+});
 
 export async function createTrazado(
     _prev: ActionResult<null> | null,
@@ -272,11 +287,11 @@ export async function updateTrazado(
 
 // ── DOCUMENTOS GENERALES ──────────────────────────────────────────────────
 
-export async function getDocumentos() {
+export const getDocumentos = cache(async function getDocumentos() {
     const session = await auth();
     if (!session) throw new Error('No autorizado');
     return prisma.document.findMany({ orderBy: { fechaDoc: 'asc' } });
-}
+});
 
 export async function createDocumento(
     _prev: ActionResult<null> | null,

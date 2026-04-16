@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useEffect } from 'react';
+import { useActionState, useEffect, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
@@ -20,6 +20,7 @@ interface BibliotecaItem {
     nombre?: string | null;
     autor?: string | null;
     gradoId?: number;
+    fileName?: string | null;
 }
 
 interface TrazadoItem {
@@ -54,10 +55,15 @@ function toInputDate(date: Date | null | undefined): string {
     return d.toISOString().split('T')[0];
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: intentional branching for biblioteca/trazado with file/url upload modes
 export function EditDocGradoModal(props: EditDocGradoModalProps) {
     const { tipo, item, grados } = props;
     const { isOpen, open, close } = useModal();
     const router = useRouter();
+
+    const currentFileName = tipo === 'biblioteca' ? (item as BibliotecaItem).fileName : undefined;
+    const isCurrentDrive = currentFileName?.includes('drive.google.com') ?? false;
+    const [uploadMode, setUploadMode] = useState<'file' | 'url'>(isCurrentDrive ? 'url' : 'file');
 
     const boundAction =
         tipo === 'biblioteca' ? updateLibro.bind(null, item.id) : updateTrazado.bind(null, item.id);
@@ -199,24 +205,71 @@ export function EditDocGradoModal(props: EditDocGradoModalProps) {
                         </div>
                     )}
 
-                    {/* Archivo opcional */}
+                    {/* Reemplazar archivo */}
                     <div className="space-y-2">
-                        <label htmlFor={`edit-${tipo}-file-${item.id}`} className="form-label">
+                        <p className="form-label">
                             Reemplazar Archivo{' '}
                             <span className="text-cg-outline text-[11px] font-normal">
                                 (opcional)
                             </span>
-                        </label>
-                        <input
-                            id={`edit-${tipo}-file-${item.id}`}
-                            type="file"
-                            name="file"
-                            accept=".pdf,.doc,.docx"
-                            className="text-cg-on-surface-variant file:text-cg-primary-tonal block w-full cursor-pointer rounded-lg border border-[rgba(70,70,88,0.35)] bg-[rgba(255,255,255,0.04)] px-3 py-2 text-[13px] file:mr-3 file:cursor-pointer file:rounded file:border-0 file:bg-[rgba(158,167,255,0.15)] file:px-2 file:py-0.5 file:text-[11px] file:font-medium"
-                        />
-                        <p className="text-cg-outline text-[10px]">
-                            Deja vacío para mantener el archivo actual.
                         </p>
+
+                        {tipo === 'biblioteca' && (
+                            <div className="flex rounded-lg border border-[rgba(70,70,88,0.35)] bg-[rgba(255,255,255,0.02)] p-1 mb-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setUploadMode('file')}
+                                    className={`flex-1 rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors ${
+                                        uploadMode === 'file'
+                                            ? 'bg-[rgba(158,167,255,0.2)] text-[#e7e6fc]'
+                                            : 'text-cg-outline hover:text-cg-on-surface'
+                                    }`}
+                                >
+                                    Subir archivo
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setUploadMode('url')}
+                                    className={`flex-1 rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors ${
+                                        uploadMode === 'url'
+                                            ? 'bg-[rgba(158,167,255,0.2)] text-[#e7e6fc]'
+                                            : 'text-cg-outline hover:text-cg-on-surface'
+                                    }`}
+                                >
+                                    Link Google Drive
+                                </button>
+                            </div>
+                        )}
+
+                        {(tipo !== 'biblioteca' || uploadMode === 'file') && (
+                            <>
+                                <input
+                                    id={`edit-${tipo}-file-${item.id}`}
+                                    type="file"
+                                    name="file"
+                                    accept=".pdf,.doc,.docx"
+                                    className="text-cg-on-surface-variant file:text-cg-primary-tonal block w-full cursor-pointer rounded-lg border border-[rgba(70,70,88,0.35)] bg-[rgba(255,255,255,0.04)] px-3 py-2 text-[13px] file:mr-3 file:cursor-pointer file:rounded file:border-0 file:bg-[rgba(158,167,255,0.15)] file:px-2 file:py-0.5 file:text-[11px] file:font-medium"
+                                />
+                                <p className="text-cg-outline text-[10px]">
+                                    Deja vacío para mantener el archivo actual.
+                                </p>
+                            </>
+                        )}
+
+                        {tipo === 'biblioteca' && uploadMode === 'url' && (
+                            <>
+                                <input
+                                    type="url"
+                                    name="externalUrl"
+                                    defaultValue={isCurrentDrive ? (currentFileName ?? '') : ''}
+                                    placeholder="https://drive.google.com/file/d/.../view"
+                                    className="text-cg-on-surface block w-full rounded-lg border border-[rgba(70,70,88,0.35)] bg-[rgba(255,255,255,0.04)] px-3 py-2 text-[13px] placeholder:text-[rgba(255,255,255,0.25)] focus:outline-none focus:ring-1 focus:ring-[rgba(158,167,255,0.4)]"
+                                />
+                                <p className="text-cg-outline text-[10px]">
+                                    Deja vacío para mantener el archivo actual. El archivo debe ser "Cualquiera con el link".
+                                </p>
+                            </>
+                        )}
                     </div>
 
                     <div className="flex justify-end gap-3 border-t border-[rgba(70,70,88,0.2)] pt-4">

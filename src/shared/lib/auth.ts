@@ -3,6 +3,9 @@ import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import { z } from 'zod';
 
+/** Rounds de bcrypt — usar en todo el proyecto para consistencia. */
+export const BCRYPT_ROUNDS = 12;
+
 import { ACTIVITY_ACTION, ACTIVITY_ENTITY, ACTIVITY_STATUS } from '@/shared/constants/activity-log';
 
 import { prisma } from './db';
@@ -14,7 +17,12 @@ const loginSchema = z.object({
 });
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-    session: { strategy: 'jwt' },
+    session: {
+        strategy: 'jwt',
+        // 8 horas de sesión activa; rota el token cada 1 hora si hay actividad
+        maxAge: 8 * 60 * 60,
+        updateAge: 60 * 60,
+    },
     pages: {
         signIn: '/login',
     },
@@ -24,8 +32,38 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             credentials: {
                 identifier: { label: 'Email o RUT', type: 'text' },
                 password: { label: 'Contraseña', type: 'password' },
+                // Step-2 only: userId is set after 2FA verification passes
+                userId: { label: 'User ID (2FA step 2)', type: 'text' },
             },
             async authorize(credentials) {
+                // ── 2FA step 2: bypass password — ID already verified by verify2FALogin ──
+                if (credentials?.userId) {
+                    const userId = Number(credentials.userId);
+                    if (Number.isNaN(userId)) return null;
+
+                    const user = await prisma.user.findUnique({
+                        where: { id: userId, active: true },
+                        include: { grado: true, oficialidad: true, category: true },
+                    });
+                    if (!user) return null;
+
+                    return {
+                        id: String(user.id),
+                        email: user.email,
+                        name: `${user.name ?? ''} ${user.lastName ?? ''}`.trim(),
+                        image: user.image ?? null,
+                        rut: user.username,
+                        grado: user.gradoId ?? 1,
+                        gradoNombre: user.grado?.nombre ?? 'Aprendiz',
+                        oficialidad: user.oficialidadId ?? 1,
+                        oficialidadNombre: user.oficialidad?.nombre ?? 'Ninguno',
+                        categoryId: user.categoryId ?? 3,
+                        categoryNombre: user.category?.nombre ?? 'Usuario',
+                        active: user.active,
+                    };
+                }
+
+                // ── Step 1: normal email/RUT + password flow ──────────────────────────────
                 const parsed = loginSchema.safeParse(credentials);
                 if (!parsed.success) return null;
 
@@ -42,12 +80,25 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                         oficialidad: true,
                         category: true,
                     },
+                    // Include 2FA fields for the gate check below
                 });
 
                 if (!user || !user.active) return null;
 
                 const passwordMatch = await bcrypt.compare(password, user.password);
                 if (!passwordMatch) return null;
+
+                // ── 2FA gate: issue a temp token and block normal JWT issuance ────────────
+                if (user.twoFactorEnabled) {
+                    const tempToken = crypto.randomUUID();
+                    const expiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+                    await prisma.user.update({
+                        where: { id: user.id },
+                        data: { twoFactorTempToken: tempToken, twoFactorTempExpiry: expiry },
+                    });
+                    // Throwing a plain Error (not AuthError) lets loginAction catch it cleanly
+                    throw new Error(`TWO_FACTOR_REQUIRED:${tempToken}`);
+                }
 
                 return {
                     id: String(user.id),

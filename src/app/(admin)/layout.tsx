@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 
+import { NotificationBellWrapper } from '@/features/notificaciones/components/NotificationBellWrapper';
 import { AdminShell } from '@/shared/components/layout/AdminShell';
 import { auth } from '@/shared/lib/auth';
 import { prisma } from '@/shared/lib/db';
@@ -17,6 +18,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             gradoId: true,
             oficialidadId: true,
             categoryId: true,
+            hasSeenOnboarding: true,
             grado: { select: { nombre: true } },
         },
     });
@@ -32,6 +34,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             gradoNombre={dbUser.grado?.nombre ?? 'Aprendiz'}
             oficialidad={dbUser.oficialidadId ?? 1}
             categoryId={dbUser.categoryId ?? 3}
+            hasSeenOnboarding={dbUser.hasSeenOnboarding ?? true}
+            notificationSlot={<NotificationBellWrapper />}
         >
             {children}
         </AdminShell>

@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { BookOpen, Download, Eye, FileText, Trash } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog';
 import { Tooltip } from '@/shared/components/ui/tooltip';
 import { getCloudinaryPdfUrl } from '@/shared/lib/cloudinary';
 import { formatDate } from '@/shared/lib/utils';
@@ -56,6 +57,7 @@ const tipoIcons: Record<DocTipo, { icon: typeof FileText; color: string; bg: str
 
 function getFileExt(fileName: string | null) {
     if (!fileName) return 'DOC';
+    if (fileName.startsWith('http://') || fileName.startsWith('https://')) return 'DRIVE';
     return (fileName.split('.').pop() ?? 'DOC').toUpperCase();
 }
 
@@ -69,10 +71,18 @@ export function DocGradoList({
     tiposActividad = [],
 }: DocGradoListProps) {
     const [preview, setPreview] = useState<PreviewDoc | null>(null);
+    const [confirmDelete, setConfirmDelete] = useState<{ id: number; label: string } | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
-    async function handleDelete(id: number, label: string | null) {
-        if (!confirm(`¿Eliminar "${label}"?`)) return;
-        const res = await deleteActions[tipo](id);
+    function handleDelete(id: number, label: string | null) {
+        setConfirmDelete({ id, label: label ?? 'este elemento' });
+    }
+
+    async function handleDeleteConfirm() {
+        if (!confirmDelete) return;
+        setIsDeleting(true);
+        const res = await deleteActions[tipo](confirmDelete.id);
+        setIsDeleting(false);
         if (res.success) toast.success('Eliminado correctamente');
         else toast.error(res.error);
     }
@@ -103,6 +113,17 @@ export function DocGradoList({
     return (
         <>
             {preview && <DocumentoPreviewModal doc={preview} onClose={() => setPreview(null)} />}
+
+            <ConfirmDialog
+                open={confirmDelete !== null}
+                onOpenChange={(open) => { if (!open) setConfirmDelete(null); }}
+                title="Eliminar documento"
+                description={`¿Eliminar "${confirmDelete?.label}"?`}
+                confirmLabel="Eliminar"
+                variant="danger"
+                onConfirm={handleDeleteConfirm}
+                isPending={isDeleting}
+            />
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {items.map((item) => {
                     const ext = getFileExt(item.fileName);
@@ -201,6 +222,7 @@ export function DocGradoList({
                                                         (item.autor as unknown as string) ??
                                                         '',
                                                     gradoId: item.gradoId,
+                                                    fileName: item.fileName,
                                                 }}
                                                 grados={grados}
                                             />

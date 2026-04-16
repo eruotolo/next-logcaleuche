@@ -1,3 +1,5 @@
+import { Suspense } from 'react';
+
 import type { Metadata } from 'next';
 
 import { DocGradoPage } from '@/features/documentos/components/DocGradoPage';
@@ -8,12 +10,14 @@ export const metadata: Metadata = {
 
 export default function AprendizBibliotecaPage() {
     return (
-        <DocGradoPage
-            tipo="biblioteca"
-            gradoMin={1}
-            redirectTo="/aprendiz/biblioteca"
-            titulo="Biblioteca — Aprendiz"
-            subtitulo="Libros y material de lectura del primer grado."
-        />
+        <Suspense>
+            <DocGradoPage
+                tipo="biblioteca"
+                gradoMin={1}
+                redirectTo="/aprendiz/biblioteca"
+                titulo="Biblioteca — Aprendiz"
+                subtitulo="Libros y material de lectura del primer grado."
+            />
+        </Suspense>
     );
 }

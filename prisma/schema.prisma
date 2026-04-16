@@ -43,17 +43,28 @@ model User {
     dateSalary     DateTime? @map("date_salary") @db.Date
     dateExalted    DateTime? @map("date_exalted") @db.Date
 
-    active    Boolean  @default(true) @map("estado")
-    createdAt DateTime @default(now()) @map("created_at")
+    active            Boolean  @default(true) @map("estado")
+    hasSeenOnboarding Boolean  @default(true) @map("has_seen_onboarding")
+    createdAt         DateTime @default(now()) @map("created_at")
+
+    // 2FA TOTP
+    twoFactorSecret     String?   @map("two_factor_secret")
+    twoFactorEnabled    Boolean   @default(false) @map("two_factor_enabled")
+    backupCodes         String[]  @default([]) @map("backup_codes")
+    twoFactorTempToken  String?   @map("two_factor_temp_token")
+    twoFactorTempExpiry DateTime? @map("two_factor_temp_expiry")
 
     // Back relations
-    feeds        Feed[]
-    comments     CommentFeed[]
-    trazados     Trazado[]
-    entradas     EntradaDinero[]
-    salidas      SalidaDinero[]
-    activityLogs ActivityLog[]
+    feeds         Feed[]
+    comments      CommentFeed[]
+    trazados      Trazado[]
+    entradas      EntradaDinero[]
+    salidas       SalidaDinero[]
+    activityLogs  ActivityLog[]
+    notifications Notification[]
+    asistencias   EventoAsistencia[]
 
+    @@index([active, dateBirthday])
     @@map("users")
 }
 
@@ -121,6 +132,7 @@ model Feed {
 
     comments CommentFeed[]
 
+    @@index([active, createdAt])
     @@map("feed")
 }
 
@@ -167,6 +179,9 @@ model Evento {
 
     active Int? @map("estado_Evento") // 0=Cancelado, 1=Activo
 
+    asistencias EventoAsistencia[]
+
+    @@index([active, fecha, gradoId])
     @@map("evento")
 }
 
@@ -249,6 +264,8 @@ model EntradaDinero {
     monto    Decimal? @map("entrada_Monto") @db.Decimal(10, 2)
     fechaMov DateTime @map("entrada_MovimientoFecha") @db.Date
 
+    @@index([userId, ano, motivoId])
+    @@index([ano, mes])
     @@map("entradadinero")
 }
 
@@ -278,6 +295,8 @@ model SalidaDinero {
     monto    Decimal? @map("salida_Monto") @db.Decimal(10, 2)
     fechaMov DateTime @map("salida_MovimientoFecha") @db.Date
 
+    @@index([userId, ano, motivoId])
+    @@index([ano, mes])
     @@map("salidadinero")
 }
 
@@ -291,7 +310,38 @@ model SalidaMotivo {
     @@map("salidamotivo")
 }
 
-// 1.22 Tabla: activity_log
+// 1.22 Tabla: notifications
+model Notification {
+    id        Int      @id @default(autoincrement())
+    userId    Int      @map("user_id")
+    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    type      String   // 'feed', 'comment', 'evento'
+    title     String
+    message   String?
+    href      String?
+    read      Boolean  @default(false)
+    createdAt DateTime @default(now()) @map("created_at")
+
+    @@index([userId, read])
+    @@index([userId, createdAt])
+    @@map("notifications")
+}
+
+// 1.23 Tabla: evento_asistencia
+model EventoAsistencia {
+    id       Int    @id @default(autoincrement())
+    eventoId Int    @map("evento_id")
+    evento   Evento @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+    userId   Int    @map("user_id")
+    user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+    estado   String @default("confirmado") // 'confirmado', 'tentativo', 'no_asiste'
+
+    @@unique([eventoId, userId])
+    @@index([eventoId])
+    @@map("evento_asistencia")
+}
+
+// 1.24 Tabla: activity_log
 model ActivityLog {
     id          Int      @id @default(autoincrement())
     userId      Int?     @map("user_id")

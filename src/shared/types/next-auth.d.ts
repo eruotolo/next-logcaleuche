@@ -24,6 +24,7 @@ declare module 'next-auth' {
         categoryId: number;
         categoryNombre: string;
         active: boolean;
+        twoFactorEnabled?: boolean;
     }
 }
 

@@ -1,12 +1,6 @@
-'use client';
-
 import Link from 'next/link';
 
-
-
 import { Banknote, Rss, TrendingUp, Users, Wallet } from 'lucide-react';
-
-
 
 import { BirthdayCard } from '@/shared/components/BirthdayCard';
 import { FeedNewsList } from '@/shared/components/FeedNewsList';
@@ -19,217 +13,14 @@ import type { getDashboardData } from '@/features/dashboard/actions';
 
 type DashboardData = Awaited<ReturnType<typeof getDashboardData>>;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 interface DashboardContentProps {
     data: DashboardData;
     categoryId: number;
 }
 
-
 export function DashboardContent({ data, categoryId }: DashboardContentProps) {
     const { feedPosts, upcomingBirthdays, eventos, activeUsersCount, tesoreria } = data;
-    const isAdmin = categoryId <= 2;
+    const showTesoreria = categoryId <= 2 && tesoreria !== null;
 
     return (
         <div className="space-y-8">
@@ -259,8 +50,8 @@ export function DashboardContent({ data, categoryId }: DashboardContentProps) {
                 </nav>
             </div>
 
-            {/* ── Row 1: KPI Cards (solo admins) ──────────────── */}
-            {isAdmin && (
+            {/* ── Row 1: KPI Cards (solo tesorero/admin) ──────────────── */}
+            {showTesoreria && (
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
                     {/* Ingresos */}
                     <GlassPanel className="p-6">
@@ -395,8 +186,8 @@ export function DashboardContent({ data, categoryId }: DashboardContentProps) {
                     </GlassPanel>
                 </div>
 
-                {/* Proximos Eventos */}
-                <div className="xl:col-span-2 flex flex-col">
+                {/* Próximos Eventos */}
+                <div className="flex flex-col xl:col-span-2">
                     <UpcomingEventsList
                         className="h-full"
                         eventos={eventos.slice(0, 7).map((ev) => ({
@@ -422,7 +213,7 @@ export function DashboardContent({ data, categoryId }: DashboardContentProps) {
                 </div>
 
                 {/* Próximos Cumpleaños */}
-                <div className="xl:col-span-2 flex flex-col">
+                <div className="flex flex-col xl:col-span-2">
                     <BirthdayCard birthdays={upcomingBirthdays} maxItems={9} className="h-full" />
                 </div>
             </div>

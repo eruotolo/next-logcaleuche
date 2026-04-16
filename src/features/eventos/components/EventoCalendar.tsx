@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog';
 import { UpcomingEventsList } from '@/shared/components/UpcomingEventsList';
 
 import { deleteEvento } from '../actions';
@@ -116,6 +117,8 @@ export function EventoCalendar({ eventos, isAdmin, grados = [], tiposActividad =
     const [currentMonth, setCurrentMonth] = useState(today.getMonth());
     const [currentYear, setCurrentYear] = useState(today.getFullYear());
     const [selectedEvento, setSelectedEvento] = useState<EventoItem | null>(null);
+    const [confirmDelete, setConfirmDelete] = useState<{ id: number; nombre: string } | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const days = getMonthDays(currentYear, currentMonth);
 
@@ -155,9 +158,15 @@ export function EventoCalendar({ eventos, isAdmin, grados = [], tiposActividad =
 
     const nextEvent = upcomingEvents[0];
 
-    async function handleDelete(id: number, nombre: string) {
-        if (!confirm(`¿Cancelar el evento "${nombre}"?`)) return;
-        const res = await deleteEvento(id);
+    function handleDelete(id: number, nombre: string) {
+        setConfirmDelete({ id, nombre });
+    }
+
+    async function handleDeleteConfirm() {
+        if (!confirmDelete) return;
+        setIsDeleting(true);
+        const res = await deleteEvento(confirmDelete.id);
+        setIsDeleting(false);
         if (res.success) toast.success('Evento cancelado');
         else toast.error(typeof res.error === 'string' ? res.error : 'Error al cancelar');
     }
@@ -335,6 +344,17 @@ export function EventoCalendar({ eventos, isAdmin, grados = [], tiposActividad =
                 isAdmin={isAdmin}
                 grados={grados}
                 tiposActividad={tiposActividad}
+            />
+
+            <ConfirmDialog
+                open={confirmDelete !== null}
+                onOpenChange={(open) => { if (!open) setConfirmDelete(null); }}
+                title="Cancelar evento"
+                description={`¿Cancelar el evento "${confirmDelete?.nombre}"?`}
+                confirmLabel="Sí, cancelar"
+                variant="danger"
+                onConfirm={handleDeleteConfirm}
+                isPending={isDeleting}
             />
         </>
     );

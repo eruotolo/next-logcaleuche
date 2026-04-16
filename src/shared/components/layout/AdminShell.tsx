@@ -2,6 +2,9 @@
 
 import { useCallback, useState } from 'react';
 
+import { OnboardingTour } from '@/features/configuracion/components/OnboardingTour';
+
+import { Breadcrumbs } from './Breadcrumbs';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 
@@ -14,6 +17,8 @@ interface AdminShellProps {
     gradoNombre: string;
     oficialidad: number;
     categoryId: number;
+    hasSeenOnboarding?: boolean;
+    notificationSlot?: React.ReactNode;
 }
 
 export function AdminShell({
@@ -25,13 +30,15 @@ export function AdminShell({
     gradoNombre,
     oficialidad,
     categoryId,
+    hasSeenOnboarding,
+    notificationSlot,
 }: AdminShellProps) {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
     const handleMobileClose = useCallback(() => setMobileSidebarOpen(false), []);
 
     return (
-        <div className="flex min-h-screen bg-[#0c0d1c]">
+        <div className="flex h-screen overflow-hidden bg-[#0c0d1c]">
             {/* Skip-to-content para usuarios de teclado y lectores de pantalla */}
             <a
                 href="#main-content"
@@ -68,7 +75,7 @@ export function AdminShell({
             />
 
             {/* Contenido principal */}
-            <div className="relative flex min-w-0 flex-1 flex-col transition-all duration-300">
+            <div className="relative flex min-w-0 flex-1 flex-col overflow-y-auto transition-all duration-300">
                 <Topbar
                     onToggleSidebar={() => setSidebarCollapsed((v) => !v)}
                     onToggleMobileSidebar={() => setMobileSidebarOpen((v) => !v)}
@@ -76,11 +83,20 @@ export function AdminShell({
                     userImage={userImage}
                     userId={userId}
                     gradoNombre={gradoNombre}
+                    notificationSlot={notificationSlot}
                 />
 
                 <main id="main-content" className="flex-1 p-5 lg:p-7">
-                    <div className="mx-auto max-w-[1600px]">{children}</div>
+                    <div className="mx-auto max-w-[1600px]">
+                        <Breadcrumbs />
+                        {children}
+                    </div>
                 </main>
+
+                <OnboardingTour
+                    hasSeenOnboarding={hasSeenOnboarding ?? true}
+                    userName={userName}
+                />
 
                 <footer className="shrink-0 border-t border-white/[0.06] px-6 py-4">
                     <div className="flex flex-col items-center justify-between gap-1 text-xs text-[#464658] sm:flex-row">

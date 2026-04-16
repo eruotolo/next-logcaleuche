@@ -5,7 +5,7 @@ import { useActionState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-import { ArrowLeft, Calendar, MessageSquare, Send, Tag, Trash } from 'lucide-react';
+import { ArrowLeft, Calendar, MessageSquare, Paperclip, Send, Tag, Trash } from 'lucide-react';
 import { toast } from 'sonner';
 
 import Image from 'next/image';
@@ -14,7 +14,7 @@ import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent } from '@/shared/components/ui/card';
 import { Tooltip } from '@/shared/components/ui/tooltip';
-import { getCloudinaryRawImageUrl } from '@/shared/lib/cloudinary';
+import { getCloudinaryPdfUrl, getCloudinaryRawImageUrl, isImageFile } from '@/shared/lib/cloudinary';
 import { formatDate } from '@/shared/lib/utils';
 
 import type { getFeedPostBySlug } from '../actions';
@@ -95,13 +95,27 @@ export function FeedDetail({ post, others, currentUser }: FeedDetailProps) {
                 <div className="space-y-8 lg:col-span-2">
                     <Card className="overflow-hidden border-none shadow-sm">
                         {post.fileName && (
-                            <div className="h-[400px] w-full overflow-hidden">
-                                <img
-                                    src={getCloudinaryRawImageUrl(post.fileName) ?? ''}
-                                    alt={post.titulo ?? ''}
-                                    className="h-full w-full object-cover"
-                                />
-                            </div>
+                            isImageFile(post.fileName) ? (
+                                <div className="h-[400px] w-full overflow-hidden">
+                                    <img
+                                        src={getCloudinaryRawImageUrl(post.fileName) ?? ''}
+                                        alt={post.titulo ?? ''}
+                                        className="h-full w-full object-cover"
+                                    />
+                                </div>
+                            ) : (
+                                <div className="border-b border-[rgba(255,255,255,0.06)] px-8 py-4">
+                                    <a
+                                        href={getCloudinaryPdfUrl(post.fileName)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-cg-on-surface-variant hover:text-cg-primary-tonal flex items-center gap-2 text-sm transition-colors"
+                                    >
+                                        <Paperclip className="h-4 w-4 shrink-0" />
+                                        <span className="truncate">{post.fileName}</span>
+                                    </a>
+                                </div>
+                            )
                         )}
                         <CardContent className="p-8">
                             <div className="mb-6 flex items-center gap-4 border-b border-[rgba(70,70,88,0.2)] pb-6">
@@ -212,20 +226,21 @@ export function FeedDetail({ post, others, currentUser }: FeedDetailProps) {
                             <Link key={other.id} href={`/feed/${other.slug}`} className="block">
                                 <Card className="group overflow-hidden border-[rgba(70,70,88,0.2)] transition-shadow hover:shadow-md">
                                     <div className="flex gap-3 p-3">
-                                        {other.fileName ? (
+                                        {other.fileName && isImageFile(other.fileName) ? (
                                             <div className="h-16 w-16 shrink-0 overflow-hidden rounded">
                                                 <img
-                                                    src={
-                                                        getCloudinaryRawImageUrl(other.fileName) ??
-                                                        ''
-                                                    }
+                                                    src={getCloudinaryRawImageUrl(other.fileName) ?? ''}
                                                     alt=""
                                                     className="h-full w-full object-cover"
                                                 />
                                             </div>
                                         ) : (
                                             <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded bg-[rgba(90,103,216,0.15)]">
-                                                <Tag className="text-cg-primary-tonal h-6 w-6" />
+                                                {other.fileName ? (
+                                                    <Paperclip className="text-cg-primary-tonal h-5 w-5" />
+                                                ) : (
+                                                    <Tag className="text-cg-primary-tonal h-6 w-6" />
+                                                )}
                                             </div>
                                         )}
                                         <div className="flex flex-col justify-center overflow-hidden">

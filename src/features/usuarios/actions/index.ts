@@ -8,7 +8,7 @@ import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 
 import { ACTIVITY_ACTION, ACTIVITY_ENTITY } from '@/shared/constants/activity-log';
-import { auth } from '@/shared/lib/auth';
+import { BCRYPT_ROUNDS, auth } from '@/shared/lib/auth';
 import { logActivity } from '@/shared/lib/activity-log';
 import { requireAdmin, requireAuth } from '@/shared/lib/auth-guards';
 import { uploadToCloudinary } from '@/shared/lib/cloudinary-upload';
@@ -47,7 +47,7 @@ const PasswordSchema = z
         path: ['confirm'],
     });
 
-export async function getUsuarios(limit = 200, includeInactive = false) {
+export const getUsuarios = cache(async function getUsuarios(limit = 200, includeInactive = false) {
     await requireAuth();
     return prisma.user.findMany({
         where: includeInactive ? undefined : { active: true },
@@ -60,7 +60,7 @@ export async function getUsuarios(limit = 200, includeInactive = false) {
         orderBy: { name: 'asc' },
         take: limit,
     });
-}
+});
 
 export const getUsuarioById = cache(async (id: number) => {
     await requireAuth();
@@ -90,6 +90,50 @@ export async function getTarifas() {
     await requireAuth();
     return prisma.tarifaCuota.findMany({ orderBy: { monto: 'asc' } });
 }
+
+export interface BirthdayEntry {
+    id: number;
+    name: string | null;
+    lastName: string | null;
+    image: string | null;
+    nextBirthday: Date;
+    daysUntil: number;
+}
+
+/** Calcula los próximos cumpleaños de hermanos activos. */
+export const getUpcomingBirthdays = cache(async function getUpcomingBirthdays(): Promise<BirthdayEntry[]> {
+    await requireAuth();
+    const users = await prisma.user.findMany({
+        where: { active: true, dateBirthday: { not: null } },
+        select: { id: true, name: true, lastName: true, dateBirthday: true, image: true },
+    });
+    const today = new Date();
+    const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    return users
+        .map((u) => {
+            const bday = u.dateBirthday as Date;
+            const currentYear = today.getFullYear();
+            let next = new Date(currentYear, bday.getUTCMonth(), bday.getUTCDate());
+            if (next < startOfToday) {
+                next = new Date(currentYear + 1, bday.getUTCMonth(), bday.getUTCDate());
+            }
+            const daysUntil = Math.round(
+                (next.getTime() - startOfToday.getTime()) / (1000 * 60 * 60 * 24),
+            );
+            return { id: u.id, name: u.name, lastName: u.lastName, image: u.image, nextBirthday: next, daysUntil };
+        })
+        .sort((a, b) => a.daysUntil - b.daysUntil);
+});
+
+/** Retorna los usuarios activos con su monto de tarifa (para formularios de tesorería). */
+export const getUsuariosConTarifa = cache(async function getUsuariosConTarifa() {
+    await requireAuth();
+    const users = await prisma.user.findMany({
+        where: { active: true },
+        select: { id: true, tarifa: { select: { monto: true } } },
+    });
+    return Object.fromEntries(users.map((u) => [u.id, Number(u.tarifa?.monto ?? 0)]));
+});
 
 export async function assignTarifa(
     userId: number,
@@ -137,7 +181,7 @@ export async function createUser(
         return { success: false, error: 'El email o RUT ya está registrado.' };
     }
 
-    const hashed = await bcrypt.hash(parsed.data.password, 12);
+    const hashed = await bcrypt.hash(parsed.data.password, BCRYPT_ROUNDS);
 
     // Subir imagen si viene una
     let image: string | undefined;
@@ -165,6 +209,7 @@ export async function createUser(
             gradoId: parsed.data.gradoId,
             categoryId: parsed.data.categoryId,
             active: true,
+            hasSeenOnboarding: false,
         },
     });
 
@@ -314,7 +359,7 @@ export async function updatePassword(
     const match = await bcrypt.compare(parsed.data.current, user.password);
     if (!match) return { success: false, error: 'La contraseña actual es incorrecta.' };
 
-    const hashed = await bcrypt.hash(parsed.data.password, 12);
+    const hashed = await bcrypt.hash(parsed.data.password, BCRYPT_ROUNDS);
     await prisma.user.update({ where: { id: user.id }, data: { password: hashed } });
 
     await logActivity({
@@ -332,7 +377,9 @@ export async function deactivateUsuario(id: number): Promise<ActionResult<null>>
     const session = await requireAdmin();
     if (!session) return { success: false, error: 'No autorizado' };
 
-    const hashed = await bcrypt.hash(process.env.DEFAULT_USER_PASSWORD ?? 'Cambiar2024!', 12);
+    const defaultPassword = process.env.DEFAULT_USER_PASSWORD;
+    if (!defaultPassword) throw new Error('DEFAULT_USER_PASSWORD no configurada en variables de entorno');
+    const hashed = await bcrypt.hash(defaultPassword, BCRYPT_ROUNDS);
     await prisma.user.update({ where: { id }, data: { active: false, password: hashed } });
 
     await logActivity({
@@ -350,7 +397,9 @@ export async function resetPassword(id: number): Promise<ActionResult<null>> {
     const session = await requireAdmin();
     if (!session) return { success: false, error: 'No autorizado' };
 
-    const hashed = await bcrypt.hash(process.env.DEFAULT_USER_PASSWORD ?? 'Cambiar2024!', 12);
+    const defaultPassword = process.env.DEFAULT_USER_PASSWORD;
+    if (!defaultPassword) throw new Error('DEFAULT_USER_PASSWORD no configurada en variables de entorno');
+    const hashed = await bcrypt.hash(defaultPassword, BCRYPT_ROUNDS);
     await prisma.user.update({ where: { id }, data: { password: hashed } });
 
     await logActivity({

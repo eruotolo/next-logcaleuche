@@ -54,7 +54,7 @@ export default function RecoveryPage() {
                 </div>
 
                 <p className="mt-8 text-center text-xs text-[#464658]">
-                    © {new Date().getFullYear()} Logia Caleuche 250
+                    © 2026 Logia Caleuche 250
                 </p>
             </div>
         </div>

@@ -7,9 +7,9 @@ import { getCategoryFeeds, getFeedPosts } from '@/features/feed/actions';
 import { CreateFeedModal } from '@/features/feed/components/CreateFeedModal';
 import { FeedList } from '@/features/feed/components/FeedList';
 import { FeedSidebar } from '@/features/feed/components/FeedSidebar';
+import { getUpcomingBirthdays } from '@/features/usuarios/actions';
 
 import { auth } from '@/shared/lib/auth';
-import { prisma } from '@/shared/lib/db';
 
 export const metadata: Metadata = {
     title: 'Feed — Logia Caleuche 250',
@@ -23,34 +23,12 @@ export default async function FeedPage() {
     const canEdit = session.user.categoryId <= 3;
     const canDelete = session.user.categoryId <= 2;
 
-    const [posts, eventos, usersWithBirthday, categories] = await Promise.all([
+    const [posts, eventos, upcomingBirthdays, categories] = await Promise.all([
         getFeedPosts(),
         getEventos(grado),
-        prisma.user.findMany({
-            where: { active: true, dateBirthday: { not: null } },
-            select: { id: true, name: true, lastName: true, dateBirthday: true, image: true },
-        }),
+        getUpcomingBirthdays(),
         getCategoryFeeds(),
     ]);
-
-    // Calcular próximos cumpleaños en los siguientes 30 días
-    const today = new Date();
-    const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-
-    const upcomingBirthdays = usersWithBirthday
-        .map((u) => {
-            const bday = u.dateBirthday as Date;
-            const currentYear = today.getFullYear();
-            let next = new Date(currentYear, bday.getUTCMonth(), bday.getUTCDate());
-            if (next < startOfToday) {
-                next = new Date(currentYear + 1, bday.getUTCMonth(), bday.getUTCDate());
-            }
-            const daysUntil = Math.round(
-                (next.getTime() - startOfToday.getTime()) / (1000 * 60 * 60 * 24),
-            );
-            return { id: u.id, name: u.name, lastName: u.lastName, image: u.image, nextBirthday: next, daysUntil };
-        })
-        .sort((a, b) => a.daysUntil - b.daysUntil);
 
     return (
         <div className="space-y-6">

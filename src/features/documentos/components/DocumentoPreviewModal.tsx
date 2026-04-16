@@ -1,21 +1,45 @@
 'use client';
 
 import NextImage from 'next/image';
+import { useState } from 'react';
 
-import { Download, FileText, X } from 'lucide-react';
+import { Download, FileText, Loader2, X } from 'lucide-react';
 
-import { getCloudinaryPdfUrl, getCloudinaryRawImageUrl } from '@/shared/lib/cloudinary';
+import { getCloudinaryPdfPreviewUrl, getCloudinaryPdfUrl, getCloudinaryRawImageUrl } from '@/shared/lib/cloudinary';
 
 export type PreviewDoc = { nombre: string | null; fileName: string };
 
+const IMAGE_EXTS = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'];
+const OFFICE_EXTS = ['doc', 'docx', 'xls', 'xlsx'];
+
+function getGoogleDriveEmbedUrl(url: string): string | null {
+    if (!url.includes('drive.google.com')) return null;
+
+    // https://drive.google.com/file/d/{ID}/view...
+    const fileMatch = url.match(/\/file\/d\/([^/]+)\//);
+    if (fileMatch) return `https://drive.google.com/file/d/${fileMatch[1]}/preview`;
+
+    // https://drive.google.com/open?id={ID}
+    const openMatch = url.match(/[?&]id=([^&]+)/);
+    if (openMatch) return `https://drive.google.com/file/d/${openMatch[1]}/preview`;
+
+    return null;
+}
+
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: intentional multi-branch preview for pdf, image, office, and google drive types
 export function DocumentoPreviewModal({ doc, onClose }: { doc: PreviewDoc; onClose: () => void }) {
-    const ext = doc.fileName.split('.').pop()?.toLowerCase() ?? '';
-    const isImage = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'].includes(ext);
-    // Todo lo que no es imagen se trata como PDF (todos los raw uploads son PDFs)
-    const isPdf = !isImage;
-    const downloadUrl = getCloudinaryPdfUrl(doc.fileName);
-    // Google Docs Viewer renderiza PDFs de URLs públicas sin restricciones de iframe
-    const pdfPreviewUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(downloadUrl)}&embedded=true`;
+    const [loading, setLoading] = useState(true);
+
+    const googleDriveEmbedUrl = getGoogleDriveEmbedUrl(doc.fileName);
+    const isGoogleDrive = googleDriveEmbedUrl !== null;
+
+    const ext = isGoogleDrive ? '' : (doc.fileName.split('.').pop()?.toLowerCase() ?? '');
+    const isImage = !isGoogleDrive && IMAGE_EXTS.includes(ext);
+    const isOfficeDoc = !isGoogleDrive && OFFICE_EXTS.includes(ext);
+    const isPdf = !isGoogleDrive && !isImage && !isOfficeDoc;
+
+    const downloadUrl = isGoogleDrive ? doc.fileName : getCloudinaryPdfUrl(doc.fileName);
+    const previewUrl = isGoogleDrive ? googleDriveEmbedUrl : getCloudinaryPdfPreviewUrl(doc.fileName);
     const imagePreviewUrl = getCloudinaryRawImageUrl(doc.fileName) ?? downloadUrl;
 
     return (
@@ -39,23 +63,42 @@ export function DocumentoPreviewModal({ doc, onClose }: { doc: PreviewDoc; onClo
                     <h3 className="font-display text-cg-on-surface truncate pr-4 text-base font-bold">
                         {doc.nombre ?? 'Vista previa'}
                     </h3>
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="text-cg-outline hover:text-cg-on-surface flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors hover:bg-[rgba(255,255,255,0.1)]"
-                    >
-                        <X className="h-4 w-4" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <a
+                            href={downloadUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            title={isGoogleDrive ? 'Abrir en Google Drive' : 'Descargar archivo'}
+                            className="text-cg-outline hover:text-cg-on-surface flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors hover:bg-[rgba(255,255,255,0.1)]"
+                        >
+                            <Download className="h-4 w-4" />
+                        </a>
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="text-cg-outline hover:text-cg-on-surface flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors hover:bg-[rgba(255,255,255,0.1)]"
+                        >
+                            <X className="h-4 w-4" />
+                        </button>
+                    </div>
                 </div>
 
                 {/* Content */}
                 <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto p-4">
-                    {isPdf && (
-                        <iframe
-                            src={pdfPreviewUrl}
-                            title={doc.nombre ?? 'Documento'}
-                            className="h-[70vh] w-full rounded-lg"
-                        />
+                    {(isPdf || isGoogleDrive) && (
+                        <div className="relative h-[70vh] w-full">
+                            {loading && (
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <Loader2 className="text-cg-outline h-8 w-8 animate-spin" />
+                                </div>
+                            )}
+                            <iframe
+                                src={previewUrl}
+                                title={doc.nombre ?? 'Documento'}
+                                className="h-full w-full rounded-lg"
+                                onLoad={() => setLoading(false)}
+                            />
+                        </div>
                     )}
                     {isImage && (
                         <div className="relative h-[70vh] w-full">
@@ -69,11 +112,11 @@ export function DocumentoPreviewModal({ doc, onClose }: { doc: PreviewDoc; onClo
                             />
                         </div>
                     )}
-                    {!isPdf && !isImage && (
+                    {isOfficeDoc && (
                         <div className="flex flex-col items-center gap-4 py-12 text-center">
                             <FileText className="text-cg-outline h-16 w-16" />
                             <p className="text-cg-on-surface-variant text-sm">
-                                Vista previa no disponible para este tipo de archivo.
+                                Vista previa no disponible para archivos de Office.
                             </p>
                             <a
                                 href={downloadUrl}

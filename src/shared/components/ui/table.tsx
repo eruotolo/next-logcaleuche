@@ -56,9 +56,10 @@ const TableRow = forwardRef<HTMLTableRowElement, HTMLAttributes<HTMLTableRowElem
 TableRow.displayName = 'TableRow';
 
 const TableHead = forwardRef<HTMLTableCellElement, ThHTMLAttributes<HTMLTableCellElement>>(
-    ({ className, ...props }, ref) => (
+    ({ className, scope = 'col', ...props }, ref) => (
         <th
             ref={ref}
+            scope={scope}
             className={cn(
                 'text-muted-foreground h-12 px-4 text-left align-middle font-medium [&:has([role=checkbox])]:pr-0',
                 className,

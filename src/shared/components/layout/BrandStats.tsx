@@ -52,10 +52,10 @@ export async function BrandStats() {
                     <Calendar size={16} />
                 </div>
                 <div className="ag-stat-value">
-                    {proximaTenida ? 'Próxima Tenida' : 'Sin Tenidas'}
+                    {proximaTenida?.fecha ? formatFechaTenida(proximaTenida.fecha) : '—'}
                 </div>
                 <div className="ag-stat-label">
-                    {proximaTenida?.fecha ? formatFechaTenida(proximaTenida.fecha) : '—'}
+                    {proximaTenida ? 'Próxima Tenida' : 'Sin Tenidas'}
                 </div>
             </div>
         </div>

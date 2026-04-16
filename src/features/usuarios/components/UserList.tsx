@@ -7,6 +7,8 @@ import Link from 'next/link';
 import { Briefcase, ChevronDown, GraduationCap, Key, UserCog, UserMinus } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog';
+
 import Image from 'next/image';
 
 import { Badge } from '@/shared/components/ui/badge';
@@ -71,6 +73,8 @@ export function UserList({
 
     const [selectedOficialidadId, setSelectedOficialidadId] = useState<number>(1);
     const [selectedGradoId, setSelectedGradoId] = useState<number>(1);
+    const [confirmDeactivate, setConfirmDeactivate] = useState<{ id: number; name: string } | null>(null);
+    const [confirmResetPwd, setConfirmResetPwd] = useState<{ id: number; name: string } | null>(null);
 
     const oficialidadModal = useModal<{ id: number; name: string }>();
     const gradoModal = useModal<{ id: number; name: string }>();
@@ -118,18 +122,24 @@ export function UserList({
             // Solo mostrar si hay al menos 1 opción de oficialidad
             minOptions: 1,
         },
+        {
+            label: 'Todos los estados',
+            options: [
+                { value: 'activo', label: 'Activos' },
+                { value: 'inactivo', label: 'Inactivos' },
+            ],
+            filterFn: (u, val) =>
+                val === 'activo' ? u.active !== false : u.active === false,
+        },
     ];
 
-    async function handleDeactivate(id: number, name: string) {
-        if (!confirm(`¿Estás seguro de inactivar a ${name}?`)) return;
+    async function handleDeactivate(id: number) {
         const res = await deactivateUsuario(id);
         if (res.success) toast.success('Usuario inactivado');
         else toast.error(res.error as string);
     }
 
-    async function handleResetPassword(id: number, name: string) {
-        if (!confirm(`¿Estás seguro de restablecer la contraseña de ${name} a la predeterminada?`))
-            return;
+    async function handleResetPassword(id: number) {
         const res = await resetPassword(id);
         if (res.success) toast.success('Contraseña restablecida');
         else toast.error(res.error as string);
@@ -336,7 +346,7 @@ export function UserList({
                                         <Button
                                             variant="outline"
                                             size="icon"
-                                            onClick={() => handleResetPassword(u.id, u.name ?? '')}
+                                            onClick={() => setConfirmResetPwd({ id: u.id, name: u.name ?? '' })}
                                         >
                                             <Key className="h-4 w-4 text-amber-600" />
                                         </Button>
@@ -345,7 +355,7 @@ export function UserList({
                                         <Button
                                             variant="outline"
                                             size="icon"
-                                            onClick={() => handleDeactivate(u.id, u.name ?? '')}
+                                            onClick={() => setConfirmDeactivate({ id: u.id, name: u.name ?? '' })}
                                         >
                                             <UserMinus className="h-4 w-4 text-red-600" />
                                         </Button>
@@ -500,6 +510,26 @@ export function UserList({
                     </div>
                 </Modal>
             )}
+
+            {/* Dialogs de confirmación */}
+            <ConfirmDialog
+                open={confirmDeactivate !== null}
+                onOpenChange={(open) => { if (!open) setConfirmDeactivate(null); }}
+                title="Inactivar hermano"
+                description={`¿Estás seguro de inactivar a ${confirmDeactivate?.name ?? ''}? Se restablecerá su contraseña a la predeterminada.`}
+                confirmLabel="Inactivar"
+                variant="danger"
+                onConfirm={() => handleDeactivate(confirmDeactivate!.id)}
+            />
+            <ConfirmDialog
+                open={confirmResetPwd !== null}
+                onOpenChange={(open) => { if (!open) setConfirmResetPwd(null); }}
+                title="Restablecer contraseña"
+                description={`¿Estás seguro de restablecer la contraseña de ${confirmResetPwd?.name ?? ''} a la predeterminada?`}
+                confirmLabel="Restablecer"
+                variant="warning"
+                onConfirm={() => handleResetPassword(confirmResetPwd!.id)}
+            />
         </>
     );
 }

@@ -8,6 +8,7 @@ import { Mail, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { type ColumnDef, DataTable, type FilterDef } from '@/shared/components/ui/data-table';
+import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog';
 import { Modal } from '@/shared/components/ui/modal';
 import { Tooltip } from '@/shared/components/ui/tooltip';
 import { useModal } from '@/shared/hooks/useModal';
@@ -62,6 +63,9 @@ interface TesoreriaTableProps {
     tipo: 'ingreso' | 'egreso';
     motivos?: { id: number; nombre: string }[];
     usuarios?: { id: number; name: string | null; lastName: string | null }[];
+    total?: number;
+    page?: number;
+    totalPages?: number;
 }
 
 function formatClp(val: unknown): string {
@@ -73,25 +77,14 @@ function ActionsCell({
     row,
     tipo,
     onEdit,
+    onDeleteRequest,
 }: {
     row: Row;
     tipo: 'ingreso' | 'egreso';
     onEdit: (row: Row) => void;
+    onDeleteRequest: (row: Row) => void;
 }) {
     const [isPending, startTransition] = useTransition();
-
-    function handleDelete() {
-        if (!confirm('¿Confirmas eliminar este registro?')) return;
-        startTransition(async () => {
-            const result =
-                tipo === 'ingreso' ? await deleteEntrada(row.id) : await deleteSalida(row.id);
-            if (result.success) {
-                toast.success('Registro eliminado.');
-            } else {
-                toast.error(result.error);
-            }
-        });
-    }
 
     function handleSendBoleta() {
         startTransition(async () => {
@@ -131,7 +124,7 @@ function ActionsCell({
                 <button
                     type="button"
                     disabled={isPending}
-                    onClick={handleDelete}
+                    onClick={() => onDeleteRequest(row)}
                     className="text-cg-outline hover:text-cg-error cursor-pointer rounded p-1.5 transition-colors hover:bg-[rgba(255,110,132,0.12)] disabled:opacity-50"
                 >
                     <Trash2 className="h-4 w-4" />
@@ -141,11 +134,21 @@ function ActionsCell({
     );
 }
 
-export function TesoreriaTable({ rows, tipo, motivos = [], usuarios = [] }: TesoreriaTableProps) {
+export function TesoreriaTable({
+    rows,
+    tipo,
+    motivos = [],
+    usuarios = [],
+    total = 0,
+    page: serverPage = 1,
+    totalPages = 1,
+}: TesoreriaTableProps) {
     const editModal = useModal<Row>();
     const router = useRouter();
-    // Estado de página elevado aquí para sobrevivir a router.refresh()
+    // Estado de página local para la paginación client-side del DataTable
     const [page, setPage] = useState(1);
+    const [confirmRow, setConfirmRow] = useState<Row | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // Años disponibles derivados de los datos (para filtro condicional)
     const anoOptions = useMemo(() => {
@@ -168,9 +171,25 @@ export function TesoreriaTable({ rows, tipo, motivos = [], usuarios = [] }: Teso
         },
     ];
 
+    function navigateToPage(newPage: number): void {
+        const params = new URLSearchParams(window.location.search);
+        params.set('page', String(newPage));
+        router.push(`?${params.toString()}`);
+    }
+
     function handleEditSuccess() {
         editModal.close();
         router.refresh();
+    }
+
+    async function handleDeleteConfirm() {
+        if (!confirmRow) return;
+        setIsDeleting(true);
+        const result =
+            tipo === 'ingreso' ? await deleteEntrada(confirmRow.id) : await deleteSalida(confirmRow.id);
+        setIsDeleting(false);
+        if (result.success) toast.success('Registro eliminado.');
+        else toast.error(result.error);
     }
 
     const columns: ColumnDef<Row>[] = [
@@ -213,7 +232,7 @@ export function TesoreriaTable({ rows, tipo, motivos = [], usuarios = [] }: Teso
         {
             header: 'Acciones',
             headerClassName: 'w-[100px] text-right',
-            cell: (r) => <ActionsCell row={r} tipo={tipo} onEdit={(row) => editModal.open(row)} />,
+            cell: (r) => <ActionsCell row={r} tipo={tipo} onEdit={(row) => editModal.open(row)} onDeleteRequest={(row) => setConfirmRow(row)} />,
         },
     ];
 
@@ -236,6 +255,7 @@ export function TesoreriaTable({ rows, tipo, motivos = [], usuarios = [] }: Teso
                 filters={filters}
                 emptyMessage="No hay registros."
                 emptyFilteredMessage="Sin resultados para los filtros aplicados."
+                pageSize={rows.length || 50}
                 mobileCard={(r) => (
                     <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
                         <div className="flex items-start justify-between gap-3">
@@ -268,6 +288,7 @@ export function TesoreriaTable({ rows, tipo, motivos = [], usuarios = [] }: Teso
                                         row={r}
                                         tipo={tipo}
                                         onEdit={(row) => editModal.open(row)}
+                                        onDeleteRequest={(row) => setConfirmRow(row)}
                                     />
                                 </div>
                             </div>
@@ -275,6 +296,37 @@ export function TesoreriaTable({ rows, tipo, motivos = [], usuarios = [] }: Teso
                     </div>
                 )}
             />
+
+            {/* Controles de paginación server-side */}
+            {totalPages > 1 && (
+                <div className="flex items-center justify-between border-t border-white/[0.06] pt-4">
+                    <p className="text-cg-outline text-sm">
+                        Total: <span className="text-cg-on-surface font-medium">{total.toLocaleString('es-CL')}</span> registros
+                    </p>
+                    <div className="flex items-center gap-3">
+                        <button
+                            type="button"
+                            disabled={serverPage <= 1}
+                            onClick={() => navigateToPage(serverPage - 1)}
+                            className="text-cg-on-surface-variant hover:text-cg-on-surface cursor-pointer rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-sm transition-colors hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                            Anterior
+                        </button>
+                        <span className="text-cg-outline text-sm">
+                            Página <span className="text-cg-on-surface font-medium">{serverPage}</span> de{' '}
+                            <span className="text-cg-on-surface font-medium">{totalPages}</span>
+                        </span>
+                        <button
+                            type="button"
+                            disabled={serverPage >= totalPages}
+                            onClick={() => navigateToPage(serverPage + 1)}
+                            className="text-cg-on-surface-variant hover:text-cg-on-surface cursor-pointer rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-sm transition-colors hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                            Siguiente
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {editingRow && tipo === 'ingreso' && (
                 <Modal
@@ -321,6 +373,17 @@ export function TesoreriaTable({ rows, tipo, motivos = [], usuarios = [] }: Teso
                     />
                 </Modal>
             )}
+
+            <ConfirmDialog
+                open={confirmRow !== null}
+                onOpenChange={(open) => { if (!open) setConfirmRow(null); }}
+                title="Eliminar registro"
+                description="¿Confirmas eliminar este registro?"
+                confirmLabel="Eliminar"
+                variant="danger"
+                onConfirm={handleDeleteConfirm}
+                isPending={isDeleting}
+            />
         </>
     );
 }

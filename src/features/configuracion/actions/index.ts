@@ -1,6 +1,7 @@
 'use server';
 
 import { requireSuperAdmin } from '@/shared/lib/auth-guards';
+import { auth } from '@/shared/lib/auth';
 import { prisma } from '@/shared/lib/db';
 
 import { ActivityLogsQuerySchema } from '../schemas';
@@ -57,5 +58,14 @@ export async function getActivityLogUsuarios() {
         where: { activityLogs: { some: {} } },
         select: { id: true, name: true, lastName: true, email: true },
         orderBy: { name: 'asc' },
+    });
+}
+
+export async function markOnboardingSeen(): Promise<void> {
+    const session = await auth();
+    if (!session?.user?.id) return;
+    await prisma.user.update({
+        where: { id: Number(session.user.id) },
+        data: { hasSeenOnboarding: true },
     });
 }
