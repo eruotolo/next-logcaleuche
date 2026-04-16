@@ -74,7 +74,7 @@ export async function GET(
     const fileBuffer = extractFirstFileFromZip(zipBuffer);
 
     const fileName = publicId.split('/').pop() ?? 'document.pdf';
-    const ext = fileName.split('.').pop()?.toLowerCase() ?? 'pdf';
+    const ext = fileName.split('.').pop()?.toLowerCase() ?? '';
     const mimeTypes: Record<string, string> = {
         pdf: 'application/pdf',
         doc: 'application/msword',
@@ -82,8 +82,16 @@ export async function GET(
         xls: 'application/vnd.ms-excel',
         xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     };
-    const contentType = mimeTypes[ext] ?? 'application/octet-stream';
-    const disposition = inline ? 'inline' : `attachment; filename="${fileName}"`;
+    // Detect PDF by magic bytes (%PDF = 0x25 0x50 0x44 0x46) as fallback for files
+    // uploaded before the roadmap that lack a .pdf extension in their public_id.
+    const isPdfByMagic =
+        fileBuffer[0] === 0x25 &&
+        fileBuffer[1] === 0x50 &&
+        fileBuffer[2] === 0x44 &&
+        fileBuffer[3] === 0x46;
+    const contentType = mimeTypes[ext] ?? (isPdfByMagic ? 'application/pdf' : 'application/octet-stream');
+    const displayName = ext ? fileName : `${fileName}.pdf`;
+    const disposition = inline ? 'inline' : `attachment; filename="${displayName}"`;
 
     return new Response(new Uint8Array(fileBuffer), {
         headers: {
