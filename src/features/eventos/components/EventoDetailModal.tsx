@@ -157,7 +157,7 @@ const RSVP_OPTIONS: { value: RsvpEstado; label: string; icon: LucideIcon; color:
         },
         {
             value: 'tentativo',
-            label: 'Tentativo',
+            label: 'Sin Ágape',
             icon: HelpCircle,
             color: 'text-[#f29c13] border-[#f29c13]/40 hover:bg-[#f29c13]/10',
         },
@@ -171,7 +171,7 @@ const RSVP_OPTIONS: { value: RsvpEstado; label: string; icon: LucideIcon; color:
 
 const ESTADO_LABEL: Record<string, string> = {
     confirmado: 'Confirmado',
-    tentativo: 'Tentativo',
+    tentativo: 'Sin Ágape',
     no_asiste: 'No asiste',
 };
 

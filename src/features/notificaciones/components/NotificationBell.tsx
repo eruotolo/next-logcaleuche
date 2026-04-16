@@ -21,6 +21,8 @@ const TYPE_COLORS: Record<string, string> = {
     feed: 'bg-[rgba(90,103,216,0.6)]',
     comment: 'bg-[rgba(65,166,90,0.6)]',
     evento: 'bg-[rgba(242,156,19,0.6)]',
+    biblioteca: 'bg-[rgba(41,128,185,0.6)]',
+    trazado: 'bg-[rgba(142,68,173,0.6)]',
 };
 
 export function NotificationBell({ initialCount, initialNotifications }: NotificationBellProps) {

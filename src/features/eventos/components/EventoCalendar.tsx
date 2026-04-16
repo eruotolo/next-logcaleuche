@@ -2,13 +2,14 @@
 
 import { useState } from 'react';
 
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { CheckCircle, ChevronLeft, ChevronRight, HelpCircle, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog';
+import { Tooltip } from '@/shared/components/ui/tooltip';
 import { UpcomingEventsList } from '@/shared/components/UpcomingEventsList';
 
-import { deleteEvento } from '../actions';
+import { deleteEvento, type AsistenciaItem } from '../actions';
 import { EventoDetailModal } from './EventoDetailModal';
 
 type EventoItem = {
@@ -27,6 +28,7 @@ interface EventoCalendarProps {
     isAdmin: boolean;
     grados?: { id: number; nombre: string }[];
     tiposActividad?: { id: number; nombre: string }[];
+    nextEventAsistencia?: AsistenciaItem[];
 }
 
 const DAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
@@ -62,6 +64,77 @@ const categoryColors: Record<number, { bg: string; text: string; border: string 
         border: 'border-cg-tertiary-tonal/30',
     },
 };
+
+const RSVP_CONFIG = [
+    {
+        estado: 'confirmado',
+        label: 'Asisten',
+        Icon: CheckCircle,
+        color: 'text-[#41a65a]',
+        bg: 'bg-[#41a65a]/10',
+        border: 'border-[#41a65a]/20',
+    },
+    {
+        estado: 'tentativo',
+        label: 'Asisten Sin Ágape',
+        Icon: HelpCircle,
+        color: 'text-[#f29c13]',
+        bg: 'bg-[#f29c13]/10',
+        border: 'border-[#f29c13]/20',
+    },
+    {
+        estado: 'no_asiste',
+        label: 'No Asisten',
+        Icon: XCircle,
+        color: 'text-[#ff6e84]',
+        bg: 'bg-[#ff6e84]/10',
+        border: 'border-[#ff6e84]/20',
+    },
+] as const;
+
+function NextEventRsvpCounts({ asistencias }: { asistencias: AsistenciaItem[] }) {
+    if (asistencias.length === 0) return null;
+
+    const grouped: Record<string, AsistenciaItem[]> = {
+        confirmado: asistencias.filter((a) => a.estado === 'confirmado'),
+        tentativo: asistencias.filter((a) => a.estado === 'tentativo'),
+        no_asiste: asistencias.filter((a) => a.estado === 'no_asiste'),
+    };
+
+    return (
+        <div className="flex flex-wrap items-center gap-1.5 pt-1">
+            {RSVP_CONFIG.map(({ estado, label, Icon, color, bg, border }) => {
+                const items = grouped[estado] ?? [];
+                const tooltipContent = (
+                    <div className="min-w-[120px] space-y-1">
+                        <p className="text-cg-outline mb-1 text-[10px] font-bold tracking-widest uppercase">
+                            {label}
+                        </p>
+                        {items.length === 0 ? (
+                            <p className="text-cg-outline italic">Sin registros</p>
+                        ) : (
+                            items.map((a) => (
+                                <p key={a.userId} className="text-cg-on-surface-variant">
+                                    {[a.user.name, a.user.lastName].filter(Boolean).join(' ')}
+                                </p>
+                            ))
+                        )}
+                    </div>
+                );
+                return (
+                    <Tooltip key={estado} content={tooltipContent} side="bottom" delayDuration={100}>
+                        <span
+                            className={`inline-flex cursor-default items-center gap-1 rounded-full border ${border} ${bg} px-2 py-0.5 text-[10px] font-semibold ${color}`}
+                        >
+                            <Icon className="h-3 w-3" />
+                            {items.length}
+                        </span>
+                    </Tooltip>
+                );
+            })}
+        </div>
+    );
+}
 
 function getMonthDays(year: number, month: number) {
     const firstDay = new Date(year, month, 1);
@@ -112,7 +185,7 @@ function isSameDay(dbDate: Date, localDate: Date) {
     );
 }
 
-export function EventoCalendar({ eventos, isAdmin, grados = [], tiposActividad = [] }: EventoCalendarProps) {
+export function EventoCalendar({ eventos, isAdmin, grados = [], tiposActividad = [], nextEventAsistencia = [] }: EventoCalendarProps) {
     const today = new Date();
     const [currentMonth, setCurrentMonth] = useState(today.getMonth());
     const [currentYear, setCurrentYear] = useState(today.getFullYear());
@@ -322,6 +395,7 @@ export function EventoCalendar({ eventos, isAdmin, grados = [], tiposActividad =
                                         {nextEvent.grado.nombre}
                                     </span>
                                 )}
+                                <NextEventRsvpCounts asistencias={nextEventAsistencia} />
                             </div>
                         </button>
                     )}

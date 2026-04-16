@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 
 import type { Metadata } from 'next';
 
-import { getEventosCalendario, getGrados, getTiposActividad } from '@/features/eventos/actions';
+import { getAsistenciaEvento, getEventosCalendario, getGrados, getTiposActividad } from '@/features/eventos/actions';
 import { EventoCalendar } from '@/features/eventos/components/EventoCalendar';
 import { EventosAdminToolbar } from '@/features/eventos/components/EventosAdminToolbar';
 
@@ -25,6 +25,13 @@ export default async function EventosPage() {
         isAdmin ? getTiposActividad() : Promise.resolve([]),
     ]);
 
+    const todayUTC = Date.UTC(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
+    const nextEventId = eventos
+        .filter((e) => e.fecha && new Date(e.fecha).getTime() >= todayUTC)
+        .sort((a, b) => new Date(a.fecha ?? 0).getTime() - new Date(b.fecha ?? 0).getTime())[0]?.id;
+
+    const nextEventAsistencia = nextEventId ? await getAsistenciaEvento(nextEventId) : [];
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
@@ -39,7 +46,7 @@ export default async function EventosPage() {
                 {isAdmin && <EventosAdminToolbar grados={grados} tiposActividad={tiposActividad} />}
             </div>
 
-            <EventoCalendar eventos={eventos} isAdmin={isAdmin} grados={grados} tiposActividad={tiposActividad} />
+            <EventoCalendar eventos={eventos} isAdmin={isAdmin} grados={grados} tiposActividad={tiposActividad} nextEventAsistencia={nextEventAsistencia} />
         </div>
     );
 }

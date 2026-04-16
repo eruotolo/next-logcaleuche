@@ -12,6 +12,8 @@ import { uploadToCloudinary } from '@/shared/lib/cloudinary-upload';
 import { prisma } from '@/shared/lib/db';
 import type { ActionResult } from '@/shared/types/actions';
 
+import { createNotifications } from '@/features/notificaciones/actions';
+
 import { DocumentoSchema, LibroSchema, TrazadoSchema } from '../schemas';
 
 // ── BIBLIOTECA ────────────────────────────────────────────────────────────
@@ -71,6 +73,36 @@ export async function createLibro(
         entityId: libro.id,
         description: `Agregó libro "${parsed.data.nombre}" a biblioteca (grado ${parsed.data.grado})`,
     });
+
+    // Notificar a usuarios según grado del documento (silencioso)
+    try {
+        const gradoId = parsed.data.grado;
+        const gradoWhere =
+            gradoId === 1
+                ? { gradoId: 1 }
+                : gradoId === 2
+                  ? { gradoId: { in: [1, 2] } }
+                  : {};
+
+        const targetUsers = await prisma.user.findMany({
+            where: { active: true, ...gradoWhere },
+            select: { id: true },
+        });
+
+        const userIds = targetUsers
+            .map((u) => u.id)
+            .filter((id) => id !== Number.parseInt(session.user.id, 10));
+
+        await createNotifications(
+            userIds,
+            'biblioteca',
+            'Nuevo libro en Biblioteca',
+            parsed.data.nombre,
+            `/${gradoId === 1 ? 'aprendiz' : gradoId === 2 ? 'companero' : 'maestro'}/biblioteca`,
+        );
+    } catch {
+        // Notificaciones no son críticas
+    }
 
     revalidatePath('/aprendiz/biblioteca');
     revalidatePath('/companero/biblioteca');
@@ -208,6 +240,36 @@ export async function createTrazado(
         entityId: trazado.id,
         description: `Subió trazado "${parsed.data.nombre}" (grado ${parsed.data.grado})`,
     });
+
+    // Notificar a usuarios según grado del documento (silencioso)
+    try {
+        const gradoId = parsed.data.grado;
+        const gradoWhere =
+            gradoId === 1
+                ? { gradoId: 1 }
+                : gradoId === 2
+                  ? { gradoId: { in: [1, 2] } }
+                  : {};
+
+        const targetUsers = await prisma.user.findMany({
+            where: { active: true, ...gradoWhere },
+            select: { id: true },
+        });
+
+        const userIds = targetUsers
+            .map((u) => u.id)
+            .filter((id) => id !== Number.parseInt(session.user.id, 10));
+
+        await createNotifications(
+            userIds,
+            'trazado',
+            'Nuevo trazado disponible',
+            parsed.data.nombre,
+            `/${gradoId === 1 ? 'aprendiz' : gradoId === 2 ? 'companero' : 'maestro'}/trazados`,
+        );
+    } catch {
+        // Notificaciones no son críticas
+    }
 
     revalidatePath('/aprendiz/trazados');
     revalidatePath('/companero/trazados');
