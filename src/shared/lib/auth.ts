@@ -1,5 +1,7 @@
+import type { Prisma } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import NextAuth from 'next-auth';
+import type { User } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import { z } from 'zod';
 
@@ -15,6 +17,78 @@ const loginSchema = z.object({
     identifier: z.string().min(1),
     password: z.string().min(6),
 });
+
+const userInclude = {
+    grado: true,
+    oficialidad: true,
+    category: true,
+} satisfies Prisma.UserInclude;
+
+type UserWithRelations = Prisma.UserGetPayload<{ include: typeof userInclude }>;
+
+function mapUserToSession(user: UserWithRelations): User {
+    return {
+        id: String(user.id),
+        email: user.email,
+        name: `${user.name ?? ''} ${user.lastName ?? ''}`.trim(),
+        image: user.image ?? null,
+        rut: user.username,
+        grado: user.gradoId ?? 1,
+        gradoNombre: user.grado?.nombre ?? 'Aprendiz',
+        oficialidad: user.oficialidadId ?? 1,
+        oficialidadNombre: user.oficialidad?.nombre ?? 'Ninguno',
+        categoryId: user.categoryId ?? 3,
+        categoryNombre: user.category?.nombre ?? 'Usuario',
+        active: user.active,
+    };
+}
+
+async function authorizeTwoFactorStep(rawUserId: string): Promise<User | null> {
+    const userId = Number(rawUserId);
+    if (Number.isNaN(userId)) return null;
+
+    const user = await prisma.user.findUnique({
+        where: { id: userId, active: true },
+        include: userInclude,
+    });
+    if (!user) return null;
+
+    return mapUserToSession(user);
+}
+
+async function authorizeCredentials(
+    credentials: Partial<Record<string, unknown>>,
+): Promise<User | null> {
+    const parsed = loginSchema.safeParse(credentials);
+    if (!parsed.success) return null;
+
+    const { identifier: rawIdentifier, password } = parsed.data;
+
+    const isEmail = rawIdentifier.includes('@');
+    const identifier = isEmail ? rawIdentifier : cleanRut(rawIdentifier);
+
+    const user = await prisma.user.findUnique({
+        where: isEmail ? { email: identifier } : { username: identifier },
+        include: userInclude,
+    });
+
+    if (!user || !user.active) return null;
+
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) return null;
+
+    if (user.twoFactorEnabled) {
+        const tempToken = crypto.randomUUID();
+        const expiry = new Date(Date.now() + 5 * 60 * 1000);
+        await prisma.user.update({
+            where: { id: user.id },
+            data: { twoFactorTempToken: tempToken, twoFactorTempExpiry: expiry },
+        });
+        throw new Error(`TWO_FACTOR_REQUIRED:${tempToken}`);
+    }
+
+    return mapUserToSession(user);
+}
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
     session: {
@@ -36,84 +110,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 userId: { label: 'User ID (2FA step 2)', type: 'text' },
             },
             async authorize(credentials) {
-                // ── 2FA step 2: bypass password — ID already verified by verify2FALogin ──
                 if (credentials?.userId) {
-                    const userId = Number(credentials.userId);
-                    if (Number.isNaN(userId)) return null;
-
-                    const user = await prisma.user.findUnique({
-                        where: { id: userId, active: true },
-                        include: { grado: true, oficialidad: true, category: true },
-                    });
-                    if (!user) return null;
-
-                    return {
-                        id: String(user.id),
-                        email: user.email,
-                        name: `${user.name ?? ''} ${user.lastName ?? ''}`.trim(),
-                        image: user.image ?? null,
-                        rut: user.username,
-                        grado: user.gradoId ?? 1,
-                        gradoNombre: user.grado?.nombre ?? 'Aprendiz',
-                        oficialidad: user.oficialidadId ?? 1,
-                        oficialidadNombre: user.oficialidad?.nombre ?? 'Ninguno',
-                        categoryId: user.categoryId ?? 3,
-                        categoryNombre: user.category?.nombre ?? 'Usuario',
-                        active: user.active,
-                    };
+                    return authorizeTwoFactorStep(String(credentials.userId));
                 }
-
-                // ── Step 1: normal email/RUT + password flow ──────────────────────────────
-                const parsed = loginSchema.safeParse(credentials);
-                if (!parsed.success) return null;
-
-                const { identifier: rawIdentifier, password } = parsed.data;
-
-                // Detectar si es email (contiene @) o RUT (username en BD)
-                const isEmail = rawIdentifier.includes('@');
-                const identifier = isEmail ? rawIdentifier : cleanRut(rawIdentifier);
-
-                const user = await prisma.user.findUnique({
-                    where: isEmail ? { email: identifier } : { username: identifier },
-                    include: {
-                        grado: true,
-                        oficialidad: true,
-                        category: true,
-                    },
-                    // Include 2FA fields for the gate check below
-                });
-
-                if (!user || !user.active) return null;
-
-                const passwordMatch = await bcrypt.compare(password, user.password);
-                if (!passwordMatch) return null;
-
-                // ── 2FA gate: issue a temp token and block normal JWT issuance ────────────
-                if (user.twoFactorEnabled) {
-                    const tempToken = crypto.randomUUID();
-                    const expiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
-                    await prisma.user.update({
-                        where: { id: user.id },
-                        data: { twoFactorTempToken: tempToken, twoFactorTempExpiry: expiry },
-                    });
-                    // Throwing a plain Error (not AuthError) lets loginAction catch it cleanly
-                    throw new Error(`TWO_FACTOR_REQUIRED:${tempToken}`);
-                }
-
-                return {
-                    id: String(user.id),
-                    email: user.email,
-                    name: `${user.name ?? ''} ${user.lastName ?? ''}`.trim(),
-                    image: user.image ?? null,
-                    rut: user.username,
-                    grado: user.gradoId ?? 1,
-                    gradoNombre: user.grado?.nombre ?? 'Aprendiz',
-                    oficialidad: user.oficialidadId ?? 1,
-                    oficialidadNombre: user.oficialidad?.nombre ?? 'Ninguno',
-                    categoryId: user.categoryId ?? 3,
-                    categoryNombre: user.category?.nombre ?? 'Usuario',
-                    active: user.active,
-                };
+                return authorizeCredentials(credentials ?? {});
             },
         }),
     ],
