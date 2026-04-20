@@ -117,6 +117,10 @@ export default async function IngresosPage({
                 total={entradasResult.total}
                 page={entradasResult.page}
                 totalPages={entradasResult.totalPages}
+                anos={entradasResult.anos}
+                initialSearch={sp.search}
+                initialMes={sp.mes}
+                initialAno={sp.ano}
             />
         </div>
     );

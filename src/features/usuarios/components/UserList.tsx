@@ -1,20 +1,21 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
+import Image from 'next/image';
 import Link from 'next/link';
 
-import { Briefcase, ChevronDown, GraduationCap, Key, UserCog, UserMinus } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+
+import { Briefcase, ChevronDown, GraduationCap, Key, Search, UserCog, UserMinus } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog';
-
-import Image from 'next/image';
-
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
-import { type ColumnDef, DataTable, type FilterDef } from '@/shared/components/ui/data-table';
+import { type ColumnDef, DataTable } from '@/shared/components/ui/data-table';
 import { Modal } from '@/shared/components/ui/modal';
+import { TablePagination } from '@/shared/components/ui/table-pagination';
 import { Tooltip } from '@/shared/components/ui/tooltip';
 import { useModal } from '@/shared/hooks/useModal';
 import { getCloudinaryRawImageUrl } from '@/shared/lib/cloudinary';
@@ -38,8 +39,16 @@ interface UserListProps {
     grados?: { id: number; nombre: string }[];
     oficiales?: { id: number; nombre: string }[];
     categories?: { id: number; nombre: string }[];
-    /** ID de categoría del usuario autenticado (para mostrar botón Ver a categoryId=4) */
+    /** ID de categoría del usuario autenticado */
     categoryId?: number;
+    // Paginación server-side
+    total?: number;
+    page?: number;
+    totalPages?: number;
+    initialSearch?: string;
+    initialGrado?: string;
+    initialOficialidad?: string;
+    initialActive?: string;
 }
 
 export function UserList({
@@ -49,9 +58,25 @@ export function UserList({
     oficiales = [],
     categories = [],
     categoryId,
+    total = 0,
+    page = 1,
+    totalPages = 1,
+    initialSearch = '',
+    initialGrado = '',
+    initialOficialidad = '',
+    initialActive = '',
 }: UserListProps) {
     const isAdmin = currentUserCategory <= 2;
     const isViewOnly = (categoryId ?? currentUserCategory) === 3;
+    const isSuperAdmin = currentUserCategory === 1;
+
+    const router = useRouter();
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const [searchValue, setSearchValue] = useState(initialSearch);
+    const [gradoValue, setGradoValue] = useState(initialGrado);
+    const [oficialidadValue, setOficialidadValue] = useState(initialOficialidad);
+    const [activeValue, setActiveValue] = useState(initialActive);
 
     const [categoryDropdownUserId, setCategoryDropdownUserId] = useState<number | null>(null);
     const categoryDropdownRef = useRef<HTMLDivElement>(null);
@@ -79,59 +104,44 @@ export function UserList({
     const oficialidadModal = useModal<{ id: number; name: string }>();
     const gradoModal = useModal<{ id: number; name: string }>();
 
-    // Opciones únicas de grado derivadas de los datos
-    const gradoFilterOptions = useMemo(() => {
-        const seen = new Set<number>();
-        return usuarios
-            .filter((u) => {
-                if (!u.gradoId || seen.has(u.gradoId)) return false;
-                seen.add(u.gradoId);
-                return true;
-            })
-            .map((u) => ({ value: u.gradoId as number, label: u.grado?.nombre as string }))
-            .sort((a, b) => a.value - b.value);
-    }, [usuarios]);
+    function pushParams(updates: Record<string, string | undefined>): void {
+        const params = new URLSearchParams(window.location.search);
+        for (const [k, v] of Object.entries(updates)) {
+            if (v) params.set(k, v);
+            else params.delete(k);
+        }
+        params.delete('page');
+        router.push(`?${params.toString()}`);
+    }
 
-    // Opciones únicas de oficialidad derivadas de los datos (excluye oficialidadId <= 1)
-    const oficialidadFilterOptions = useMemo(() => {
-        const seen = new Set<number>();
-        return usuarios
-            .filter((u) => {
-                if (!u.oficialidadId || u.oficialidadId <= 1 || seen.has(u.oficialidadId))
-                    return false;
-                seen.add(u.oficialidadId);
-                return true;
-            })
-            .map((u) => ({
-                value: u.oficialidadId as number,
-                label: u.oficialidad?.nombre as string,
-            }))
-            .sort((a, b) => a.value - b.value);
-    }, [usuarios]);
+    function handleSearchChange(value: string): void {
+        setSearchValue(value);
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => {
+            pushParams({ search: value || undefined });
+        }, 400);
+    }
 
-    const filters: FilterDef<Usuario>[] = [
-        {
-            label: 'Todos los grados',
-            options: gradoFilterOptions,
-            filterFn: (u, val) => u.gradoId === val,
-        },
-        {
-            label: 'Todas las oficialidades',
-            options: oficialidadFilterOptions,
-            filterFn: (u, val) => u.oficialidadId === val,
-            // Solo mostrar si hay al menos 1 opción de oficialidad
-            minOptions: 1,
-        },
-        {
-            label: 'Todos los estados',
-            options: [
-                { value: 'activo', label: 'Activos' },
-                { value: 'inactivo', label: 'Inactivos' },
-            ],
-            filterFn: (u, val) =>
-                val === 'activo' ? u.active !== false : u.active === false,
-        },
-    ];
+    function handleGradoChange(value: string): void {
+        setGradoValue(value);
+        pushParams({ gradoId: value || undefined });
+    }
+
+    function handleOficialidadChange(value: string): void {
+        setOficialidadValue(value);
+        pushParams({ oficialidadId: value || undefined });
+    }
+
+    function handleActiveChange(value: string): void {
+        setActiveValue(value);
+        pushParams({ active: value || undefined });
+    }
+
+    function navigateToPage(newPage: number): void {
+        const params = new URLSearchParams(window.location.search);
+        params.set('page', String(newPage));
+        router.push(`?${params.toString()}`);
+    }
 
     async function handleDeactivate(id: number) {
         const res = await deactivateUsuario(id);
@@ -173,6 +183,11 @@ export function UserList({
             toast.error(res.error as string);
         }
     }
+
+    const hasActiveFilter = searchValue || gradoValue || oficialidadValue || activeValue;
+
+    // Opciones de oficialidad del prop (excluye id <= 1)
+    const oficialidadOptions = oficiales.filter((o) => o.id > 1);
 
     const columns: ColumnDef<Usuario>[] = [
         {
@@ -362,7 +377,6 @@ export function UserList({
                                     </Tooltip>
                                 </>
                             )}
-
                         </>
                     )}
                 </div>
@@ -372,17 +386,68 @@ export function UserList({
 
     return (
         <>
+            {/* Barra de búsqueda y filtros — server-side */}
+            <div className="mb-4 flex flex-wrap items-center gap-3">
+                <div className="relative min-w-[200px] flex-1">
+                    <Search className="text-cg-outline absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+                    <input
+                        type="text"
+                        placeholder="Buscar por nombre, email o RUT…"
+                        value={searchValue}
+                        onChange={(e) => handleSearchChange(e.target.value)}
+                        className="text-cg-on-surface placeholder:text-cg-outline h-9 w-full rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] pr-3 pl-9 text-sm focus:ring-1 focus:ring-[rgba(90,103,216,0.5)] focus:outline-none"
+                    />
+                </div>
+                {grados.length > 0 && (
+                    <select
+                        value={gradoValue}
+                        onChange={(e) => handleGradoChange(e.target.value)}
+                        className="text-cg-on-surface-variant h-9 rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(20,20,35,0.9)] px-3 text-sm focus:ring-1 focus:ring-[rgba(90,103,216,0.5)] focus:outline-none"
+                    >
+                        <option value="">Todos los grados</option>
+                        {grados.map((g) => (
+                            <option key={g.id} value={String(g.id)}>
+                                {g.nombre}
+                            </option>
+                        ))}
+                    </select>
+                )}
+                {oficialidadOptions.length > 0 && (
+                    <select
+                        value={oficialidadValue}
+                        onChange={(e) => handleOficialidadChange(e.target.value)}
+                        className="text-cg-on-surface-variant h-9 rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(20,20,35,0.9)] px-3 text-sm focus:ring-1 focus:ring-[rgba(90,103,216,0.5)] focus:outline-none"
+                    >
+                        <option value="">Todas las oficialidades</option>
+                        {oficialidadOptions.map((o) => (
+                            <option key={o.id} value={String(o.id)}>
+                                {o.nombre}
+                            </option>
+                        ))}
+                    </select>
+                )}
+                {isSuperAdmin && (
+                    <select
+                        value={activeValue}
+                        onChange={(e) => handleActiveChange(e.target.value)}
+                        className="text-cg-on-surface-variant h-9 rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(20,20,35,0.9)] px-3 text-sm focus:ring-1 focus:ring-[rgba(90,103,216,0.5)] focus:outline-none"
+                    >
+                        <option value="">Todos los estados</option>
+                        <option value="activo">Activos</option>
+                        <option value="inactivo">Inactivos</option>
+                    </select>
+                )}
+                {hasActiveFilter && (
+                    <span className="text-cg-outline text-xs">
+                        {total.toLocaleString('es-CL')} resultado{total !== 1 ? 's' : ''}
+                    </span>
+                )}
+            </div>
+
             <DataTable
                 data={usuarios}
                 columns={columns}
                 keyExtractor={(u) => u.id}
-                searchPlaceholder="Buscar por nombre, email o RUT…"
-                searchFn={(u, q) =>
-                    `${u.name} ${u.lastName}`.toLowerCase().includes(q) ||
-                    u.email?.toLowerCase().includes(q) ||
-                    u.username?.toLowerCase().includes(q)
-                }
-                filters={filters}
                 emptyMessage="No se encontraron miembros activos."
                 emptyFilteredMessage="Sin resultados para los filtros aplicados."
                 mobileCard={(u) => (
@@ -451,7 +516,18 @@ export function UserList({
                 )}
             />
 
-            {/* Modal cambio de grado — fuera del DataTable */}
+            {/* Paginación server-side */}
+            {totalPages > 1 && (
+                <div className="border-t border-white/[0.06] pt-4">
+                    <TablePagination
+                        currentPage={page}
+                        totalPages={totalPages}
+                        onPageChange={navigateToPage}
+                    />
+                </div>
+            )}
+
+            {/* Modal cambio de grado */}
             {gradoModal.data && (
                 <Modal
                     open={gradoModal.isOpen}
@@ -481,7 +557,7 @@ export function UserList({
                 </Modal>
             )}
 
-            {/* Modal asignación de oficialidad — fuera del DataTable */}
+            {/* Modal asignación de oficialidad */}
             {oficialidadModal.data && (
                 <Modal
                     open={oficialidadModal.isOpen}
@@ -519,7 +595,7 @@ export function UserList({
                 description={`¿Estás seguro de inactivar a ${confirmDeactivate?.name ?? ''}? Se restablecerá su contraseña a la predeterminada.`}
                 confirmLabel="Inactivar"
                 variant="danger"
-                onConfirm={() => handleDeactivate(confirmDeactivate!.id)}
+                onConfirm={() => handleDeactivate(confirmDeactivate?.id ?? 0)}
             />
             <ConfirmDialog
                 open={confirmResetPwd !== null}
@@ -528,7 +604,7 @@ export function UserList({
                 description={`¿Estás seguro de restablecer la contraseña de ${confirmResetPwd?.name ?? ''} a la predeterminada?`}
                 confirmLabel="Restablecer"
                 variant="warning"
-                onConfirm={() => handleResetPassword(confirmResetPwd!.id)}
+                onConfirm={() => handleResetPassword(confirmResetPwd?.id ?? 0)}
             />
         </>
     );

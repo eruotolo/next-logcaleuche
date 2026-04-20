@@ -1,13 +1,13 @@
 'use client';
 
-import { useMemo, useState, useTransition } from 'react';
+import { useRef, useState, useTransition } from 'react';
 
 import { useRouter } from 'next/navigation';
 
-import { Mail, Pencil, Trash2 } from 'lucide-react';
+import { Mail, Pencil, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { type ColumnDef, DataTable, type FilterDef } from '@/shared/components/ui/data-table';
+import { type ColumnDef, DataTable } from '@/shared/components/ui/data-table';
 import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog';
 import { Modal } from '@/shared/components/ui/modal';
 import { Tooltip } from '@/shared/components/ui/tooltip';
@@ -66,6 +66,10 @@ interface TesoreriaTableProps {
     total?: number;
     page?: number;
     totalPages?: number;
+    anos?: string[];
+    initialSearch?: string;
+    initialMes?: string;
+    initialAno?: string;
 }
 
 function formatClp(val: unknown): string {
@@ -142,34 +146,47 @@ export function TesoreriaTable({
     total = 0,
     page: serverPage = 1,
     totalPages = 1,
+    anos = [],
+    initialSearch = '',
+    initialMes = '',
+    initialAno = '',
 }: TesoreriaTableProps) {
     const editModal = useModal<Row>();
     const router = useRouter();
-    // Estado de página local para la paginación client-side del DataTable
-    const [page, setPage] = useState(1);
     const [confirmRow, setConfirmRow] = useState<Row | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const [searchValue, setSearchValue] = useState(initialSearch);
+    const [mesValue, setMesValue] = useState(initialMes);
+    const [anoValue, setAnoValue] = useState(initialAno);
 
-    // Años disponibles derivados de los datos (para filtro condicional)
-    const anoOptions = useMemo(() => {
-        const years = [...new Set(rows.map((r) => r.ano).filter(Boolean))].sort().reverse();
-        return (years as string[]).map((a) => ({ value: a, label: a }));
-    }, [rows]);
+    function pushParams(updates: Record<string, string | undefined>): void {
+        const params = new URLSearchParams(window.location.search);
+        for (const [k, v] of Object.entries(updates)) {
+            if (v) params.set(k, v);
+            else params.delete(k);
+        }
+        params.delete('page');
+        router.push(`?${params.toString()}`);
+    }
 
-    const filters: FilterDef<Row>[] = [
-        {
-            label: 'Todos los meses',
-            options: MESES.map((m) => ({ value: m, label: m })),
-            filterFn: (r, val) => r.mes === val,
-        },
-        {
-            label: 'Todos los años',
-            options: anoOptions,
-            filterFn: (r, val) => r.ano === val,
-            // Solo mostrar el select de año cuando hay más de 1 año disponible
-            minOptions: 2,
-        },
-    ];
+    function handleSearchChange(value: string): void {
+        setSearchValue(value);
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => {
+            pushParams({ search: value || undefined });
+        }, 400);
+    }
+
+    function handleMesChange(value: string): void {
+        setMesValue(value);
+        pushParams({ mes: value || undefined });
+    }
+
+    function handleAnoChange(value: string): void {
+        setAnoValue(value);
+        pushParams({ ano: value || undefined });
+    }
 
     function navigateToPage(newPage: number): void {
         const params = new URLSearchParams(window.location.search);
@@ -236,23 +253,60 @@ export function TesoreriaTable({
         },
     ];
 
+    const hasActiveFilter = searchValue || mesValue || anoValue;
     const editingRow = editModal.data;
 
     return (
         <>
+            {/* Barra de búsqueda y filtros — server-side */}
+            <div className="mb-4 flex flex-wrap items-center gap-3">
+                <div className="relative min-w-[200px] flex-1">
+                    <Search className="text-cg-outline absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+                    <input
+                        type="text"
+                        placeholder="Buscar por miembro o motivo…"
+                        value={searchValue}
+                        onChange={(e) => handleSearchChange(e.target.value)}
+                        className="text-cg-on-surface placeholder:text-cg-outline h-9 w-full rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] pr-3 pl-9 text-sm focus:ring-1 focus:ring-[rgba(90,103,216,0.5)] focus:outline-none"
+                    />
+                </div>
+                <select
+                    value={mesValue}
+                    onChange={(e) => handleMesChange(e.target.value)}
+                    className="text-cg-on-surface-variant h-9 rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(20,20,35,0.9)] px-3 text-sm focus:ring-1 focus:ring-[rgba(90,103,216,0.5)] focus:outline-none"
+                >
+                    <option value="">Todos los meses</option>
+                    {MESES.map((m) => (
+                        <option key={m} value={m}>
+                            {m}
+                        </option>
+                    ))}
+                </select>
+                {anos.length > 1 && (
+                    <select
+                        value={anoValue}
+                        onChange={(e) => handleAnoChange(e.target.value)}
+                        className="text-cg-on-surface-variant h-9 rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(20,20,35,0.9)] px-3 text-sm focus:ring-1 focus:ring-[rgba(90,103,216,0.5)] focus:outline-none"
+                    >
+                        <option value="">Todos los años</option>
+                        {anos.map((a) => (
+                            <option key={a} value={a}>
+                                {a}
+                            </option>
+                        ))}
+                    </select>
+                )}
+                {hasActiveFilter && (
+                    <span className="text-cg-outline text-xs">
+                        {total.toLocaleString('es-CL')} resultado{total !== 1 ? 's' : ''}
+                    </span>
+                )}
+            </div>
+
             <DataTable
                 data={rows}
                 columns={columns}
                 keyExtractor={(r) => r.id}
-                page={page}
-                onPageChange={setPage}
-                searchPlaceholder="Buscar por miembro o motivo…"
-                searchFn={(r, q) => {
-                    const miembro = `${r.user?.name ?? ''} ${r.user?.lastName ?? ''}`.toLowerCase();
-                    const motivo = r.motivo?.nombre?.toLowerCase() ?? '';
-                    return miembro.includes(q) || motivo.includes(q);
-                }}
-                filters={filters}
                 emptyMessage="No hay registros."
                 emptyFilteredMessage="Sin resultados para los filtros aplicados."
                 pageSize={rows.length || 50}
@@ -297,7 +351,7 @@ export function TesoreriaTable({
                 )}
             />
 
-            {/* Controles de paginación server-side */}
+            {/* Paginación server-side */}
             {totalPages > 1 && (
                 <div className="flex items-center justify-between border-t border-white/[0.06] pt-4">
                     <p className="text-cg-outline text-sm">

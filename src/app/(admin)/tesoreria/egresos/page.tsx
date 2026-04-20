@@ -93,6 +93,10 @@ export default async function EgresosPage({
                 total={salidasResult.total}
                 page={salidasResult.page}
                 totalPages={salidasResult.totalPages}
+                anos={salidasResult.anos}
+                initialSearch={sp.search}
+                initialMes={sp.mes}
+                initialAno={sp.ano}
             />
         </div>
     );

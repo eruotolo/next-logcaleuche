@@ -15,6 +15,9 @@ import { uploadToCloudinary } from '@/shared/lib/cloudinary-upload';
 import { prisma } from '@/shared/lib/db';
 import { generateUniqueSlug } from '@/shared/lib/slugs';
 import type { ActionResult } from '@/shared/types/actions';
+import type { PagedResult } from '@/shared/types/pagination';
+
+import { UsuariosQuerySchema } from '../schemas';
 
 const ProfileSchema = z.object({
     name: z.string().min(1),
@@ -497,4 +500,62 @@ export async function assignOficialidad(
 
     revalidatePath('/usuarios');
     return { success: true, data: null };
+}
+
+type UsuarioPaginado = Awaited<ReturnType<typeof getUsuarios>>[number];
+
+export async function getUsuariosPaginados(
+    rawQuery: Record<string, string | undefined> = {},
+): Promise<PagedResult<UsuarioPaginado>> {
+    const session = await requireAuth();
+    const isSuperAdmin = session.user.categoryId === 1;
+
+    const { page, pageSize, search, gradoId, oficialidadId, active } =
+        UsuariosQuerySchema.parse(rawQuery);
+    const skip = (page - 1) * pageSize;
+
+    const activeFilter =
+        active === 'activo'
+            ? { active: true }
+            : active === 'inactivo'
+              ? { active: false }
+              : isSuperAdmin
+                ? {}
+                : { active: true };
+
+    const where = {
+        ...activeFilter,
+        ...(gradoId ? { gradoId } : {}),
+        ...(oficialidadId ? { oficialidadId } : {}),
+        ...(search
+            ? {
+                  OR: [
+                      { name: { contains: search, mode: 'insensitive' as const } },
+                      { lastName: { contains: search, mode: 'insensitive' as const } },
+                      { email: { contains: search, mode: 'insensitive' as const } },
+                      { username: { contains: search, mode: 'insensitive' as const } },
+                  ],
+              }
+            : {}),
+    };
+
+    const [items, total] = await Promise.all([
+        prisma.user.findMany({
+            where,
+            omit: { password: true, token: true, tokenExpiry: true },
+            include: { grado: true, category: true, oficialidad: true },
+            orderBy: { name: 'asc' },
+            skip,
+            take: pageSize,
+        }),
+        prisma.user.count({ where }),
+    ]);
+
+    return {
+        items,
+        total,
+        page,
+        pageSize,
+        totalPages: Math.max(1, Math.ceil(total / pageSize)),
+    };
 }

@@ -13,6 +13,7 @@ import { logActivity } from '@/shared/lib/activity-log';
 import { prisma } from '@/shared/lib/db';
 import { sendBoleta, sendRecordatorioCuotas } from '@/shared/lib/email';
 import type { ActionResult } from '@/shared/types/actions';
+import type { PagedResult } from '@/shared/types/pagination';
 
 import { TesoreriaQuerySchema } from '../schemas';
 
@@ -112,25 +113,32 @@ interface MovimientoRow {
     motivo: { id: number; nombre: string } | null;
 }
 
-interface PagedResult<T> {
-    items: T[];
-    total: number;
-    page: number;
-    pageSize: number;
-    totalPages: number;
-}
+type TesoreriaPagedResult<T> = PagedResult<T> & { anos: string[] };
 
 export async function getEntradas(
     rawQuery: Record<string, string | undefined> = {},
-): Promise<PagedResult<MovimientoRow>> {
+): Promise<TesoreriaPagedResult<MovimientoRow>> {
     const session = await auth();
     if (!session || !isTesorero(session)) throw new Error('No autorizado');
 
-    const { page, pageSize } = TesoreriaQuerySchema.parse(rawQuery);
+    const { page, pageSize, search, mes, ano } = TesoreriaQuerySchema.parse(rawQuery);
     const skip = (page - 1) * pageSize;
 
-    const [rows, total] = await Promise.all([
+    const userFilter = search
+        ? {
+              OR: [
+                  { user: { name: { contains: search, mode: 'insensitive' as const } } },
+                  { user: { lastName: { contains: search, mode: 'insensitive' as const } } },
+              ],
+          }
+        : {};
+    const mesFilter = mes ? { mes: { contains: mes, mode: 'insensitive' as const } } : {};
+    const anoFilter = ano ? { ano } : {};
+    const where = { ...userFilter, ...mesFilter, ...anoFilter };
+
+    const [rows, total, anosRaw] = await Promise.all([
         prisma.entradaDinero.findMany({
+            where,
             include: {
                 user: { select: { name: true, lastName: true } },
                 motivo: true,
@@ -139,8 +147,15 @@ export async function getEntradas(
             skip,
             take: pageSize,
         }),
-        prisma.entradaDinero.count(),
+        prisma.entradaDinero.count({ where }),
+        prisma.entradaDinero.findMany({
+            select: { ano: true },
+            distinct: ['ano'],
+            orderBy: { ano: 'desc' },
+        }),
     ]);
+
+    const anos = anosRaw.map((r) => r.ano).filter(Boolean) as string[];
 
     return {
         items: rows.map((r) => ({ ...r, monto: Number(r.monto ?? 0) })),
@@ -148,20 +163,34 @@ export async function getEntradas(
         page,
         pageSize,
         totalPages: Math.max(1, Math.ceil(total / pageSize)),
+        anos,
     };
 }
 
 export async function getSalidas(
     rawQuery: Record<string, string | undefined> = {},
-): Promise<PagedResult<MovimientoRow>> {
+): Promise<TesoreriaPagedResult<MovimientoRow>> {
     const session = await auth();
     if (!session || !isTesorero(session)) throw new Error('No autorizado');
 
-    const { page, pageSize } = TesoreriaQuerySchema.parse(rawQuery);
+    const { page, pageSize, search, mes, ano } = TesoreriaQuerySchema.parse(rawQuery);
     const skip = (page - 1) * pageSize;
 
-    const [rows, total] = await Promise.all([
+    const userFilter = search
+        ? {
+              OR: [
+                  { user: { name: { contains: search, mode: 'insensitive' as const } } },
+                  { user: { lastName: { contains: search, mode: 'insensitive' as const } } },
+              ],
+          }
+        : {};
+    const mesFilter = mes ? { mes: { contains: mes, mode: 'insensitive' as const } } : {};
+    const anoFilter = ano ? { ano } : {};
+    const where = { ...userFilter, ...mesFilter, ...anoFilter };
+
+    const [rows, total, anosRaw] = await Promise.all([
         prisma.salidaDinero.findMany({
+            where,
             include: {
                 user: { select: { name: true, lastName: true } },
                 motivo: true,
@@ -170,8 +199,15 @@ export async function getSalidas(
             skip,
             take: pageSize,
         }),
-        prisma.salidaDinero.count(),
+        prisma.salidaDinero.count({ where }),
+        prisma.salidaDinero.findMany({
+            select: { ano: true },
+            distinct: ['ano'],
+            orderBy: { ano: 'desc' },
+        }),
     ]);
+
+    const anos = anosRaw.map((r) => r.ano).filter(Boolean) as string[];
 
     return {
         items: rows.map((r) => ({ ...r, monto: Number(r.monto ?? 0) })),
@@ -179,6 +215,7 @@ export async function getSalidas(
         page,
         pageSize,
         totalPages: Math.max(1, Math.ceil(total / pageSize)),
+        anos,
     };
 }
 

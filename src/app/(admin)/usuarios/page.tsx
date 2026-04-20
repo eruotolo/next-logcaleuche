@@ -1,7 +1,12 @@
 import { BookOpen, Compass, Sun, Users } from 'lucide-react';
 import type { Metadata } from 'next';
 
-import { getCategories, getGrados, getOficiales, getUsuarios } from '@/features/usuarios/actions';
+import {
+    getCategories,
+    getGrados,
+    getOficiales,
+    getUsuariosPaginados,
+} from '@/features/usuarios/actions';
 import { CandidatesSubtitle } from '@/features/usuarios/components/CandidatesSubtitle';
 import { CreateUserModal } from '@/features/usuarios/components/CreateUserModal';
 import { UserList } from '@/features/usuarios/components/UserList';
@@ -13,18 +18,23 @@ export const metadata: Metadata = {
     title: 'Directorio de Miembros — Logia Caleuche 250',
 };
 
-export default async function UsuariosPage() {
+export default async function UsuariosPage({
+    searchParams,
+}: {
+    searchParams: Promise<Record<string, string | undefined>>;
+}) {
     const session = await auth();
     const canRegister = session?.user?.categoryId && session.user.categoryId <= 2;
     const isMaestro = session?.user?.grado === 3;
-    const isSuperAdmin = session?.user?.categoryId === 1;
+
+    const sp = await searchParams;
 
     const today = new Date();
     const twentyTwoMonthsAgo = new Date(today);
     twentyTwoMonthsAgo.setMonth(twentyTwoMonthsAgo.getMonth() - 22);
 
     const [
-        usuarios,
+        usuariosResult,
         totalActivos,
         aprendices,
         companeros,
@@ -35,7 +45,7 @@ export default async function UsuariosPage() {
         categories,
         oficiales,
     ] = await Promise.all([
-        getUsuarios(200, isSuperAdmin),
+        getUsuariosPaginados(sp),
         prisma.user.count({ where: { active: true } }),
         prisma.user.count({ where: { active: true, gradoId: 1 } }),
         prisma.user.count({ where: { active: true, gradoId: 2 } }),
@@ -56,6 +66,10 @@ export default async function UsuariosPage() {
         canRegister ? getCategories() : Promise.resolve([]),
         canRegister ? getOficiales() : Promise.resolve([]),
     ]);
+
+    // Siempre cargar grados y oficiales para los filtros (independiente de canRegister)
+    const gradosForFilter = grados.length > 0 ? grados : await getGrados();
+    const oficialesForFilter = oficiales.length > 0 ? oficiales : await getOficiales();
 
     const statCards = [
         {
@@ -156,12 +170,19 @@ export default async function UsuariosPage() {
             </div>
 
             <UserList
-                usuarios={usuarios}
+                usuarios={usuariosResult.items}
                 currentUserCategory={session?.user?.categoryId ?? 3}
                 categoryId={session?.user?.categoryId ?? 3}
-                grados={grados}
-                oficiales={oficiales}
+                grados={gradosForFilter}
+                oficiales={oficialesForFilter}
                 categories={categories}
+                total={usuariosResult.total}
+                page={usuariosResult.page}
+                totalPages={usuariosResult.totalPages}
+                initialSearch={sp.search}
+                initialGrado={sp.gradoId}
+                initialOficialidad={sp.oficialidadId}
+                initialActive={sp.active}
             />
         </div>
     );
