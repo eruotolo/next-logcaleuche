@@ -33,6 +33,7 @@ export const getFeedPosts = cache(async function getFeedPosts(limit = 50) {
                     grado: { select: { nombre: true } },
                 },
             },
+            reactions: { select: { userId: true, emoji: true } },
             _count: { select: { comments: true } },
         },
         orderBy: { createdAt: 'desc' },
@@ -144,6 +145,37 @@ export async function createFeedPost(
         // Notificaciones no son críticas — continúa sin error
     }
 
+    // Detectar @menciones en el contenido y notificar
+    try {
+        const slugMatches = parsed.data.contenido?.match(/@([a-z0-9-]+)/g) ?? [];
+        if (slugMatches.length > 0) {
+            const slugs = slugMatches.map((m) => m.slice(1));
+            const mentionedUsers = await prisma.user.findMany({
+                where: { slug: { in: slugs }, active: true },
+                select: { id: true },
+            });
+            const mentionedIds = mentionedUsers
+                .map((u) => u.id)
+                .filter((id) => id !== Number.parseInt(session.user.id, 10));
+
+            if (mentionedIds.length > 0) {
+                await prisma.feedMention.createMany({
+                    data: mentionedIds.map((mentionedUserId) => ({ feedId: post.id, mentionedUserId })),
+                    skipDuplicates: true,
+                });
+                await createNotifications(
+                    mentionedIds,
+                    'feed',
+                    'Te mencionaron en una publicación',
+                    parsed.data.titulo,
+                    `/feed/${slug}`,
+                );
+            }
+        }
+    } catch {
+        // Menciones no son críticas
+    }
+
     revalidatePath('/feed');
     revalidateTag('category-feeds', 'days');
     return { success: true, data: null };
@@ -215,6 +247,45 @@ export async function deleteFeedPost(id: number): Promise<ActionResult<null>> {
 
     revalidatePath('/feed');
     revalidateTag('category-feeds', 'days');
+    return { success: true, data: null };
+}
+
+export async function toggleReaction(feedId: number): Promise<ActionResult<null>> {
+    const session = await auth();
+    if (!session) return { success: false, error: 'No autorizado' };
+
+    const userId = Number.parseInt(session.user.id, 10);
+    const emoji = '❤️';
+
+    const existing = await prisma.feedReaction.findUnique({
+        where: { feedId_userId_emoji: { feedId, userId, emoji } },
+    });
+
+    if (existing) {
+        await prisma.feedReaction.delete({ where: { id: existing.id } });
+    } else {
+        await prisma.feedReaction.create({ data: { feedId, userId, emoji } });
+
+        try {
+            const post = await prisma.feed.findUnique({
+                where: { id: feedId },
+                select: { userId: true, slug: true },
+            });
+            if (post?.userId && post.userId !== userId) {
+                await createNotifications(
+                    [post.userId],
+                    'feed',
+                    'Nueva reacción en tu publicación',
+                    undefined,
+                    `/feed/${post.slug}`,
+                );
+            }
+        } catch {
+            // Notificaciones no son críticas
+        }
+    }
+
+    revalidatePath('/feed');
     return { success: true, data: null };
 }
 

@@ -77,12 +77,14 @@ export async function createLibro(
     // Notificar a usuarios según grado del documento (silencioso)
     try {
         const gradoId = parsed.data.grado;
+        // Notificar solo a quienes pueden ver este grado de contenido:
+        // grado 1 → todos (1, 2, 3) | grado 2 → compañeros y maestros (2, 3) | grado 3 → solo maestros (3)
         const gradoWhere =
             gradoId === 1
-                ? { gradoId: 1 }
+                ? {}
                 : gradoId === 2
-                  ? { gradoId: { in: [1, 2] } }
-                  : {};
+                  ? { gradoId: { in: [2, 3] } }
+                  : { gradoId: 3 };
 
         const targetUsers = await prisma.user.findMany({
             where: { active: true, ...gradoWhere },
@@ -244,12 +246,14 @@ export async function createTrazado(
     // Notificar a usuarios según grado del documento (silencioso)
     try {
         const gradoId = parsed.data.grado;
+        // Notificar solo a quienes pueden ver este grado de contenido:
+        // grado 1 → todos (1, 2, 3) | grado 2 → compañeros y maestros (2, 3) | grado 3 → solo maestros (3)
         const gradoWhere =
             gradoId === 1
-                ? { gradoId: 1 }
+                ? {}
                 : gradoId === 2
-                  ? { gradoId: { in: [1, 2] } }
-                  : {};
+                  ? { gradoId: { in: [2, 3] } }
+                  : { gradoId: 3 };
 
         const targetUsers = await prisma.user.findMany({
             where: { active: true, ...gradoWhere },
@@ -451,4 +455,174 @@ export async function deleteDocumento(id: number): Promise<ActionResult<null>> {
 
     revalidatePath('/documentos');
     return { success: true, data: null };
+}
+
+// ── FAVORITOS ─────────────────────────────────────────────────────────────
+
+export async function toggleDocumentFavorite(
+    documentType: string,
+    documentId: number,
+): Promise<ActionResult<{ favorited: boolean }>> {
+    const session = await auth();
+    if (!session) return { success: false, error: 'No autorizado' };
+    const userId = Number.parseInt(session.user.id, 10);
+
+    const existing = await prisma.documentFavorite.findUnique({
+        where: { userId_documentType_documentId: { userId, documentType, documentId } },
+    });
+
+    if (existing) {
+        await prisma.documentFavorite.delete({ where: { id: existing.id } });
+        return { success: true, data: { favorited: false } };
+    }
+
+    await prisma.documentFavorite.create({ data: { userId, documentType, documentId } });
+    return { success: true, data: { favorited: true } };
+}
+
+export const getUserDocumentFavorites = cache(async function getUserDocumentFavorites() {
+    const session = await auth();
+    if (!session) throw new Error('No autorizado');
+    const userId = Number.parseInt(session.user.id, 10);
+
+    return prisma.documentFavorite.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+    });
+});
+
+export const getFavoritesWithDetails = cache(async function getFavoritesWithDetails() {
+    const session = await auth();
+    if (!session) throw new Error('No autorizado');
+    const userId = Number.parseInt(session.user.id, 10);
+
+    const favs = await prisma.documentFavorite.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+    });
+
+    const biblioIds = favs.filter((f) => f.documentType === 'biblioteca').map((f) => f.documentId);
+    const trazadoIds = favs.filter((f) => f.documentType === 'trazado').map((f) => f.documentId);
+    const docIds = favs.filter((f) => f.documentType === 'documento').map((f) => f.documentId);
+
+    const [biblioteca, trazados, documentos] = await Promise.all([
+        biblioIds.length > 0
+            ? prisma.biblioteca.findMany({ where: { id: { in: biblioIds } }, include: { grado: true } })
+            : [],
+        trazadoIds.length > 0
+            ? prisma.trazado.findMany({ where: { id: { in: trazadoIds } }, include: { grado: true, autor: { select: { name: true, lastName: true } } } })
+            : [],
+        docIds.length > 0
+            ? prisma.document.findMany({ where: { id: { in: docIds } } })
+            : [],
+    ]);
+
+    return { biblioteca, trazados, documentos };
+});
+
+// ── VISTAS RECIENTES ──────────────────────────────────────────────────────
+
+export async function registerDocumentView(
+    documentType: string,
+    documentId: number,
+): Promise<void> {
+    const session = await auth();
+    if (!session) return;
+    const userId = Number.parseInt(session.user.id, 10);
+
+    await prisma.documentView.upsert({
+        where: { userId_documentType_documentId: { userId, documentType, documentId } },
+        create: { userId, documentType, documentId },
+        update: { viewedAt: new Date() },
+    });
+}
+
+export const getRecentDocumentViews = cache(async function getRecentDocumentViews(limit = 5) {
+    const session = await auth();
+    if (!session) throw new Error('No autorizado');
+    const userId = Number.parseInt(session.user.id, 10);
+
+    return prisma.documentView.findMany({
+        where: { userId },
+        orderBy: { viewedAt: 'desc' },
+        take: limit,
+    });
+});
+
+// ── BÚSQUEDA FTS ──────────────────────────────────────────────────────────
+
+interface SearchResult {
+    id: number;
+    nombre: string | null;
+    fileName: string | null;
+    tipo: 'biblioteca' | 'trazado' | 'documento';
+    gradoId?: number | null;
+}
+
+export async function searchDocumentos(
+    query: string,
+    tipo?: 'biblioteca' | 'trazado' | 'documento',
+): Promise<SearchResult[]> {
+    const session = await auth();
+    if (!session) throw new Error('No autorizado');
+
+    const userGrado = session.user.grado ?? 1;
+    const sanitized = query.trim().replace(/['"\\]/g, '');
+    if (!sanitized) return [];
+
+    const results: SearchResult[] = [];
+
+    if (!tipo || tipo === 'biblioteca') {
+        const rows = await prisma.$queryRawUnsafe<
+            { id: number; nombre_Libro: string | null; file_name: string | null; grado_Libro: number | null }[]
+        >(
+            `SELECT id, "nombre_Libro", "file_name", "grado_Libro"
+             FROM biblioteca
+             WHERE search_vector @@ plainto_tsquery('spanish', $1)
+               AND "grado_Libro" <= $2
+             ORDER BY ts_rank(search_vector, plainto_tsquery('spanish', $1)) DESC
+             LIMIT 20`,
+            sanitized,
+            userGrado,
+        );
+        for (const r of rows) {
+            results.push({ id: r.id, nombre: r.nombre_Libro, fileName: r.file_name, tipo: 'biblioteca', gradoId: r.grado_Libro });
+        }
+    }
+
+    if (!tipo || tipo === 'trazado') {
+        const rows = await prisma.$queryRawUnsafe<
+            { id: number; name_Trazado: string | null; file_name: string; grado_Trazado: number | null }[]
+        >(
+            `SELECT id, "name_Trazado", "file_name", "grado_Trazado"
+             FROM trazado
+             WHERE search_vector @@ plainto_tsquery('spanish', $1)
+               AND "grado_Trazado" <= $2
+             ORDER BY ts_rank(search_vector, plainto_tsquery('spanish', $1)) DESC
+             LIMIT 20`,
+            sanitized,
+            userGrado,
+        );
+        for (const r of rows) {
+            results.push({ id: r.id, nombre: r.name_Trazado, fileName: r.file_name, tipo: 'trazado', gradoId: r.grado_Trazado });
+        }
+    }
+
+    if (!tipo || tipo === 'documento') {
+        const rows = await prisma.$queryRawUnsafe<
+            { id: number; name_Doc: string | null; file_name: string | null }[]
+        >(
+            `SELECT id, "name_Doc", "file_name"
+             FROM documents
+             WHERE search_vector @@ plainto_tsquery('spanish', $1)
+             ORDER BY ts_rank(search_vector, plainto_tsquery('spanish', $1)) DESC
+             LIMIT 20`,
+            sanitized,
+        );
+        for (const r of rows) {
+            results.push({ id: r.id, nombre: r.name_Doc, fileName: r.file_name, tipo: 'documento' });
+        }
+    }
+
+    return results;
 }

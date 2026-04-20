@@ -3,6 +3,14 @@
         {
             "path": "/api/cron/eventos",
             "schedule": "0 12 * * 1"
+        },
+        {
+            "path": "/api/cron/cumpleanos",
+            "schedule": "0 12 * * *"
+        },
+        {
+            "path": "/api/cron/aniversarios",
+            "schedule": "0 12 * * *"
         }
     ]
 }

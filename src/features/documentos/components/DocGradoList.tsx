@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-import { BookOpen, Download, Eye, FileText, Trash } from 'lucide-react';
+import { BookOpen, Download, Eye, FileText, Star, Trash } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog';
@@ -10,7 +10,7 @@ import { Tooltip } from '@/shared/components/ui/tooltip';
 import { getCloudinaryPdfUrl } from '@/shared/lib/cloudinary';
 import { formatDate } from '@/shared/lib/utils';
 
-import { deleteLibro, deleteTrazado } from '../actions';
+import { deleteLibro, deleteTrazado, toggleDocumentFavorite } from '../actions';
 import { DocumentoPreviewModal, type PreviewDoc } from './DocumentoPreviewModal';
 import { EditDocGradoModal } from './EditDocGradoModal';
 
@@ -37,6 +37,7 @@ interface DocGradoListProps {
     items: DocItem[];
     isAdmin: boolean;
     canEdit?: boolean;
+    favoritedIds?: number[];
     grados?: { id: number; nombre: string }[];
     usuarios?: { id: number; name: string | null; lastName: string | null }[];
     tiposActividad?: { id: number; nombre: string }[];
@@ -66,6 +67,7 @@ export function DocGradoList({
     items,
     isAdmin,
     canEdit = false,
+    favoritedIds = [],
     grados = [],
     usuarios = [],
     tiposActividad = [],
@@ -73,6 +75,7 @@ export function DocGradoList({
     const [preview, setPreview] = useState<PreviewDoc | null>(null);
     const [confirmDelete, setConfirmDelete] = useState<{ id: number; label: string } | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [favs, setFavs] = useState<Set<number>>(new Set(favoritedIds));
 
     function handleDelete(id: number, label: string | null) {
         setConfirmDelete({ id, label: label ?? 'este elemento' });
@@ -87,6 +90,16 @@ export function DocGradoList({
         else toast.error(res.error);
     }
 
+    async function handleToggleFav(id: number) {
+        setFavs((prev) => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+        await toggleDocumentFavorite(tipo, id);
+    }
+
     const getLabel = (item: DocItem) => item.nombre ?? item.titulo ?? 'Sin título';
     const getDate = (item: DocItem) => {
         const d = item.fecha ?? item.createdAt;
@@ -99,7 +112,7 @@ export function DocGradoList({
         return '';
     };
 
-    const { icon: TipoIcon, color, bg } = tipoIcons[tipo];
+    const { icon: TipoIcon, color } = tipoIcons[tipo];
 
     if (items.length === 0) {
         return (
@@ -175,11 +188,15 @@ export function DocGradoList({
 
                             {/* Actions */}
                             <div className="flex items-center justify-between border-t border-[rgba(255,255,255,0.05)] pt-3">
-                                <span
-                                    className={`flex h-6 w-6 items-center justify-center rounded ${bg}`}
-                                >
-                                    <TipoIcon className={`h-3.5 w-3.5 ${color}`} />
-                                </span>
+                                <Tooltip content={favs.has(item.id) ? 'Quitar favorito' : 'Agregar a favoritos'}>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleToggleFav(item.id)}
+                                        className={`flex h-6 w-6 items-center justify-center rounded transition-colors ${favs.has(item.id) ? 'text-yellow-400' : 'text-cg-outline hover:text-yellow-400'}`}
+                                    >
+                                        <Star className="h-3.5 w-3.5" fill={favs.has(item.id) ? 'currentColor' : 'none'} />
+                                    </button>
+                                </Tooltip>
                                 <div className="flex items-center gap-1">
                                     {item.fileName && (
                                         <Tooltip content="Vista previa">

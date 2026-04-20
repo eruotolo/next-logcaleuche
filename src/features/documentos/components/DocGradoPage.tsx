@@ -5,7 +5,7 @@ import { getGrados, getUsuarios } from '@/features/usuarios/actions';
 
 import { auth } from '@/shared/lib/auth';
 
-import { getBiblioteca, getTrazados } from '../actions';
+import { getBiblioteca, getTrazados, getUserDocumentFavorites } from '../actions';
 import { DocGradoList, type DocTipo } from './DocGradoList';
 import { UploadDocGradoModal } from './UploadDocGradoModal';
 
@@ -38,12 +38,17 @@ export async function DocGradoPage({
 
     if (userGrado < gradoMin && !isAdmin) redirect('/dashboard');
 
-    const [rawItems, grados, allUsers, tiposActividad] = await Promise.all([
+    const [rawItems, grados, allUsers, tiposActividad, allFavorites] = await Promise.all([
         fetchers[tipo](gradoMin),
         getGrados(),
         tipo === 'trazado' ? getUsuarios() : Promise.resolve([]),
         tipo === 'trazado' ? getTiposActividad() : Promise.resolve([]),
+        getUserDocumentFavorites(),
     ]);
+
+    const favoritedIds = allFavorites
+        .filter((f) => f.documentType === tipo)
+        .map((f) => f.documentId);
 
     // Biblioteca: Prisma returns `autor` (TS field name) but DocItem expects `autor_Libro`
     const items =
@@ -79,6 +84,7 @@ export async function DocGradoPage({
                 items={items as Parameters<typeof DocGradoList>[0]['items']}
                 isAdmin={isAdmin}
                 canEdit={canEdit}
+                favoritedIds={favoritedIds}
                 grados={grados}
                 usuarios={usuarios}
                 tiposActividad={tiposActividad as { id: number; nombre: string }[]}

@@ -27,7 +27,7 @@ interface EditFeedModalProps {
         fileName: string | null;
     };
     categories: { id: number; nombre: string }[];
-    trigger: React.ReactNode;
+    trigger: (open: () => void) => React.ReactNode;
 }
 
 interface EditFeedDraft {
@@ -112,9 +112,7 @@ export function EditFeedModal({ post, categories, trigger }: EditFeedModalProps)
 
     return (
         <>
-            <button type="button" onClick={() => open()} className="cursor-pointer">
-                {trigger}
-            </button>
+            {trigger(open)}
 
             <Modal open={isOpen} onClose={handleClose} title="Editar Publicación" size="lg">
                 <form action={action} className="space-y-5">

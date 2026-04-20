@@ -17,6 +17,11 @@ interface NotificationBellProps {
     initialNotifications: NotificationItem[];
 }
 
+interface NotificationsResponse {
+    count: number;
+    notifications: NotificationItem[];
+}
+
 const TYPE_COLORS: Record<string, string> = {
     feed: 'bg-[rgba(90,103,216,0.6)]',
     comment: 'bg-[rgba(65,166,90,0.6)]',
@@ -32,6 +37,24 @@ export function NotificationBell({ initialCount, initialNotifications }: Notific
     const [isPending, startTransition] = useTransition();
     const panelRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
+
+    /* Polling cada 30 segundos para recibir notificaciones nuevas sin navegar */
+    useEffect(() => {
+        const poll = async () => {
+            try {
+                const res = await fetch('/api/notifications/count');
+                if (!res.ok) return;
+                const data: NotificationsResponse = await res.json();
+                setCount(data.count);
+                setNotifications(data.notifications);
+            } catch {
+                // Silencioso — no interrumpir la UX por errores de red
+            }
+        };
+
+        const id = setInterval(poll, 30_000);
+        return () => clearInterval(id);
+    }, []);
 
     /* Cerrar al clicar fuera */
     useEffect(() => {

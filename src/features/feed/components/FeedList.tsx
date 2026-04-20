@@ -13,12 +13,13 @@ type FeedPost = Awaited<ReturnType<typeof getFeedPosts>>[number];
 
 interface FeedListProps {
     posts: FeedPost[];
+    currentUserId: number;
     canEdit?: boolean;
     canDelete?: boolean;
     categories?: { id: number; nombre: string }[];
 }
 
-export function FeedList({ posts, canEdit = false, canDelete = false, categories = [] }: FeedListProps) {
+export function FeedList({ posts, currentUserId, canEdit = false, canDelete = false, categories = [] }: FeedListProps) {
     const [page, setPage] = useState(0);
 
     if (posts.length === 0) {
@@ -39,6 +40,7 @@ export function FeedList({ posts, canEdit = false, canDelete = false, categories
                 <FeedCard
                     key={post.id}
                     post={post}
+                    currentUserId={currentUserId}
                     canEdit={canEdit}
                     canDelete={canDelete}
                     categories={categories}

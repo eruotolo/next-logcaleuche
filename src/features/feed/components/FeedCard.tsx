@@ -1,75 +1,26 @@
 'use client';
 
-import { useTransition } from 'react';
+import { useOptimistic, useTransition } from 'react';
 
 import Image from 'next/image';
 import Link from 'next/link';
 
-
-
 import { Calendar, Eye, Heart, MessageSquare, Paperclip, Pencil, Trash2 } from 'lucide-react';
-
-
 
 import { Badge } from '@/shared/components/ui/badge';
 import { Tooltip } from '@/shared/components/ui/tooltip';
 import { getCloudinaryPdfUrl, getCloudinaryRawImageUrl, isImageFile } from '@/shared/lib/cloudinary';
-
 import { formatDate, truncate } from '@/shared/lib/utils';
 
-
-
 import type { getFeedPosts } from '../actions';
-import { deleteFeedPost } from '../actions';
+import { deleteFeedPost, toggleReaction } from '../actions';
 import { EditFeedModal } from './EditFeedModal';
 
 type FeedPost = Awaited<ReturnType<typeof getFeedPosts>>[number];
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 interface FeedCardProps {
     post: FeedPost;
+    currentUserId: number;
     canEdit?: boolean;
     canDelete?: boolean;
     categories?: { id: number; nombre: string }[];
@@ -81,15 +32,30 @@ const gradoColors: Record<number, string> = {
     3: 'bg-[rgba(155,255,206,0.2)] text-cg-tertiary-tonal',
 };
 
-export function FeedCard({ post, canEdit = false, canDelete = false, categories = [] }: FeedCardProps) {
+export function FeedCard({ post, currentUserId, canEdit = false, canDelete = false, categories = [] }: FeedCardProps) {
     const gradoId = post.user?.gradoId ?? 1;
     const gradoNombre = post.user?.grado?.nombre ?? '';
     const [isPending, startTransition] = useTransition();
+
+    const likeCount = post.reactions.filter((r) => r.emoji === '❤️').length;
+    const hasLiked = post.reactions.some((r) => r.userId === currentUserId && r.emoji === '❤️');
+
+    const [optimisticLiked, toggleOptimistic] = useOptimistic(
+        { count: likeCount, liked: hasLiked },
+        (state) => ({ count: state.liked ? state.count - 1 : state.count + 1, liked: !state.liked }),
+    );
 
     function handleDelete() {
         if (!confirm(`¿Eliminar la publicación "${post.titulo}"?`)) return;
         startTransition(async () => {
             await deleteFeedPost(post.id);
+        });
+    }
+
+    function handleLike() {
+        startTransition(async () => {
+            toggleOptimistic(undefined);
+            await toggleReaction(post.id);
         });
     }
 
@@ -111,9 +77,7 @@ export function FeedCard({ post, canEdit = false, canDelete = false, categories 
                         <h3 className="text-cg-on-surface flex items-center gap-2 font-bold">
                             {post.user?.name} {post.user?.lastName}
                             {gradoNombre && (
-                                <span
-                                    className={`rounded px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase ${gradoColors[gradoId] ?? gradoColors[1]}`}
-                                >
+                                <span className={`rounded px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase ${gradoColors[gradoId] ?? gradoColors[1]}`}>
                                     {gradoNombre}
                                 </span>
                             )}
@@ -172,9 +136,21 @@ export function FeedCard({ post, canEdit = false, canDelete = false, categories 
             {/* Interaction Bar */}
             <div className="flex items-center justify-between border-t border-[rgba(255,255,255,0.05)] pt-4">
                 <div className="flex gap-6">
-                    <span className="text-cg-on-surface-variant flex items-center gap-2 text-xs font-medium">
-                        <Heart className="h-4 w-4" />
-                    </span>
+                    {/* Like button */}
+                    <button
+                        type="button"
+                        onClick={handleLike}
+                        disabled={isPending}
+                        className={`flex items-center gap-1.5 text-xs font-medium transition-colors disabled:opacity-50 ${
+                            optimisticLiked.liked
+                                ? 'text-red-400 hover:text-red-300'
+                                : 'text-cg-on-surface-variant hover:text-red-400'
+                        }`}
+                    >
+                        <Heart className={`h-4 w-4 transition-all ${optimisticLiked.liked ? 'fill-red-400' : ''}`} />
+                        {optimisticLiked.count > 0 && optimisticLiked.count}
+                    </button>
+
                     <Link
                         href={`/feed/${post.slug}`}
                         className="text-cg-on-surface-variant hover:text-cg-primary-tonal flex items-center gap-2 text-xs font-medium transition-colors"
@@ -205,16 +181,17 @@ export function FeedCard({ post, canEdit = false, canDelete = false, categories 
                                 fileName: post.fileName,
                             }}
                             categories={categories}
-                            trigger={
+                            trigger={(openModal) => (
                                 <Tooltip content="Editar publicación">
                                     <button
                                         type="button"
+                                        onClick={openModal}
                                         className="text-cg-outline hover:text-cg-primary-tonal flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg transition-colors hover:bg-[rgba(158,167,255,0.15)]"
                                     >
                                         <Pencil className="h-3.5 w-3.5" />
                                     </button>
                                 </Tooltip>
-                            }
+                            )}
                         />
                     )}
 

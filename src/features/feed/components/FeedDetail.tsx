@@ -2,6 +2,9 @@
 
 import { useActionState, useEffect } from 'react';
 
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -147,8 +150,10 @@ export function FeedDetail({ post, others, currentUser }: FeedDetailProps) {
                                 </div>
                             </div>
 
-                            <div className="text-cg-on-surface text-lg leading-relaxed whitespace-pre-wrap">
-                                {post.contenido}
+                            <div className="prose prose-invert prose-sm max-w-none text-lg leading-relaxed [&_a]:text-[#5a67d8] [&_a]:underline [&_code]:rounded [&_code]:bg-white/[0.06] [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:text-sm [&_strong]:text-[#e7e6fc]">
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                    {post.contenido ?? ''}
+                                </ReactMarkdown>
                             </div>
                         </CardContent>
                     </Card>

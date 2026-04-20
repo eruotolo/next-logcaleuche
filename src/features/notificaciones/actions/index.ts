@@ -90,7 +90,7 @@ export async function markAllAsRead(): Promise<ActionResult<null>> {
     return { success: true, data: null };
 }
 
-// ── Helper interno (no exportado como Server Action) ─────────────────────────
+// ── Helper interno ───────────────────────────────────────────────────────────
 // Llamar con try/catch en las acciones principales para que un fallo aquí
 // no interrumpa el flujo principal.
 
@@ -103,8 +103,18 @@ export async function createNotifications(
 ): Promise<void> {
     if (userIds.length === 0) return;
 
+    // Excluir usuarios que desactivaron notificaciones in-app para este tipo
+    const optedOut = await prisma.notificationPreference.findMany({
+        where: { userId: { in: userIds }, type, inApp: false },
+        select: { userId: true },
+    });
+    const optedOutSet = new Set(optedOut.map((p) => p.userId));
+    const filteredIds = userIds.filter((id) => !optedOutSet.has(id));
+
+    if (filteredIds.length === 0) return;
+
     await prisma.notification.createMany({
-        data: userIds.map((userId) => ({
+        data: filteredIds.map((userId) => ({
             userId,
             type,
             title,
@@ -113,4 +123,49 @@ export async function createNotifications(
         })),
         skipDuplicates: true,
     });
+}
+
+// ── Preferencias de notificación ─────────────────────────────────────────────
+
+export interface NotificationPreferenceItem {
+    type: string;
+    inApp: boolean;
+    email: boolean;
+}
+
+export const getNotificationPreferences = cache(async function getNotificationPreferences(): Promise<
+    NotificationPreferenceItem[]
+> {
+    const session = await auth();
+    if (!session) return [];
+
+    return prisma.notificationPreference.findMany({
+        where: { userId: Number.parseInt(session.user.id, 10) },
+        select: { type: true, inApp: true, email: true },
+    });
+});
+
+export async function updateNotificationPreference(
+    type: string,
+    field: 'inApp' | 'email',
+    value: boolean,
+): Promise<ActionResult<null>> {
+    const session = await auth();
+    if (!session) return { success: false, error: 'No autorizado' };
+
+    const userId = Number.parseInt(session.user.id, 10);
+
+    await prisma.notificationPreference.upsert({
+        where: { userId_type: { userId, type } },
+        create: {
+            userId,
+            type,
+            inApp: field === 'inApp' ? value : true,
+            email: field === 'email' ? value : false,
+        },
+        update: { [field]: value },
+    });
+
+    revalidatePath('/perfil/notificaciones');
+    return { success: true, data: null };
 }

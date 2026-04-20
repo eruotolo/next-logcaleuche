@@ -312,6 +312,49 @@ export async function sendCumpleanos({
     });
 }
 
+export async function sendAniversario({
+    email,
+    nombre,
+    anios,
+}: {
+    email: string;
+    nombre: string;
+    anios: number;
+}): Promise<void> {
+    const aniosLabel = anios === 1 ? '1 año' : `${anios} años`;
+
+    await transporter.sendMail({
+        from: NOREPLY_FROM,
+        to: `"${nombre}" <${email}>`,
+        subject: "Aniversario de Iniciación — R∴L∴ Caleuche 250",
+        html: `
+            <div style="max-width:600px;margin:0 auto;font-family:Georgia,serif;color:#1a1a1a;">
+                <div style="text-align:center;padding:20px;border-bottom:2px solid #2980b9;">
+                    <img src="https://intranet.logiacaleuche.cl/admin/assets/images/logo.jpg" style="max-width:120px;height:auto;" alt="Logo">
+                </div>
+                <div style="padding:32px 24px;">
+                    <h2 style="color:#2980b9;text-align:center;">
+                        ¡${aniosLabel} de Iniciación, Q∴H∴ ${esc(nombre)}!
+                    </h2>
+                    <p style="text-align:center;font-size:16px;line-height:1.7;">
+                        En este día conmemoramos tu Aniversario de <strong>Iniciación</strong>
+                        en nuestra Respetable Logia.<br><br>
+                        Todos tus Hermanos de la <strong>R∴L∴ Caleuche 250</strong>
+                        te felicitan por este nuevo año de luz y trabajo masónico.
+                    </p>
+                    <p style="text-align:center;margin-top:30px;">Un Triple Abrazo Fraternal.</p>
+                    <p style="text-align:center;"><b>R∴L∴ Caleuche 250 — Valle de Castro, Chiloé</b></p>
+                </div>
+                <div style="padding:12px 24px;background:#f5f5f5;border-top:1px solid #ddd;text-align:center;">
+                    <p style="margin:0;font-size:11px;color:#999;">
+                        Este es un mensaje automático del sistema de la logia. Por favor no responder.
+                    </p>
+                </div>
+            </div>
+        `,
+    });
+}
+
 export async function sendRecovery(
     emailDestino: string,
     nombre: string,

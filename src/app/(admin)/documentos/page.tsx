@@ -1,11 +1,14 @@
 import { redirect } from 'next/navigation';
 
 import type { Metadata } from 'next';
+import Link from 'next/link';
+
+import { Search, Star } from 'lucide-react';
 
 import { getDocumentos } from '@/features/documentos/actions';
 import { DocumentoList } from '@/features/documentos/components/DocumentoList';
 import { UploadDocumentoModal } from '@/features/documentos/components/UploadDocumentoModal';
-
+import { Button } from '@/shared/components/ui/button';
 import { auth } from '@/shared/lib/auth';
 
 export const metadata: Metadata = {
@@ -31,7 +34,21 @@ export default async function DocumentosPage() {
                         Documentos disponibles para todos los miembros.
                     </p>
                 </div>
-                {isAdmin && <UploadDocumentoModal />}
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" asChild>
+                        <Link href="/documentos/buscar">
+                            <Search className="mr-1.5 h-4 w-4" />
+                            Buscar
+                        </Link>
+                    </Button>
+                    <Button variant="outline" size="sm" asChild>
+                        <Link href="/documentos/favoritos">
+                            <Star className="mr-1.5 h-4 w-4" />
+                            Favoritos
+                        </Link>
+                    </Button>
+                    {isAdmin && <UploadDocumentoModal />}
+                </div>
             </div>
 
             <DocumentoList documentos={documentos} isAdmin={isAdmin} canEdit={canEdit} />

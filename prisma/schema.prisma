@@ -55,14 +55,19 @@ model User {
     twoFactorTempExpiry DateTime? @map("two_factor_temp_expiry")
 
     // Back relations
-    feeds         Feed[]
-    comments      CommentFeed[]
-    trazados      Trazado[]
-    entradas      EntradaDinero[]
-    salidas       SalidaDinero[]
-    activityLogs  ActivityLog[]
-    notifications Notification[]
-    asistencias   EventoAsistencia[]
+    feeds                    Feed[]
+    comments                 CommentFeed[]
+    trazados                 Trazado[]
+    entradas                 EntradaDinero[]
+    salidas                  SalidaDinero[]
+    activityLogs             ActivityLog[]
+    notifications            Notification[]
+    asistencias              EventoAsistencia[]
+    notificationPreferences  NotificationPreference[]
+    feedReactions            FeedReaction[]
+    feedMentions             FeedMention[]            @relation("FeedMentioned")
+    documentFavorites        DocumentFavorite[]
+    documentViews            DocumentView[]
 
     @@index([active, dateBirthday])
     @@map("users")
@@ -130,7 +135,9 @@ model Feed {
     active    Int?     @map("estado_Feed") // 0=Inactivo, 1=Publicado
     createdAt DateTime @default(now()) @map("created_at")
 
-    comments CommentFeed[]
+    comments  CommentFeed[]
+    reactions FeedReaction[]
+    mentions  FeedMention[]
 
     @@index([active, createdAt])
     @@map("feed")
@@ -327,7 +334,74 @@ model Notification {
     @@map("notifications")
 }
 
-// 1.23 Tabla: evento_asistencia
+// 1.23 Tabla: feed_reactions
+model FeedReaction {
+    id        Int      @id @default(autoincrement())
+    feedId    Int      @map("feed_id")
+    userId    Int      @map("user_id")
+    emoji     String   @default("❤️")
+    createdAt DateTime @default(now()) @map("created_at")
+    feed      Feed     @relation(fields: [feedId], references: [id], onDelete: Cascade)
+    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@unique([feedId, userId, emoji])
+    @@index([feedId])
+    @@map("feed_reactions")
+}
+
+// 1.23b Tabla: feed_mentions
+model FeedMention {
+    id              Int  @id @default(autoincrement())
+    feedId          Int  @map("feed_id")
+    mentionedUserId Int  @map("mentioned_user_id")
+    feed            Feed @relation(fields: [feedId], references: [id], onDelete: Cascade)
+    mentionedUser   User @relation("FeedMentioned", fields: [mentionedUserId], references: [id], onDelete: Cascade)
+
+    @@unique([feedId, mentionedUserId])
+    @@index([mentionedUserId])
+    @@map("feed_mentions")
+}
+
+// 1.24 Tabla: document_favorites
+model DocumentFavorite {
+    id           Int      @id @default(autoincrement())
+    userId       Int      @map("user_id")
+    documentType String   @map("document_type") // 'biblioteca' | 'trazado' | 'documento'
+    documentId   Int      @map("document_id")
+    createdAt    DateTime @default(now()) @map("created_at")
+    user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@unique([userId, documentType, documentId])
+    @@index([userId])
+    @@map("document_favorites")
+}
+
+// 1.24b Tabla: document_views
+model DocumentView {
+    userId       Int      @map("user_id")
+    documentType String   @map("document_type")
+    documentId   Int      @map("document_id")
+    viewedAt     DateTime @default(now()) @map("viewed_at")
+    user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@id([userId, documentType, documentId])
+    @@index([userId, viewedAt])
+    @@map("document_views")
+}
+
+// 1.24c Tabla: notification_preferences
+model NotificationPreference {
+    userId Int
+    type   String  // 'feed' | 'comment' | 'evento' | 'biblioteca' | 'trazado' | 'cumpleanos' | 'aniversario'
+    inApp  Boolean @default(true)
+    email  Boolean @default(false)
+    user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@id([userId, type])
+    @@map("notification_preferences")
+}
+
+// 1.24 Tabla: evento_asistencia
 model EventoAsistencia {
     id       Int    @id @default(autoincrement())
     eventoId Int    @map("evento_id")

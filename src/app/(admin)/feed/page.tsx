@@ -50,6 +50,7 @@ export default async function FeedPage() {
                 <div className="w-full xl:w-[65%]">
                     <FeedList
                         posts={posts}
+                        currentUserId={Number(session.user.id)}
                         canEdit={canEdit}
                         canDelete={canDelete}
                         categories={categories}

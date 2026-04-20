@@ -9,25 +9,19 @@ export async function GET(request: Request) {
 
     const today = new Date();
     const day = today.getDate();
-    const month = today.getMonth() + 1; // getMonth() is 0-indexed
+    const month = today.getMonth() + 1;
 
-    // Buscar usuarios activos con cumpleaños hoy (mismo día y mes)
-    const usuarios = await prisma.user.findMany({
-        where: {
-            active: true,
-            dateBirthday: { not: null },
-        },
-        select: {
-            id: true,
-            name: true,
-            lastName: true,
-            email: true,
-            dateBirthday: true,
-        },
-    });
+    const [usuarios, todosLosIds] = await Promise.all([
+        prisma.user.findMany({
+            where: { active: true, dateBirthday: { not: null } },
+            select: { id: true, name: true, lastName: true, email: true, dateBirthday: true, slug: true },
+        }),
+        prisma.user.findMany({
+            where: { active: true },
+            select: { id: true },
+        }),
+    ]);
 
-    // Filtrar en JS porque Prisma/PostgreSQL no tiene extracción de día/mes directa
-    // sin SQL raw — mantenemos el patrón del proyecto
     const cumpleaneros = usuarios.filter((u) => {
         if (!u.dateBirthday) return false;
         const bday = new Date(u.dateBirthday);
@@ -38,16 +32,35 @@ export async function GET(request: Request) {
         return Response.json({ notified: 0, message: 'Sin cumpleaños hoy' });
     }
 
+    const allUserIds = todosLosIds.map((u) => u.id);
     let notified = 0;
 
     for (const usuario of cumpleaneros) {
+        const nombre = `${usuario.name ?? ''} ${usuario.lastName ?? ''}`.trim();
+
         try {
-            const nombre = `${usuario.name ?? ''} ${usuario.lastName ?? ''}`.trim();
             await sendCumpleanos({ email: usuario.email, nombre });
-            notified++;
         } catch {
             // No interrumpir el loop por un fallo individual de email
         }
+
+        try {
+            const destinatarios = allUserIds.filter((id) => id !== usuario.id);
+            await prisma.notification.createMany({
+                data: destinatarios.map((userId) => ({
+                    userId,
+                    type: 'cumpleanos',
+                    title: `¡Hoy es el cumpleaños de Q∴H∴ ${nombre}!`,
+                    message: 'Envíale un saludo fraternal.',
+                    href: usuario.slug ? `/usuarios/${usuario.slug}` : null,
+                })),
+                skipDuplicates: true,
+            });
+        } catch {
+            // No interrumpir si falla la notificación in-app
+        }
+
+        notified++;
     }
 
     return Response.json({
