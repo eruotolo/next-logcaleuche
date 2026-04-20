@@ -56,9 +56,11 @@ export function FeedList({ posts, canEdit = false, canDelete = false, categories
                         <ChevronLeft className="h-4 w-4" />
                     </button>
 
-                    {Array.from({ length: totalPages }, (_, i) => (
+                    {Array.from({ length: totalPages }, (_, i) => {
+                        const pageNum = i + 1;
+                        return (
                         <button
-                            key={i}
+                            key={pageNum}
                             type="button"
                             onClick={() => setPage(i)}
                             className={`h-8 w-8 rounded-lg border text-xs font-semibold transition-colors ${
@@ -69,7 +71,8 @@ export function FeedList({ posts, canEdit = false, canDelete = false, categories
                         >
                             {i + 1}
                         </button>
-                    ))}
+                        );
+                    })}
 
                     <button
                         type="button"

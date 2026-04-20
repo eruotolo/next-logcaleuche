@@ -11,8 +11,8 @@ import { useModal } from '@/shared/hooks/useModal';
 import { UserForm } from './UserForm';
 
 interface CreateUserModalProps {
-    grados: any[];
-    categories: any[];
+    grados: { id: number; nombre: string }[];
+    categories: { id: number; nombre: string }[];
 }
 
 export function CreateUserModal({ grados, categories }: CreateUserModalProps) {

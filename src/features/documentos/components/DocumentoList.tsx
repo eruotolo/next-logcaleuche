@@ -2,8 +2,6 @@
 
 import { useState } from 'react';
 
-import NextImage from 'next/image';
-
 import { Download, Eye, FileText, Image, Trash } from 'lucide-react';
 import { toast } from 'sonner';
 

@@ -72,8 +72,9 @@ export function EditEntradaForm({
     return (
         <form action={formAction} className="cg-form-container max-w-lg space-y-4">
             <div className="space-y-1">
-                <label className="form-label">Miembro *</label>
+                <label htmlFor="userId" className="form-label">Miembro *</label>
                 <select
+                    id="userId"
                     name="userId"
                     required
                     defaultValue={entrada.userId ?? ''}
@@ -90,8 +91,9 @@ export function EditEntradaForm({
 
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                    <label className="form-label">Mes *</label>
+                    <label htmlFor="mes" className="form-label">Mes *</label>
                     <select
+                        id="mes"
                         name="mes"
                         required
                         defaultValue={entrada.mes ?? ''}
@@ -106,14 +108,15 @@ export function EditEntradaForm({
                     </select>
                 </div>
                 <div className="space-y-1">
-                    <label className="form-label">Año *</label>
-                    <Input name="ano" defaultValue={entrada.ano ?? ''} required />
+                    <label htmlFor="ano" className="form-label">Año *</label>
+                    <Input id="ano" name="ano" defaultValue={entrada.ano ?? ''} required />
                 </div>
             </div>
 
             <div className="space-y-1">
-                <label className="form-label">Motivo *</label>
+                <label htmlFor="motivoId" className="form-label">Motivo *</label>
                 <select
+                    id="motivoId"
                     name="motivoId"
                     required
                     defaultValue={entrada.motivoId ?? ''}
@@ -129,13 +132,14 @@ export function EditEntradaForm({
             </div>
 
             <div className="space-y-1">
-                <label className="form-label">Fecha del movimiento *</label>
-                <Input name="fecha" type="date" required defaultValue={fechaDefault} />
+                <label htmlFor="fecha" className="form-label">Fecha del movimiento *</label>
+                <Input id="fecha" name="fecha" type="date" required defaultValue={fechaDefault} />
             </div>
 
             <div className="space-y-1">
-                <label className="form-label">Monto (CLP) *</label>
+                <label htmlFor="monto" className="form-label">Monto (CLP) *</label>
                 <Input
+                    id="monto"
                     name="monto"
                     type="number"
                     min="1"

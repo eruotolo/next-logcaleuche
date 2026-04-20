@@ -38,13 +38,13 @@ export function EventoForm({ grados, tiposActividad, onSuccess }: EventoFormProp
     return (
         <form action={formAction} className="cg-form-container max-w-lg space-y-5">
             <div className="space-y-1">
-                <label className="form-label">Nombre del Evento *</label>
-                <Input name="nombre" placeholder="Ej: La Búsqueda de la Verdad" required />
+                <label htmlFor="nombre" className="form-label">Nombre del Evento *</label>
+                <Input id="nombre" name="nombre" placeholder="Ej: La Búsqueda de la Verdad" required />
             </div>
 
             <div className="space-y-1">
-                <label className="form-label">Tipo de Actividad *</label>
-                <select name="tipoActividadId" required className="form-select">
+                <label htmlFor="tipoActividadId" className="form-label">Tipo de Actividad *</label>
+                <select id="tipoActividadId" name="tipoActividadId" required className="form-select">
                     <option value="">Seleccionar…</option>
                     {tiposActividad.map((t) => (
                         <option key={t.id} value={t.id}>
@@ -55,8 +55,9 @@ export function EventoForm({ grados, tiposActividad, onSuccess }: EventoFormProp
             </div>
 
             <div className="space-y-1">
-                <label className="form-label">Autor / Responsable</label>
+                <label htmlFor="autor" className="form-label">Autor / Responsable</label>
                 <Input
+                    id="autor"
                     name="autor"
                     placeholder="Ej: Q.H. Pedro Bravo — Brindis: Q.H. Juan Serra / Q.H. Ivan Segovia"
                 />
@@ -64,23 +65,23 @@ export function EventoForm({ grados, tiposActividad, onSuccess }: EventoFormProp
 
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                    <label className="form-label">Fecha *</label>
-                    <Input name="fecha" type="date" required />
+                    <label htmlFor="fecha" className="form-label">Fecha *</label>
+                    <Input id="fecha" name="fecha" type="date" required />
                 </div>
                 <div className="space-y-1">
-                    <label className="form-label">Hora</label>
-                    <Input name="hora" type="time" placeholder="20:00" />
+                    <label htmlFor="hora" className="form-label">Hora</label>
+                    <Input id="hora" name="hora" type="time" placeholder="20:00" />
                 </div>
             </div>
 
             <div className="space-y-1">
-                <label className="form-label">Lugar</label>
-                <Input name="lugar" placeholder="Ej: Casa Masónica de Castro" />
+                <label htmlFor="lugar" className="form-label">Lugar</label>
+                <Input id="lugar" name="lugar" placeholder="Ej: Casa Masónica de Castro" />
             </div>
 
             <div className="space-y-1">
-                <label className="form-label">Grado *</label>
-                <select name="grado" required className="form-select">
+                <label htmlFor="grado" className="form-label">Grado *</label>
+                <select id="grado" name="grado" required className="form-select">
                     <option value="">Seleccionar…</option>
                     {grados.map((g) => (
                         <option key={g.id} value={g.id}>

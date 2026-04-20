@@ -226,7 +226,7 @@ export function EventoCalendar({ eventos, isAdmin, grados = [], tiposActividad =
     const todayUTC = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
     const upcomingEvents = eventos
         .filter((e) => e.fecha && new Date(e.fecha).getTime() >= todayUTC)
-        .sort((a, b) => new Date(a.fecha!).getTime() - new Date(b.fecha!).getTime())
+        .sort((a, b) => new Date(a.fecha ?? 0).getTime() - new Date(b.fecha ?? 0).getTime())
         .slice(0, 5);
 
     const nextEvent = upcomingEvents[0];
@@ -310,7 +310,7 @@ export function EventoCalendar({ eventos, isAdmin, grados = [], tiposActividad =
 
                                 return (
                                     <div
-                                        key={`${d.date.toISOString()}-${i}`}
+                                        key={d.date.toISOString()}
                                         className={`p-3 transition-colors hover:bg-[rgba(255,255,255,0.02)] ${
                                             i >= 7 ? 'border-t border-[rgba(255,255,255,0.05)]' : ''
                                         } ${

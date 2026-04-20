@@ -44,10 +44,12 @@ export function TablePagination({ currentPage, totalPages, onPageChange }: Table
                 </button>
 
                 {/* Números de página — ocultos en mobile para evitar desbordamiento */}
-                {pages.map((p, i) =>
-                    p === '...' ? (
+                {pages.map((p, i) => {
+                    const prevPage = pages[i - 1];
+                    const ellipsisKey = `ellipsis-after-${typeof prevPage === 'number' ? prevPage : i}`;
+                    return p === '...' ? (
                         <span
-                            key={`ellipsis-${i}`}
+                            key={ellipsisKey}
                             className="text-cg-outline hidden h-8 w-8 items-center justify-center text-xs sm:flex"
                         >
                             …
@@ -65,8 +67,8 @@ export function TablePagination({ currentPage, totalPages, onPageChange }: Table
                         >
                             {p}
                         </button>
-                    ),
-                )}
+                    );
+                })}
 
                 <button
                     type="button"

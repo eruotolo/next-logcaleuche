@@ -81,12 +81,13 @@ function EditForm({
     return (
         <form action={formAction} className="space-y-4">
             <div className="space-y-1">
-                <label className="form-label">Nombre del Evento *</label>
-                <Input name="nombre" defaultValue={evento.nombre} required />
+                <label htmlFor="edit-nombre" className="form-label">Nombre del Evento *</label>
+                <Input id="edit-nombre" name="nombre" defaultValue={evento.nombre} required />
             </div>
             <div className="space-y-1">
-                <label className="form-label">Tipo de Actividad *</label>
+                <label htmlFor="edit-tipoActividadId" className="form-label">Tipo de Actividad *</label>
                 <select
+                    id="edit-tipoActividadId"
                     name="tipoActividadId"
                     required
                     className="form-select"
@@ -101,30 +102,32 @@ function EditForm({
                 </select>
             </div>
             <div className="space-y-1">
-                <label className="form-label">Autor / Responsable</label>
-                <Input name="autor" defaultValue={evento.autor ?? ''} />
+                <label htmlFor="edit-autor" className="form-label">Autor / Responsable</label>
+                <Input id="edit-autor" name="autor" defaultValue={evento.autor ?? ''} />
             </div>
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                    <label className="form-label">Fecha *</label>
-                    <Input name="fecha" type="date" defaultValue={fechaStr} required />
+                    <label htmlFor="edit-fecha" className="form-label">Fecha *</label>
+                    <Input id="edit-fecha" name="fecha" type="date" defaultValue={fechaStr} required />
                 </div>
                 <div className="space-y-1">
-                    <label className="form-label">Hora</label>
-                    <Input name="hora" type="time" defaultValue={evento.hora ?? ''} />
+                    <label htmlFor="edit-hora" className="form-label">Hora</label>
+                    <Input id="edit-hora" name="hora" type="time" defaultValue={evento.hora ?? ''} />
                 </div>
             </div>
             <div className="space-y-1">
-                <label className="form-label">Lugar</label>
+                <label htmlFor="edit-lugar" className="form-label">Lugar</label>
                 <Input
+                    id="edit-lugar"
                     name="lugar"
                     defaultValue={evento.lugar ?? ''}
                     placeholder="Casa Masónica de Castro"
                 />
             </div>
             <div className="space-y-1">
-                <label className="form-label">Grado *</label>
+                <label htmlFor="edit-grado" className="form-label">Grado *</label>
                 <select
+                    id="edit-grado"
                     name="grado"
                     required
                     className="form-select"

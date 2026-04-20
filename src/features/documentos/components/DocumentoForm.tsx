@@ -38,17 +38,17 @@ export function DocumentoForm({ onSuccess }: DocumentoFormProps = {}) {
     return (
         <form action={formAction} className="cg-form-container max-w-lg space-y-5">
             <div className="space-y-1">
-                <label className="form-label">Nombre del Documento *</label>
-                <Input name="nombre" placeholder="Ej: Reglamento Interno 2024" required />
+                <label htmlFor="nombre" className="form-label">Nombre del Documento *</label>
+                <Input id="nombre" name="nombre" placeholder="Ej: Reglamento Interno 2024" required />
             </div>
 
             <div className="space-y-1">
-                <label className="form-label">Fecha *</label>
-                <Input name="fecha" type="date" required />
+                <label htmlFor="fecha" className="form-label">Fecha *</label>
+                <Input id="fecha" name="fecha" type="date" required />
             </div>
 
             <div className="space-y-3">
-                <label className="form-label">Archivo PDF *</label>
+                <p className="form-label">Archivo PDF *</p>
                 <div className="flex flex-col gap-3">
                     {selectedFileName && (
                         <div className="flex items-center gap-3 rounded-lg border border-[rgba(70,70,88,0.3)] bg-[rgba(255,255,255,0.02)] p-3 shadow-sm">

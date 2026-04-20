@@ -55,8 +55,8 @@ export function SalidaForm({ motivos, onSuccess }: SalidaFormProps) {
         <form action={formAction} className="cg-form-container max-w-lg space-y-4">
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                    <label className="form-label">Mes *</label>
-                    <select name="mes" required className="form-select">
+                    <label htmlFor="mes" className="form-label">Mes *</label>
+                    <select id="mes" name="mes" required className="form-select">
                         <option value="">Seleccionar…</option>
                         {MESES.map((m) => (
                             <option key={m} value={m}>
@@ -66,14 +66,14 @@ export function SalidaForm({ motivos, onSuccess }: SalidaFormProps) {
                     </select>
                 </div>
                 <div className="space-y-1">
-                    <label className="form-label">Año *</label>
-                    <Input name="ano" defaultValue={currentYear} required />
+                    <label htmlFor="ano" className="form-label">Año *</label>
+                    <Input id="ano" name="ano" defaultValue={currentYear} required />
                 </div>
             </div>
 
             <div className="space-y-1">
-                <label className="form-label">Motivo *</label>
-                <select name="motivoId" required className="form-select">
+                <label htmlFor="motivoId" className="form-label">Motivo *</label>
+                <select id="motivoId" name="motivoId" required className="form-select">
                     <option value="">Seleccionar motivo…</option>
                     {motivos.map((m) => (
                         <option key={m.id} value={m.id}>
@@ -84,8 +84,9 @@ export function SalidaForm({ motivos, onSuccess }: SalidaFormProps) {
             </div>
 
             <div className="space-y-1">
-                <label className="form-label">Fecha del movimiento *</label>
+                <label htmlFor="fecha" className="form-label">Fecha del movimiento *</label>
                 <Input
+                    id="fecha"
                     name="fecha"
                     type="date"
                     required
@@ -94,8 +95,8 @@ export function SalidaForm({ motivos, onSuccess }: SalidaFormProps) {
             </div>
 
             <div className="space-y-1">
-                <label className="form-label">Monto (CLP) *</label>
-                <Input name="monto" type="number" min="1" step="1" placeholder="50000" required />
+                <label htmlFor="monto" className="form-label">Monto (CLP) *</label>
+                <Input id="monto" name="monto" type="number" min="1" step="1" placeholder="50000" required />
             </div>
 
             <div className="flex justify-end gap-3 pt-2">

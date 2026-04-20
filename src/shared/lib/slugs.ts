@@ -19,7 +19,7 @@ export function slugify(text: string): string {
  * Genera un slug único para un modelo y campo específicos.
  */
 export async function generateUniqueSlug(
-    model: any,
+    model: string,
     title: string,
     slugField = 'slug',
     idField = 'id',
@@ -30,7 +30,7 @@ export async function generateUniqueSlug(
     let counter = 1;
 
     while (true) {
-        const exists = await (prisma as any)[model].findFirst({
+        const exists = await (prisma as unknown as Record<string, { findFirst: (args: unknown) => Promise<unknown> }>)[model].findFirst({
             where: {
                 [slugField]: slug,
                 ...(excludeId ? { NOT: { [idField]: excludeId } } : {}),

@@ -1,6 +1,7 @@
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
 
+// biome-ignore lint/style/noNonNullAssertion: guaranteed by environment validation at startup
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 
 const globalForPrisma = globalThis as unknown as {

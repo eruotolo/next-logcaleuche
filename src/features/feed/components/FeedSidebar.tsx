@@ -32,7 +32,7 @@ interface FeedSidebarProps {
     totalPosts: number;
 }
 
-export function FeedSidebar({ posts, eventos, upcomingBirthdays, totalPosts }: FeedSidebarProps) {
+export function FeedSidebar({ posts, eventos, upcomingBirthdays }: FeedSidebarProps) {
     return (
         <aside className="space-y-8">
             {/* Feed de Noticias */}

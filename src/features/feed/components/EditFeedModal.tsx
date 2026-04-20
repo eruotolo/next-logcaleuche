@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState } from 'react';
 
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
 import { ImageIcon } from 'lucide-react';
@@ -111,9 +112,9 @@ export function EditFeedModal({ post, categories, trigger }: EditFeedModalProps)
 
     return (
         <>
-            <span onClick={() => open()} className="cursor-pointer">
+            <button type="button" onClick={() => open()} className="cursor-pointer">
                 {trigger}
-            </span>
+            </button>
 
             <Modal open={isOpen} onClose={handleClose} title="Editar Publicación" size="lg">
                 <form action={action} className="space-y-5">
@@ -165,15 +166,16 @@ export function EditFeedModal({ post, categories, trigger }: EditFeedModalProps)
                         </div>
 
                         <div className="space-y-2">
-                            <label className="form-label">Imagen de Portada</label>
+                            <p className="form-label">Imagen de Portada</p>
                             <div className="flex flex-col gap-2">
                                 {previewUrl && (
                                     <div className="relative h-24 w-full overflow-hidden rounded-lg border border-[rgba(70,70,88,0.3)]">
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img
+                                        <Image
                                             src={previewUrl}
                                             alt="Preview portada"
-                                            className="h-full w-full object-cover"
+                                            fill
+                                            className="object-cover"
+                                            unoptimized
                                         />
                                     </div>
                                 )}

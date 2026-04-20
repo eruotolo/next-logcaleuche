@@ -96,11 +96,13 @@ export function FeedDetail({ post, others, currentUser }: FeedDetailProps) {
                     <Card className="overflow-hidden border-none shadow-sm">
                         {post.fileName && (
                             isImageFile(post.fileName) ? (
-                                <div className="h-[400px] w-full overflow-hidden">
-                                    <img
+                                <div className="relative h-[400px] w-full overflow-hidden">
+                                    <Image
                                         src={getCloudinaryRawImageUrl(post.fileName) ?? ''}
                                         alt={post.titulo ?? ''}
-                                        className="h-full w-full object-cover"
+                                        fill
+                                        className="object-cover"
+                                        unoptimized
                                     />
                                 </div>
                             ) : (
@@ -227,11 +229,13 @@ export function FeedDetail({ post, others, currentUser }: FeedDetailProps) {
                                 <Card className="group overflow-hidden border-[rgba(70,70,88,0.2)] transition-shadow hover:shadow-md">
                                     <div className="flex gap-3 p-3">
                                         {other.fileName && isImageFile(other.fileName) ? (
-                                            <div className="h-16 w-16 shrink-0 overflow-hidden rounded">
-                                                <img
+                                            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded">
+                                                <Image
                                                     src={getCloudinaryRawImageUrl(other.fileName) ?? ''}
                                                     alt=""
-                                                    className="h-full w-full object-cover"
+                                                    fill
+                                                    className="object-cover"
+                                                    unoptimized
                                                 />
                                             </div>
                                         ) : (

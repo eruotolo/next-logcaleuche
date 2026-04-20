@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useState } from 'react';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -16,8 +17,13 @@ import { useAutosave } from '@/shared/hooks/useAutosave';
 
 import { createFeedPost } from '../actions';
 
+interface FeedCategory {
+    id: number;
+    nombre: string;
+}
+
 interface FeedFormProps {
-    categories: any[];
+    categories: FeedCategory[];
     onSuccess?: () => void;
 }
 
@@ -85,8 +91,9 @@ export function FeedForm({ categories, onSuccess }: FeedFormProps) {
     const formContent = (
         <form action={action} className="space-y-6">
             <div className="space-y-2">
-                <label className="form-label">Título</label>
+                <label htmlFor="titulo" className="form-label">Título</label>
                 <Input
+                    id="titulo"
                     name="titulo"
                     placeholder="Ej: Resumen de la última Tenida"
                     required
@@ -99,8 +106,9 @@ export function FeedForm({ categories, onSuccess }: FeedFormProps) {
 
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <div className="space-y-2">
-                    <label className="form-label">Categoría</label>
+                    <label htmlFor="category" className="form-label">Categoría</label>
                     <select
+                        id="category"
                         name="category"
                         className="form-select"
                         required
@@ -121,15 +129,16 @@ export function FeedForm({ categories, onSuccess }: FeedFormProps) {
                 </div>
 
                 <div className="space-y-3">
-                    <label className="form-label">Imagen de Portada (Opcional)</label>
+                    <p className="form-label">Imagen de Portada (Opcional)</p>
                     <div className="flex flex-col gap-3">
                         {previewUrl && (
                             <div className="relative h-28 w-full overflow-hidden rounded-lg border border-[rgba(70,70,88,0.3)] shadow-sm md:w-48">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img
+                                <Image
                                     src={previewUrl}
                                     alt="Preview portada"
-                                    className="h-full w-full object-cover"
+                                    fill
+                                    className="object-cover"
+                                    unoptimized
                                 />
                             </div>
                         )}
@@ -152,8 +161,9 @@ export function FeedForm({ categories, onSuccess }: FeedFormProps) {
             </div>
 
             <div className="space-y-2">
-                <label className="form-label">Contenido</label>
+                <label htmlFor="contenido" className="form-label">Contenido</label>
                 <textarea
+                    id="contenido"
                     name="contenido"
                     rows={onSuccess ? 6 : 8}
                     className="form-textarea"

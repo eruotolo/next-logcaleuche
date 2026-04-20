@@ -16,9 +16,19 @@ import { Input } from '@/shared/components/ui/input';
 
 import { createUser } from '../actions';
 
+interface Grado {
+    id: number;
+    nombre: string;
+}
+
+interface Category {
+    id: number;
+    nombre: string;
+}
+
 interface UserFormProps {
-    grados: any[];
-    categories: any[];
+    grados: Grado[];
+    categories: Category[];
     onSuccess?: () => void;
 }
 
@@ -59,30 +69,31 @@ export function UserForm({ grados, categories, onSuccess }: UserFormProps) {
         <form action={action} className="space-y-4">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                    <label className="form-label">Nombre</label>
-                    <Input name="name" placeholder="Ej: Juan" required />
+                    <label htmlFor="name" className="form-label">Nombre</label>
+                    <Input id="name" name="name" placeholder="Ej: Juan" required />
                 </div>
                 <div className="space-y-2">
-                    <label className="form-label">Apellido</label>
-                    <Input name="lastName" placeholder="Ej: Pérez" required />
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                    <label className="form-label">Email</label>
-                    <Input name="email" type="email" placeholder="juan@ejemplo.com" required />
-                </div>
-                <div className="space-y-2">
-                    <label className="form-label">RUT (Usuario)</label>
-                    <Input name="username" placeholder="12345678" required />
+                    <label htmlFor="lastName" className="form-label">Apellido</label>
+                    <Input id="lastName" name="lastName" placeholder="Ej: Pérez" required />
                 </div>
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                    <label className="form-label">Contraseña Inicial</label>
+                    <label htmlFor="email" className="form-label">Email</label>
+                    <Input id="email" name="email" type="email" placeholder="juan@ejemplo.com" required />
+                </div>
+                <div className="space-y-2">
+                    <label htmlFor="username" className="form-label">RUT (Usuario)</label>
+                    <Input id="username" name="username" placeholder="12345678" required />
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                    <label htmlFor="password" className="form-label">Contraseña Inicial</label>
                     <Input
+                        id="password"
                         name="password"
                         type="password"
                         placeholder="Mínimo 6 caracteres"
@@ -90,7 +101,7 @@ export function UserForm({ grados, categories, onSuccess }: UserFormProps) {
                     />
                 </div>
                 <div className="space-y-3">
-                    <label className="form-label">Foto de Perfil (Opcional)</label>
+                    <p className="form-label">Foto de Perfil (Opcional)</p>
                     <div className="flex items-center gap-4">
                         <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full border-2 border-[rgba(70,70,88,0.3)] shadow-sm">
                             {previewUrl ? (
@@ -124,8 +135,8 @@ export function UserForm({ grados, categories, onSuccess }: UserFormProps) {
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                    <label className="form-label">Grado</label>
-                    <select name="gradoId" className="form-select" required>
+                    <label htmlFor="gradoId" className="form-label">Grado</label>
+                    <select id="gradoId" name="gradoId" className="form-select" required>
                         {grados.map((g) => (
                             <option key={g.id} value={g.id}>
                                 {g.nombre}
@@ -134,8 +145,8 @@ export function UserForm({ grados, categories, onSuccess }: UserFormProps) {
                     </select>
                 </div>
                 <div className="space-y-2">
-                    <label className="form-label">Categoría</label>
-                    <select name="categoryId" className="form-select" required defaultValue={3}>
+                    <label htmlFor="categoryId" className="form-label">Categoría</label>
+                    <select id="categoryId" name="categoryId" className="form-select" required defaultValue={3}>
                         {categories.map((c) => (
                             <option key={c.id} value={c.id}>
                                 {c.nombre}

@@ -124,8 +124,9 @@ export function InformeTesoreria() {
                     {tipo === 'mensual' && (
                         <>
                             <div className="space-y-1">
-                                <label className="form-label">Mes</label>
+                                <label htmlFor="informe-mes" className="form-label">Mes</label>
                                 <select
+                                    id="informe-mes"
                                     value={mes}
                                     onChange={(e) => setMes(e.target.value)}
                                     className="form-select"
@@ -138,8 +139,9 @@ export function InformeTesoreria() {
                                 </select>
                             </div>
                             <div className="space-y-1">
-                                <label className="form-label">Año</label>
+                                <label htmlFor="informe-ano" className="form-label">Año</label>
                                 <Input
+                                    id="informe-ano"
                                     value={ano}
                                     onChange={(e) => setAno(e.target.value)}
                                     className="h-9 w-24"
@@ -150,8 +152,9 @@ export function InformeTesoreria() {
 
                     {tipo === 'anual' && (
                         <div className="space-y-1">
-                            <label className="form-label">Año</label>
+                            <label htmlFor="informe-ano" className="form-label">Año</label>
                             <Input
+                                id="informe-ano"
                                 value={ano}
                                 onChange={(e) => setAno(e.target.value)}
                                 className="h-9 w-24"
@@ -162,8 +165,9 @@ export function InformeTesoreria() {
                     {tipo === 'personalizado' && (
                         <>
                             <div className="space-y-1">
-                                <label className="form-label">Desde</label>
+                                <label htmlFor="informe-desde" className="form-label">Desde</label>
                                 <Input
+                                    id="informe-desde"
                                     type="date"
                                     value={desde}
                                     onChange={(e) => setDesde(e.target.value)}
@@ -171,8 +175,9 @@ export function InformeTesoreria() {
                                 />
                             </div>
                             <div className="space-y-1">
-                                <label className="form-label">Hasta</label>
+                                <label htmlFor="informe-hasta" className="form-label">Hasta</label>
                                 <Input
+                                    id="informe-hasta"
                                     type="date"
                                     value={hasta}
                                     onChange={(e) => setHasta(e.target.value)}

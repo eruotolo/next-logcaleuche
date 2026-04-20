@@ -47,12 +47,42 @@ interface PagoItem {
     fechaMov: Date;
 }
 
+interface UserData {
+    id: number;
+    name: string | null;
+    lastName: string | null;
+    email: string;
+    username: string;
+    phone: string | null;
+    city: string | null;
+    address: string | null;
+    image: string | null;
+    gradoId: number | null;
+    oficialidadId: number | null;
+    cuotaId: number | null;
+    dateBirthday: Date | null;
+    dateInitiation: Date | null;
+    dateSalary: Date | null;
+    dateExalted: Date | null;
+    createdAt: Date;
+    grado: { id: number; nombre: string } | null;
+    oficialidad: { id: number; nombre: string } | null;
+    category: { id: number; nombre: string } | null;
+    tarifa: { id: number; nombre: string; monto: number } | null;
+}
+
+interface CurrentUserData {
+    id: string;
+    categoryId: number;
+}
+
+
 interface UserProfileProps {
-    user: any;
-    currentUser: any;
-    grados: any[];
-    oficiales: any[];
-    categories: any[];
+    user: UserData;
+    currentUser: CurrentUserData | undefined;
+    grados: { id: number; nombre: string }[];
+    oficiales: { id: number; nombre: string }[];
+    categories: { id: number; nombre: string }[];
     tarifas: TarifaOption[];
     pagos: PagoItem[];
 }
@@ -75,8 +105,8 @@ export function UserProfile({
     const [selectedCuotaId, setSelectedCuotaId] = useState<number | ''>(user.cuotaId ?? '');
     const [isSavingCuota, setIsSavingCuota] = useState(false);
 
-    const canEdit = currentUser.id === String(user.id) || currentUser.categoryId <= 2;
-    const isAdmin = currentUser.categoryId <= 2;
+    const canEdit = currentUser ? (currentUser.id === String(user.id) || currentUser.categoryId <= 2) : false;
+    const isAdmin = currentUser ? currentUser.categoryId <= 2 : false;
 
     async function handleAssignTarifa() {
         setIsSavingCuota(true);
@@ -183,11 +213,11 @@ export function UserProfile({
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <div className="space-y-2">
                             <label htmlFor="edit-name" className="form-label">Nombre</label>
-                            <Input id="edit-name" name="name" defaultValue={user.name} required />
+                            <Input id="edit-name" name="name" defaultValue={user.name ?? ''} required />
                         </div>
                         <div className="space-y-2">
                             <label htmlFor="edit-lastName" className="form-label">Apellido</label>
-                            <Input id="edit-lastName" name="lastName" defaultValue={user.lastName} required />
+                            <Input id="edit-lastName" name="lastName" defaultValue={user.lastName ?? ''} required />
                         </div>
                     </div>
 
@@ -198,14 +228,14 @@ export function UserProfile({
                         </div>
                         <div className="space-y-2">
                             <label htmlFor="edit-phone" className="form-label">Teléfono</label>
-                            <Input id="edit-phone" name="phone" defaultValue={user.phone} placeholder="+56 9 ..." />
+                            <Input id="edit-phone" name="phone" defaultValue={user.phone ?? ''} placeholder="+56 9 ..." />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <div className="space-y-2">
                             <label htmlFor="edit-city" className="form-label">Ciudad</label>
-                            <Input id="edit-city" name="city" defaultValue={user.city} />
+                            <Input id="edit-city" name="city" defaultValue={user.city ?? ''} />
                         </div>
                         <div className="space-y-2">
                             <label htmlFor="edit-dateBirthday" className="form-label">Fecha de Nacimiento</label>
@@ -224,7 +254,7 @@ export function UserProfile({
 
                     <div className="space-y-2">
                         <label htmlFor="edit-address" className="form-label">Dirección</label>
-                        <Input id="edit-address" name="address" defaultValue={user.address} />
+                        <Input id="edit-address" name="address" defaultValue={user.address ?? ''} />
                     </div>
 
                     <div className="flex justify-end gap-3 border-t border-[rgba(70,70,88,0.2)] pt-4">
@@ -273,7 +303,7 @@ export function UserProfile({
                                     <Badge className="text-cg-primary-tonal border-[rgba(158,167,255,0.2)] bg-[rgba(158,167,255,0.12)]">
                                         {user.grado?.nombre}
                                     </Badge>
-                                    {user.oficialidadId > 1 && (
+                                    {(user.oficialidadId ?? 0) > 1 && (
                                         <Badge
                                             variant="outline"
                                             className="border-[rgba(249,115,22,0.2)] bg-[rgba(249,115,22,0.12)] text-orange-400"
@@ -419,7 +449,7 @@ export function UserProfile({
                                         <div
                                             className={cn(
                                                 'absolute top-1 -left-8 h-3 w-3 rounded-full border-2 bg-white',
-                                                user.gradoId >= 2
+                                                (user.gradoId ?? 0) >= 2
                                                     ? 'border-blue-600'
                                                     : 'border-[rgba(70,70,88,0.3)]',
                                             )}
@@ -428,7 +458,7 @@ export function UserProfile({
                                             <span
                                                 className={cn(
                                                     'text-sm font-bold',
-                                                    user.gradoId >= 2
+                                                    (user.gradoId ?? 0) >= 2
                                                         ? 'text-cg-on-surface'
                                                         : 'text-cg-outline',
                                                 )}
@@ -448,7 +478,7 @@ export function UserProfile({
                                         <div
                                             className={cn(
                                                 'absolute top-1 -left-8 h-3 w-3 rounded-full border-2 bg-white',
-                                                user.gradoId >= 3
+                                                (user.gradoId ?? 0) >= 3
                                                     ? 'border-blue-600'
                                                     : 'border-[rgba(70,70,88,0.3)]',
                                             )}
@@ -457,7 +487,7 @@ export function UserProfile({
                                             <span
                                                 className={cn(
                                                     'text-sm font-bold',
-                                                    user.gradoId >= 3
+                                                    (user.gradoId ?? 0) >= 3
                                                         ? 'text-cg-on-surface'
                                                         : 'text-cg-outline',
                                                 )}
@@ -533,7 +563,7 @@ export function UserProfile({
                             </Card>
                         )}
 
-                        {currentUser.id === String(user.id) && (
+                        {currentUser?.id === String(user.id) && (
                         <Card>
                                 <CardHeader className="border-b pb-3">
                                     <CardTitle className="flex items-center gap-2 text-sm font-bold">

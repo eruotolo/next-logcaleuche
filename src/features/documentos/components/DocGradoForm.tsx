@@ -66,8 +66,9 @@ export function DocGradoForm({
         <form action={formAction} className="cg-form-container max-w-lg space-y-4">
             {/* Nombre */}
             <div className="space-y-1">
-                <label className="form-label">Nombre *</label>
+                <label htmlFor="nombre" className="form-label">Nombre *</label>
                 <Input
+                    id="nombre"
                     name="nombre"
                     placeholder={tipo === 'trazado' ? 'Nombre del trazado' : 'Nombre del libro'}
                     required
@@ -77,14 +78,14 @@ export function DocGradoForm({
             {/* Autor (solo biblioteca y trazado) */}
             {tipo === 'biblioteca' && (
                 <div className="space-y-1">
-                    <label className="form-label">Autor *</label>
-                    <Input name="autor" placeholder="Autor del libro" required />
+                    <label htmlFor="autor" className="form-label">Autor *</label>
+                    <Input id="autor" name="autor" placeholder="Autor del libro" required />
                 </div>
             )}
             {tipo === 'trazado' && usuarios.length > 0 && (
                 <div className="space-y-1">
-                    <label className="form-label">Autor *</label>
-                    <select name="autor" required className="form-select">
+                    <label htmlFor="autor" className="form-label">Autor *</label>
+                    <select id="autor" name="autor" required className="form-select">
                         <option value="">Seleccionar hermano…</option>
                         {usuarios.map((u) => (
                             <option key={u.id} value={u.id}>
@@ -98,8 +99,8 @@ export function DocGradoForm({
             {/* Tipo de Actividad (solo trazado) */}
             {tipo === 'trazado' && tiposActividad.length > 0 && (
                 <div className="space-y-1">
-                    <label className="form-label">Tipo de Actividad</label>
-                    <select name="tipoActividadId" className="form-select">
+                    <label htmlFor="tipoActividadId" className="form-label">Tipo de Actividad</label>
+                    <select id="tipoActividadId" name="tipoActividadId" className="form-select">
                         <option value="">Seleccionar…</option>
                         {tiposActividad.map((t) => (
                             <option key={t.id} value={t.id}>
@@ -113,15 +114,15 @@ export function DocGradoForm({
             {/* Fecha (solo trazado) */}
             {tipo === 'trazado' && (
                 <div className="space-y-1">
-                    <label className="form-label">Fecha *</label>
-                    <Input name="fecha" type="date" required />
+                    <label htmlFor="fecha" className="form-label">Fecha *</label>
+                    <Input id="fecha" name="fecha" type="date" required />
                 </div>
             )}
 
             {/* Grado */}
             <div className="space-y-1">
-                <label className="form-label">Grado *</label>
-                <select name="grado" required className="form-select">
+                <label htmlFor="grado" className="form-label">Grado *</label>
+                <select id="grado" name="grado" required className="form-select">
                     <option value="">Seleccionar grado…</option>
                     {grados.map((g) => (
                         <option key={g.id} value={g.id}>

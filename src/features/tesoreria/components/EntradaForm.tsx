@@ -64,7 +64,7 @@ export function EntradaForm({ usuarios, motivos, onSuccess }: EntradaFormProps) 
             }
         }
         // Si el motivo cambia a otro que no es cuota, no limpiar — dejar que el usuario edite
-    }, [selectedUserId, selectedMotivoId]);
+    }, [selectedUserId, selectedMotivoId, tarifaMap]);
 
     useEffect(() => {
         if (state?.success) {
@@ -79,8 +79,9 @@ export function EntradaForm({ usuarios, motivos, onSuccess }: EntradaFormProps) 
     return (
         <form action={formAction} className="cg-form-container max-w-lg space-y-4">
             <div className="space-y-1">
-                <label className="form-label">Miembro *</label>
+                <label htmlFor="userId" className="form-label">Miembro *</label>
                 <select
+                    id="userId"
                     name="userId"
                     required
                     className="form-select"
@@ -99,8 +100,8 @@ export function EntradaForm({ usuarios, motivos, onSuccess }: EntradaFormProps) 
 
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                    <label className="form-label">Mes *</label>
-                    <select name="mes" required className="form-select">
+                    <label htmlFor="mes" className="form-label">Mes *</label>
+                    <select id="mes" name="mes" required className="form-select">
                         <option value="">Seleccionar…</option>
                         {MESES.map((m) => (
                             <option key={m} value={m}>
@@ -110,14 +111,15 @@ export function EntradaForm({ usuarios, motivos, onSuccess }: EntradaFormProps) 
                     </select>
                 </div>
                 <div className="space-y-1">
-                    <label className="form-label">Año *</label>
-                    <Input name="ano" defaultValue={currentYear} required />
+                    <label htmlFor="ano" className="form-label">Año *</label>
+                    <Input id="ano" name="ano" defaultValue={currentYear} required />
                 </div>
             </div>
 
             <div className="space-y-1">
-                <label className="form-label">Motivo *</label>
+                <label htmlFor="motivoId" className="form-label">Motivo *</label>
                 <select
+                    id="motivoId"
                     name="motivoId"
                     required
                     className="form-select"
@@ -135,8 +137,9 @@ export function EntradaForm({ usuarios, motivos, onSuccess }: EntradaFormProps) 
             </div>
 
             <div className="space-y-1">
-                <label className="form-label">Fecha del movimiento *</label>
+                <label htmlFor="fecha" className="form-label">Fecha del movimiento *</label>
                 <Input
+                    id="fecha"
                     name="fecha"
                     type="date"
                     required
@@ -145,7 +148,7 @@ export function EntradaForm({ usuarios, motivos, onSuccess }: EntradaFormProps) 
             </div>
 
             <div className="space-y-1">
-                <label className="form-label">
+                <label htmlFor="monto" className="form-label">
                     Monto (CLP) *
                     {selectedMotivoId === MOTIVO_ENTRADA.CUOTA_MENSUAL &&
                         selectedUserId !== null &&
@@ -157,6 +160,7 @@ export function EntradaForm({ usuarios, motivos, onSuccess }: EntradaFormProps) 
                 </label>
                 <input
                     ref={montoRef}
+                    id="monto"
                     name="monto"
                     type="number"
                     min="1"

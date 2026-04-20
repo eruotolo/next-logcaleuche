@@ -10,8 +10,13 @@ import { useModal } from '@/shared/hooks/useModal';
 
 import { FeedForm } from './FeedForm';
 
+interface FeedCategory {
+    id: number;
+    nombre: string;
+}
+
 interface CreateFeedModalProps {
-    categories: any[];
+    categories: FeedCategory[];
 }
 
 export function CreateFeedModal({ categories }: CreateFeedModalProps) {
