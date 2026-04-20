@@ -2,14 +2,14 @@
 
 import { useState } from 'react';
 
-import { Download, Eye, FileText, Image, Trash } from 'lucide-react';
+import { Download, Eye, FileText, Image, Star, Trash } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Tooltip } from '@/shared/components/ui/tooltip';
 import { getCloudinaryPdfUrl } from '@/shared/lib/cloudinary';
 import { formatDate } from '@/shared/lib/utils';
 
-import { deleteDocumento } from '../actions';
+import { deleteDocumento, toggleDocumentFavorite } from '../actions';
 import { DocumentoPreviewModal, type PreviewDoc } from './DocumentoPreviewModal';
 import { EditDocumentoModal } from './EditDocumentoModal';
 
@@ -22,12 +22,13 @@ interface DocumentoListProps {
     }[];
     isAdmin: boolean;
     canEdit?: boolean;
+    favoritedIds?: number[];
+    filterOnUnfavorite?: boolean;
 }
 
 function getExt(fileName: string | null): string {
     if (!fileName) return '';
     const raw = fileName.split('.').pop()?.toLowerCase() ?? '';
-    // Si tiene más de 5 chars no es una extensión real (es parte del path sin extensión)
     return raw.length <= 5 ? raw : '';
 }
 
@@ -39,7 +40,6 @@ function getFileIcon(fileName: string | null) {
         return { icon: FileText, color: 'text-blue-400', bg: 'bg-[rgba(96,165,250,0.1)]' };
     if (['xls', 'xlsx'].includes(ext))
         return { icon: FileText, color: 'text-green-400', bg: 'bg-[rgba(74,222,128,0.1)]' };
-    // PDF explícito o sin extensión (raw uploads sin extensión son PDFs)
     return { icon: FileText, color: 'text-[#d73357]', bg: 'bg-[rgba(215,51,87,0.1)]' };
 }
 
@@ -48,8 +48,15 @@ function getFileExt(fileName: string | null) {
     return ext ? ext.toUpperCase() : 'PDF';
 }
 
-export function DocumentoList({ documentos, isAdmin, canEdit = false }: DocumentoListProps) {
+export function DocumentoList({
+    documentos,
+    isAdmin,
+    canEdit = false,
+    favoritedIds = [],
+    filterOnUnfavorite = false,
+}: DocumentoListProps) {
     const [preview, setPreview] = useState<PreviewDoc | null>(null);
+    const [favs, setFavs] = useState<Set<number>>(new Set(favoritedIds));
 
     async function handleDelete(id: number, nombre: string | null) {
         if (!confirm(`¿Eliminar el documento "${nombre}"?`)) return;
@@ -58,7 +65,19 @@ export function DocumentoList({ documentos, isAdmin, canEdit = false }: Document
         else toast.error(res.error);
     }
 
-    if (documentos.length === 0) {
+    async function handleToggleFav(id: number) {
+        setFavs((prev) => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+        await toggleDocumentFavorite('documento', id);
+    }
+
+    const visibleDocs = filterOnUnfavorite ? documentos.filter((d) => favs.has(d.id)) : documentos;
+
+    if (visibleDocs.length === 0) {
         return (
             <div className="cg-empty-state">
                 <FileText className="text-cg-outline mx-auto mb-3 h-10 w-10" />
@@ -71,7 +90,7 @@ export function DocumentoList({ documentos, isAdmin, canEdit = false }: Document
         <>
             {preview && <DocumentoPreviewModal doc={preview} onClose={() => setPreview(null)} />}
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {documentos.map((d) => {
+                {visibleDocs.map((d) => {
                     const { icon: Icon, color, bg } = getFileIcon(d.fileName);
                     const ext = getFileExt(d.fileName);
 
@@ -102,11 +121,15 @@ export function DocumentoList({ documentos, isAdmin, canEdit = false }: Document
 
                             {/* Actions */}
                             <div className="flex items-center justify-between border-t border-[rgba(255,255,255,0.05)] pt-3">
-                                <span
-                                    className={`flex h-6 w-6 items-center justify-center rounded ${bg}`}
-                                >
-                                    <Icon className={`h-3.5 w-3.5 ${color}`} />
-                                </span>
+                                <Tooltip content={favs.has(d.id) ? 'Quitar favorito' : 'Agregar a favoritos'}>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleToggleFav(d.id)}
+                                        className={`flex h-6 w-6 items-center justify-center rounded transition-colors ${favs.has(d.id) ? 'text-yellow-400' : 'text-cg-outline hover:text-yellow-400'}`}
+                                    >
+                                        <Star className="h-3.5 w-3.5" fill={favs.has(d.id) ? 'currentColor' : 'none'} />
+                                    </button>
+                                </Tooltip>
                                 <div className="flex items-center gap-1">
                                     {d.fileName && (
                                         <Tooltip content="Vista previa">

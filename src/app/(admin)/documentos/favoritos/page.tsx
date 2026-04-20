@@ -73,6 +73,7 @@ export default async function FavoritosPage() {
                         isAdmin={false}
                         canEdit={false}
                         favoritedIds={biblioteca.map((b) => b.id)}
+                        filterOnUnfavorite
                     />
                 </section>
             )}
@@ -99,6 +100,7 @@ export default async function FavoritosPage() {
                         isAdmin={false}
                         canEdit={false}
                         favoritedIds={trazados.map((t) => t.id)}
+                        filterOnUnfavorite
                     />
                 </section>
             )}
@@ -113,6 +115,8 @@ export default async function FavoritosPage() {
                         documentos={documentos}
                         isAdmin={false}
                         canEdit={false}
+                        favoritedIds={documentos.map((d) => d.id)}
+                        filterOnUnfavorite
                     />
                 </section>
             )}

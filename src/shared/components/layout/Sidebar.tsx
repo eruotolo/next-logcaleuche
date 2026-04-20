@@ -106,7 +106,6 @@ export function Sidebar({ collapsed, mobileOpen, onMobileClose, grado, oficialid
             children: [
                 { label: 'Todos', href: '/documentos' },
                 { label: 'Favoritos', href: '/documentos/favoritos' },
-                { label: 'Buscar', href: '/documentos/buscar' },
             ],
         },
         {
@@ -283,7 +282,7 @@ export function Sidebar({ collapsed, mobileOpen, onMobileClose, grado, oficialid
                                     href={child.href}
                                     className={cn(
                                         'flex items-center gap-2 rounded-lg py-2 pr-4 pl-10 text-[13px] transition-colors duration-150',
-                                        isActive(child.href)
+                                        pathname === child.href
                                             ? 'font-semibold text-[#9ea7ff]'
                                             : 'text-[#aaa9be]/70 hover:text-[#e7e6fc]',
                                     )}
@@ -292,7 +291,7 @@ export function Sidebar({ collapsed, mobileOpen, onMobileClose, grado, oficialid
                                     <span
                                         className={cn(
                                             'h-1 w-1 shrink-0 rounded-full transition-colors',
-                                            isActive(child.href) ? 'bg-[#4cd6fb]' : 'bg-[#464658]',
+                                            pathname === child.href ? 'bg-[#4cd6fb]' : 'bg-[#464658]',
                                         )}
                                     />
                                     {child.label}

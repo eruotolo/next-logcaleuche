@@ -38,6 +38,7 @@ interface DocGradoListProps {
     isAdmin: boolean;
     canEdit?: boolean;
     favoritedIds?: number[];
+    filterOnUnfavorite?: boolean;
     grados?: { id: number; nombre: string }[];
     usuarios?: { id: number; name: string | null; lastName: string | null }[];
     tiposActividad?: { id: number; nombre: string }[];
@@ -68,6 +69,7 @@ export function DocGradoList({
     isAdmin,
     canEdit = false,
     favoritedIds = [],
+    filterOnUnfavorite = false,
     grados = [],
     usuarios = [],
     tiposActividad = [],
@@ -114,7 +116,9 @@ export function DocGradoList({
 
     const { icon: TipoIcon, color } = tipoIcons[tipo];
 
-    if (items.length === 0) {
+    const visibleItems = filterOnUnfavorite ? items.filter((item) => favs.has(item.id)) : items;
+
+    if (visibleItems.length === 0) {
         return (
             <div className="cg-empty-state">
                 <TipoIcon className="text-cg-outline mx-auto mb-3 h-10 w-10" />
@@ -138,7 +142,7 @@ export function DocGradoList({
                 isPending={isDeleting}
             />
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {items.map((item) => {
+                {visibleItems.map((item) => {
                     const ext = getFileExt(item.fileName);
                     const author = getAuthor(item);
 

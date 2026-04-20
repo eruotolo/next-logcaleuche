@@ -3,12 +3,11 @@ import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
-import { Search, Star } from 'lucide-react';
+import { Star } from 'lucide-react';
 
-import { getDocumentos } from '@/features/documentos/actions';
+import { getDocumentos, getUserDocumentFavorites } from '@/features/documentos/actions';
 import { DocumentoList } from '@/features/documentos/components/DocumentoList';
 import { UploadDocumentoModal } from '@/features/documentos/components/UploadDocumentoModal';
-import { Button } from '@/shared/components/ui/button';
 import { auth } from '@/shared/lib/auth';
 
 export const metadata: Metadata = {
@@ -21,7 +20,10 @@ export default async function DocumentosPage() {
 
     const isAdmin = session.user.categoryId <= 2;
     const canEdit = session.user.categoryId <= 3;
-    const documentos = await getDocumentos();
+    const [documentos, allFavs] = await Promise.all([getDocumentos(), getUserDocumentFavorites()]);
+    const favoritedIds = allFavs
+        .filter((f) => f.documentType === 'documento')
+        .map((f) => f.documentId);
 
     return (
         <div className="space-y-6">
@@ -35,23 +37,18 @@ export default async function DocumentosPage() {
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" asChild>
-                        <Link href="/documentos/buscar">
-                            <Search className="mr-1.5 h-4 w-4" />
-                            Buscar
-                        </Link>
-                    </Button>
-                    <Button variant="outline" size="sm" asChild>
-                        <Link href="/documentos/favoritos">
-                            <Star className="mr-1.5 h-4 w-4" />
-                            Favoritos
-                        </Link>
-                    </Button>
+                    <Link
+                        href="/documentos/favoritos"
+                        className="inline-flex h-8 cursor-pointer items-center justify-center rounded-md border border-[rgba(70,70,88,0.35)] bg-transparent px-3 text-xs font-medium text-cg-on-surface transition-colors hover:bg-[rgba(255,255,255,0.06)]"
+                    >
+                        <Star className="mr-1.5 h-4 w-4" />
+                        Favoritos
+                    </Link>
                     {isAdmin && <UploadDocumentoModal />}
                 </div>
             </div>
 
-            <DocumentoList documentos={documentos} isAdmin={isAdmin} canEdit={canEdit} />
+            <DocumentoList documentos={documentos} isAdmin={isAdmin} canEdit={canEdit} favoritedIds={favoritedIds} />
         </div>
     );
 }
