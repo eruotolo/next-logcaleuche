@@ -7,15 +7,26 @@ import { toast } from 'sonner';
 
 import { disableAllNotifications, enableAllNotifications, updateNotificationPreference } from '@/features/notificaciones/actions';
 
-const NOTIFICATION_TYPES = [
-    { key: 'feed', label: 'Publicaciones del Feed', desc: 'Cuando alguien publica en el feed' },
-    { key: 'comment', label: 'Comentarios', desc: 'Comentarios en tus publicaciones' },
-    { key: 'evento', label: 'Eventos', desc: 'Nuevos eventos de la Logia' },
-    { key: 'biblioteca', label: 'Biblioteca', desc: 'Nuevos documentos de biblioteca' },
-    { key: 'trazado', label: 'Trazados', desc: 'Nuevos trazados publicados' },
-    { key: 'cumpleanos', label: 'Cumpleaños', desc: 'Cumpleaños de Hermanos' },
-    { key: 'aniversario', label: 'Aniversarios de Iniciación', desc: 'Aniversarios masónicos de Hermanos' },
-] as const;
+// 'user'      → toggle normal controlado por el usuario
+// 'mandatory' → siempre activado, no editable
+// 'none'      → sin opción de email
+type EmailMode = 'user' | 'mandatory' | 'none';
+
+const NOTIFICATION_TYPES: {
+    key: string;
+    label: string;
+    desc: string;
+    emailMode: EmailMode;
+}[] = [
+    { key: 'feed', label: 'Publicaciones del Feed', desc: 'Cuando alguien publica en el feed', emailMode: 'none' },
+    { key: 'comment', label: 'Comentarios', desc: 'Comentarios en tus publicaciones', emailMode: 'none' },
+    { key: 'evento', label: 'Eventos (Tenidas)', desc: 'Invitación semanal a la próxima Tenida', emailMode: 'mandatory' },
+    { key: 'biblioteca', label: 'Biblioteca', desc: 'Nuevos documentos de biblioteca', emailMode: 'none' },
+    { key: 'trazado', label: 'Trazados', desc: 'Nuevos trazados publicados', emailMode: 'none' },
+    { key: 'documento', label: 'Documentos generales', desc: 'Nuevos documentos subidos a la sección general', emailMode: 'none' },
+    { key: 'cumpleanos', label: 'Cumpleaños', desc: 'Cumpleaños de Hermanos', emailMode: 'user' },
+    { key: 'aniversario', label: 'Aniversarios de Iniciación', desc: 'Aniversarios masónicos de Hermanos', emailMode: 'user' },
+];
 
 interface PreferenceMap {
     [type: string]: { inApp: boolean; email: boolean };
@@ -100,7 +111,7 @@ export function NotificationPreferencesForm({ preferences }: NotificationPrefere
                 <span className="text-center text-xs font-medium text-[#9a9ab0]">Email</span>
             </div>
 
-            {NOTIFICATION_TYPES.map(({ key, label, desc }) => {
+            {NOTIFICATION_TYPES.map(({ key, label, desc, emailMode }) => {
                 const pref = preferences[key] ?? { inApp: true, email: false };
                 return (
                     <div key={key} className="grid grid-cols-[1fr_80px_80px] items-center gap-2 py-4 px-1">
@@ -116,11 +127,23 @@ export function NotificationPreferencesForm({ preferences }: NotificationPrefere
                             />
                         </div>
                         <div className="flex justify-center">
-                            <Toggle
-                                checked={pref.email}
-                                onChange={() => handleToggle(key, 'email', pref.email)}
-                                disabled={isPending}
-                            />
+                            {emailMode === 'user' && (
+                                <Toggle
+                                    checked={pref.email}
+                                    onChange={() => handleToggle(key, 'email', pref.email)}
+                                    disabled={isPending}
+                                />
+                            )}
+                            {emailMode === 'mandatory' && (
+                                <Toggle
+                                    checked={true}
+                                    onChange={() => { /* no-op: mandatory */ }}
+                                    disabled={true}
+                                />
+                            )}
+                            {emailMode === 'none' && (
+                                <span className="text-xs text-[#4a4b6b]">—</span>
+                            )}
                         </div>
                     </div>
                 );

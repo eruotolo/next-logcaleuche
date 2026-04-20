@@ -10,6 +10,7 @@ import { auth } from '@/shared/lib/auth';
 import { logActivity } from '@/shared/lib/activity-log';
 import { requireAdmin } from '@/shared/lib/auth-guards';
 import { prisma } from '@/shared/lib/db';
+import { buildGradoNotifyFilter } from '@/shared/lib/grado';
 import type { ActionResult } from '@/shared/types/actions';
 
 import { createNotifications } from '@/features/notificaciones/actions';
@@ -57,14 +58,6 @@ export const getEventosCalendario = cache(async function getEventosCalendario(gr
     });
 });
 
-export const getProximoEvento = cache(async function getProximoEvento() {
-    return prisma.evento.findFirst({
-        where: { active: 1, fecha: { gte: new Date() } },
-        include: { grado: true, tipoActividad: true },
-        orderBy: { fecha: 'asc' },
-    });
-});
-
 export const getProximaTenida = cache(async function getProximaTenida() {
     return prisma.evento.findFirst({
         where: {
@@ -78,12 +71,11 @@ export const getProximaTenida = cache(async function getProximaTenida() {
 });
 
 export async function getUsuariosParaEvento(gradoId: number) {
-    const gradoWhere =
-        gradoId === 1 ? {} : gradoId === 2 ? { gradoId: { in: [2, 3] } } : { gradoId: 3 };
+    const gradoWhere = buildGradoNotifyFilter(gradoId);
 
     return prisma.user.findMany({
         where: { active: true, ...gradoWhere },
-        select: { email: true, name: true, lastName: true },
+        select: { id: true, email: true, name: true, lastName: true },
     });
 }
 
@@ -132,12 +124,7 @@ export async function createEvento(
     // Notificar a usuarios con gradoId <= gradoId del evento (silencioso)
     try {
         const gradoId = parsed.data.grado;
-        const gradoWhere =
-            gradoId === 1
-                ? {}
-                : gradoId === 2
-                  ? { gradoId: { in: [2, 3] } }
-                  : { gradoId: 3 };
+        const gradoWhere = buildGradoNotifyFilter(gradoId);
 
         const targetUsers = await prisma.user.findMany({
             where: { active: true, ...gradoWhere },

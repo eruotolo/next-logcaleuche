@@ -4,6 +4,23 @@ import { OFICIALIDAD } from '@/shared/constants/domain';
 import { prisma } from '@/shared/lib/db';
 import { sendInvitacionEvento } from '@/shared/lib/email';
 
+// Event emails are mandatory — no preference filter applied
+async function buildDestinatarios(
+    gradoId: number,
+    isTest: boolean,
+): Promise<{ email: string; nombre: string }[]> {
+    if (isTest) {
+        const testEmail = process.env.CRON_TEST_EMAIL ?? '';
+        return testEmail ? [{ email: testEmail, nombre: process.env.CRON_TEST_NAME ?? 'Test' }] : [];
+    }
+
+    const candidatos = await getUsuariosParaEvento(gradoId);
+    return candidatos.map((u) => ({
+        email: u.email,
+        nombre: `${u.name ?? ''} ${u.lastName ?? ''}`.trim(),
+    }));
+}
+
 export async function GET(request: Request) {
     const authHeader = request.headers.get('authorization');
     if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -11,12 +28,10 @@ export async function GET(request: Request) {
     }
 
     const evento = await getProximaTenida();
-
     if (!evento || !evento.gradoId || !evento.grado || !evento.fecha) {
         return Response.json({ message: 'No hay próximo evento programado' });
     }
 
-    // Traer el Venerable Maestro y Secretario activos
     const [vm, secretario] = await Promise.all([
         prisma.user.findFirst({
             where: { oficialidadId: OFICIALIDAD.VENERABLE_MAESTRO, active: true },
@@ -27,24 +42,9 @@ export async function GET(request: Request) {
             select: { name: true, lastName: true },
         }),
     ]);
-    const nombreVM = vm ? `${vm.name ?? ''} ${vm.lastName ?? ''}`.trim() : null;
-    const nombreSecretario = secretario
-        ? `${secretario.name ?? ''} ${secretario.lastName ?? ''}`.trim()
-        : null;
 
-    const url = new URL(request.url);
-    const isTest = url.searchParams.get('test') === 'true';
-
-    const testEmail = process.env.CRON_TEST_EMAIL ?? '';
-    const testNombre = process.env.CRON_TEST_NAME ?? 'Test';
-    const destinatarios = isTest
-        ? testEmail
-            ? [{ email: testEmail, nombre: testNombre }]
-            : []
-        : (await getUsuariosParaEvento(evento.gradoId)).map((u) => ({
-              email: u.email,
-              nombre: `${u.name ?? ''} ${u.lastName ?? ''}`.trim(),
-          }));
+    const isTest = new URL(request.url).searchParams.get('test') === 'true';
+    const destinatarios = await buildDestinatarios(evento.gradoId, isTest);
 
     if (destinatarios.length === 0) {
         return Response.json({ message: 'No hay destinatarios para este evento' });
@@ -52,8 +52,8 @@ export async function GET(request: Request) {
 
     await sendInvitacionEvento({
         destinatarios,
-        nombreVM,
-        nombreSecretario,
+        nombreVM: vm ? `${vm.name ?? ''} ${vm.lastName ?? ''}`.trim() : null,
+        nombreSecretario: secretario ? `${secretario.name ?? ''} ${secretario.lastName ?? ''}`.trim() : null,
         evento: {
             nombre: evento.nombre,
             tipoActividad: evento.tipoActividad?.nombre ?? '',

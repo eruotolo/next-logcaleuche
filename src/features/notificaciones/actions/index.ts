@@ -171,7 +171,7 @@ export async function updateNotificationPreference(
 }
 
 const ALL_NOTIFICATION_TYPES = [
-    'feed', 'comment', 'evento', 'biblioteca', 'trazado', 'cumpleanos', 'aniversario',
+    'feed', 'comment', 'evento', 'biblioteca', 'trazado', 'documento', 'cumpleanos', 'aniversario',
 ] as const;
 
 export async function enableAllNotifications(): Promise<ActionResult<null>> {

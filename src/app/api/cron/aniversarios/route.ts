@@ -1,3 +1,4 @@
+import { createNotifications } from '@/features/notificaciones/actions';
 import { prisma } from '@/shared/lib/db';
 import { sendAniversario } from '@/shared/lib/email';
 
@@ -38,26 +39,31 @@ async function notifyAniversario(entry: AniversarioEntry, allUserIds: number[]):
     const nombre = `${usuario.name ?? ''} ${usuario.lastName ?? ''}`.trim();
     const aniosLabel = anios === 1 ? '1 año' : `${anios} años`;
 
+    // Send email only if the aniversario user has opted in
     try {
-        await sendAniversario({ email: usuario.email, nombre, anios });
+        const emailPref = await prisma.notificationPreference.findUnique({
+            where: { userId_type: { userId: usuario.id, type: 'aniversario' } },
+            select: { email: true },
+        });
+        if (emailPref?.email === true) {
+            await sendAniversario({ email: usuario.email, nombre, anios });
+        }
     } catch {
-        // No interrumpir por fallo individual de email
+        // Non-critical
     }
 
+    // In-app notifications via createNotifications (respects inApp preferences)
     try {
         const destinatarios = allUserIds.filter((id) => id !== usuario.id);
-        await prisma.notification.createMany({
-            data: destinatarios.map((userId) => ({
-                userId,
-                type: 'aniversario',
-                title: `¡${aniosLabel} de Iniciación de Q∴H∴ ${nombre}!`,
-                message: 'Felicitemos a nuestro Hermano por este aniversario masónico.',
-                href: usuario.slug ? `/usuarios/${usuario.slug}` : null,
-            })),
-            skipDuplicates: true,
-        });
+        await createNotifications(
+            destinatarios,
+            'aniversario',
+            `¡${aniosLabel} de Iniciación de Q∴H∴ ${nombre}!`,
+            'Felicitemos a nuestro Hermano por este aniversario masónico.',
+            usuario.slug ? `/usuarios/${usuario.slug}` : undefined,
+        );
     } catch {
-        // No interrumpir si falla la notificación in-app
+        // Non-critical
     }
 }
 

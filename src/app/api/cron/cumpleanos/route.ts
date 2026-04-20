@@ -1,3 +1,4 @@
+import { createNotifications } from '@/features/notificaciones/actions';
 import { prisma } from '@/shared/lib/db';
 import { sendCumpleanos } from '@/shared/lib/email';
 
@@ -38,26 +39,31 @@ export async function GET(request: Request) {
     for (const usuario of cumpleaneros) {
         const nombre = `${usuario.name ?? ''} ${usuario.lastName ?? ''}`.trim();
 
+        // Send email only if the user has opted in
         try {
-            await sendCumpleanos({ email: usuario.email, nombre });
+            const emailPref = await prisma.notificationPreference.findUnique({
+                where: { userId_type: { userId: usuario.id, type: 'cumpleanos' } },
+                select: { email: true },
+            });
+            if (emailPref?.email === true) {
+                await sendCumpleanos({ email: usuario.email, nombre });
+            }
         } catch {
-            // No interrumpir el loop por un fallo individual de email
+            // Non-critical
         }
 
+        // In-app notifications via createNotifications (respects inApp preferences)
         try {
             const destinatarios = allUserIds.filter((id) => id !== usuario.id);
-            await prisma.notification.createMany({
-                data: destinatarios.map((userId) => ({
-                    userId,
-                    type: 'cumpleanos',
-                    title: `¡Hoy es el cumpleaños de Q∴H∴ ${nombre}!`,
-                    message: 'Envíale un saludo fraternal.',
-                    href: usuario.slug ? `/usuarios/${usuario.slug}` : null,
-                })),
-                skipDuplicates: true,
-            });
+            await createNotifications(
+                destinatarios,
+                'cumpleanos',
+                `¡Hoy es el cumpleaños de Q∴H∴ ${nombre}!`,
+                'Envíale un saludo fraternal.',
+                usuario.slug ? `/usuarios/${usuario.slug}` : undefined,
+            );
         } catch {
-            // No interrumpir si falla la notificación in-app
+            // Non-critical
         }
 
         notified++;

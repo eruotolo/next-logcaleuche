@@ -10,6 +10,7 @@ import { logActivity } from '@/shared/lib/activity-log';
 import { requireAdmin } from '@/shared/lib/auth-guards';
 import { uploadToCloudinary } from '@/shared/lib/cloudinary-upload';
 import { prisma } from '@/shared/lib/db';
+import { buildGradoNotifyFilter, canUserAccessGrado } from '@/shared/lib/grado';
 import type { ActionResult } from '@/shared/types/actions';
 
 import { createNotifications } from '@/features/notificaciones/actions';
@@ -77,14 +78,7 @@ export async function createLibro(
     // Notificar a usuarios según grado del documento (silencioso)
     try {
         const gradoId = parsed.data.grado;
-        // Notificar solo a quienes pueden ver este grado de contenido:
-        // grado 1 → todos (1, 2, 3) | grado 2 → compañeros y maestros (2, 3) | grado 3 → solo maestros (3)
-        const gradoWhere =
-            gradoId === 1
-                ? {}
-                : gradoId === 2
-                  ? { gradoId: { in: [2, 3] } }
-                  : { gradoId: 3 };
+        const gradoWhere = buildGradoNotifyFilter(gradoId);
 
         const targetUsers = await prisma.user.findMany({
             where: { active: true, ...gradoWhere },
@@ -246,14 +240,7 @@ export async function createTrazado(
     // Notificar a usuarios según grado del documento (silencioso)
     try {
         const gradoId = parsed.data.grado;
-        // Notificar solo a quienes pueden ver este grado de contenido:
-        // grado 1 → todos (1, 2, 3) | grado 2 → compañeros y maestros (2, 3) | grado 3 → solo maestros (3)
-        const gradoWhere =
-            gradoId === 1
-                ? {}
-                : gradoId === 2
-                  ? { gradoId: { in: [2, 3] } }
-                  : { gradoId: 3 };
+        const gradoWhere = buildGradoNotifyFilter(gradoId);
 
         const targetUsers = await prisma.user.findMany({
             where: { active: true, ...gradoWhere },
@@ -392,6 +379,25 @@ export async function createDocumento(
         description: `Subió documento "${parsed.data.nombre}"`,
     });
 
+    // Notificar a todos los usuarios activos (documento general = universal)
+    try {
+        const authorId = Number.parseInt(session.user.id, 10);
+        const targetUsers = await prisma.user.findMany({
+            where: { active: true },
+            select: { id: true },
+        });
+        const userIds = targetUsers.map((u) => u.id).filter((id) => id !== authorId);
+        await createNotifications(
+            userIds,
+            'documento',
+            'Nuevo documento disponible',
+            parsed.data.nombre,
+            '/documentos',
+        );
+    } catch {
+        // Notificaciones no son críticas
+    }
+
     revalidatePath('/documentos');
     return { success: true, data: null };
 }
@@ -466,10 +472,21 @@ export async function toggleDocumentFavorite(
     const session = await auth();
     if (!session) return { success: false, error: 'No autorizado' };
     const userId = Number.parseInt(session.user.id, 10);
+    const userGrado = session.user.grado ?? 1;
 
     const existing = await prisma.documentFavorite.findUnique({
         where: { userId_documentType_documentId: { userId, documentType, documentId } },
     });
+
+    if (!existing && (documentType === 'biblioteca' || documentType === 'trazado')) {
+        const doc =
+            documentType === 'biblioteca'
+                ? await prisma.biblioteca.findUnique({ where: { id: documentId }, select: { gradoId: true } })
+                : await prisma.trazado.findUnique({ where: { id: documentId }, select: { gradoId: true } });
+        if (!canUserAccessGrado(userGrado, doc?.gradoId ?? null)) {
+            return { success: false, error: 'No autorizado' };
+        }
+    }
 
     if (existing) {
         await prisma.documentFavorite.delete({ where: { id: existing.id } });
@@ -495,6 +512,7 @@ export const getFavoritesWithDetails = cache(async function getFavoritesWithDeta
     const session = await auth();
     if (!session) throw new Error('No autorizado');
     const userId = Number.parseInt(session.user.id, 10);
+    const userGrado = session.user.grado ?? 1;
 
     const favs = await prisma.documentFavorite.findMany({
         where: { userId },
@@ -507,10 +525,16 @@ export const getFavoritesWithDetails = cache(async function getFavoritesWithDeta
 
     const [biblioteca, trazados, documentos] = await Promise.all([
         biblioIds.length > 0
-            ? prisma.biblioteca.findMany({ where: { id: { in: biblioIds } }, include: { grado: true } })
+            ? prisma.biblioteca.findMany({
+                  where: { id: { in: biblioIds }, gradoId: { lte: userGrado } },
+                  include: { grado: true },
+              })
             : [],
         trazadoIds.length > 0
-            ? prisma.trazado.findMany({ where: { id: { in: trazadoIds } }, include: { grado: true, autor: { select: { name: true, lastName: true } } } })
+            ? prisma.trazado.findMany({
+                  where: { id: { in: trazadoIds }, gradoId: { lte: userGrado } },
+                  include: { grado: true, autor: { select: { name: true, lastName: true } } },
+              })
             : [],
         docIds.length > 0
             ? prisma.document.findMany({ where: { id: { in: docIds } } })
@@ -529,6 +553,15 @@ export async function registerDocumentView(
     const session = await auth();
     if (!session) return;
     const userId = Number.parseInt(session.user.id, 10);
+    const userGrado = session.user.grado ?? 1;
+
+    if (documentType === 'biblioteca' || documentType === 'trazado') {
+        const doc =
+            documentType === 'biblioteca'
+                ? await prisma.biblioteca.findUnique({ where: { id: documentId }, select: { gradoId: true } })
+                : await prisma.trazado.findUnique({ where: { id: documentId }, select: { gradoId: true } });
+        if (!canUserAccessGrado(userGrado, doc?.gradoId ?? null)) return;
+    }
 
     await prisma.documentView.upsert({
         where: { userId_documentType_documentId: { userId, documentType, documentId } },
