@@ -22,12 +22,12 @@ export interface ColumnDef<T> {
     cellClassName?: string;
 }
 
-export interface FilterOption {
+interface FilterOption {
     value: string | number;
     label: string;
 }
 
-export interface FilterDef<T> {
+interface FilterDef<T> {
     /** Placeholder del select, e.g. "Todas las categorías" */
     label: string;
     options: FilterOption[];
@@ -40,12 +40,12 @@ export interface FilterDef<T> {
     minOptions?: number;
 }
 
-export interface CsvColumnDef<T> {
+interface CsvColumnDef<T> {
     header: string;
     getValue: (item: T) => string | number;
 }
 
-export interface DataTableProps<T> {
+interface DataTableProps<T> {
     data: T[];
     columns: ColumnDef<T>[];
     keyExtractor: (item: T) => string | number;

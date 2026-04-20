@@ -11,4 +11,3 @@ export const ActivityLogsQuerySchema = z.object({
     q: z.string().trim().max(200).optional(),
 });
 
-export type ActivityLogsQuery = z.infer<typeof ActivityLogsQuerySchema>;

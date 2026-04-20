@@ -416,24 +416,6 @@ export async function resetPassword(id: number): Promise<ActionResult<null>> {
     return { success: true, data: null };
 }
 
-export async function setAdmin(id: number): Promise<ActionResult<null>> {
-    const session = await requireAdmin();
-    if (!session || session.user.categoryId !== 1)
-        return { success: false, error: 'No autorizado' };
-
-    await prisma.user.update({ where: { id }, data: { categoryId: 2 } });
-
-    await logActivity({
-        action: ACTIVITY_ACTION.USER_CHANGE_CATEGORY,
-        entity: ACTIVITY_ENTITY.USER,
-        entityId: id,
-        description: `Ascendió al usuario ${id} a Admin (categoryId=2)`,
-    });
-
-    revalidatePath('/usuarios');
-    return { success: true, data: null };
-}
-
 export async function updateUserCategory(
     userId: number,
     categoryId: number,

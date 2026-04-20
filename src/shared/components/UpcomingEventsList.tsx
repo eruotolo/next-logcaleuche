@@ -6,7 +6,7 @@ import { Calendar, Trash } from 'lucide-react';
 
 import { getMesNombre } from '@/shared/lib/utils';
 
-export type UpcomingEventItem = {
+type UpcomingEventItem = {
     id: number;
     nombre: string;
     tipoActividad?: { id: number; nombre: string } | null;

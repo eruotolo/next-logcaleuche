@@ -11,5 +11,3 @@ export const CommentSchema = z.object({
     message: z.string().min(1).max(300),
 });
 
-export type FeedPostInput = z.infer<typeof FeedPostSchema>;
-export type CommentInput = z.infer<typeof CommentSchema>;

@@ -12,7 +12,7 @@ const sizeClasses = {
     xl: 'max-w-3xl',
 } as const;
 
-export interface ModalProps {
+interface ModalProps {
     open: boolean;
     onClose: () => void;
     title: string;

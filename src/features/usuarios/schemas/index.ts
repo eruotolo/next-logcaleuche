@@ -9,4 +9,3 @@ export const UsuariosQuerySchema = z.object({
     active: z.enum(['activo', 'inactivo']).optional(),
 });
 
-export type UsuariosQuery = z.infer<typeof UsuariosQuerySchema>;

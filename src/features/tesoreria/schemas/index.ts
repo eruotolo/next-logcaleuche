@@ -8,4 +8,3 @@ export const TesoreriaQuerySchema = z.object({
     ano: z.string().optional(),
 });
 
-export type TesoreriaQuery = z.infer<typeof TesoreriaQuerySchema>;

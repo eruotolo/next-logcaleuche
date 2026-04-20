@@ -9,8 +9,7 @@ export function isImageFile(fileName: string | null | undefined): boolean {
     return IMAGE_EXTS.has(ext);
 }
 
-/** Devuelve true si el valor es una URL externa (http/https). */
-export function isExternalUrl(value: string): boolean {
+function isExternalUrl(value: string): boolean {
     return value.startsWith('http://') || value.startsWith('https://');
 }
 
@@ -24,21 +23,6 @@ export function getCloudinaryPdfUrl(publicId: string): string {
 export function getCloudinaryPdfPreviewUrl(publicId: string): string {
     if (isExternalUrl(publicId)) return publicId;
     return `/api/raw/${publicId}?inline=true`;
-}
-
-
-/**
- * URL de imagen Cloudinary con crop cuadrado (para avatares).
- * Devuelve undefined si no hay publicId, compatible con <AvatarImage src>.
- */
-export function getCloudinaryImageUrl(
-    publicId: string | null | undefined,
-    width = 200,
-    height = 200,
-): string | undefined {
-    if (!publicId) return undefined;
-    // f_auto y q_auto permiten entregar WebP/Avif y resolver conflictos de extensión
-    return `https://res.cloudinary.com/${CLOUD}/image/upload/c_fill,w_${width},h_${height},f_auto,q_auto/${publicId}`;
 }
 
 /**

@@ -10,7 +10,6 @@ export const EventoSchema = z.object({
     grado: z.coerce.number().int().positive('Selecciona un grado'),
 });
 
-export type EventoInput = z.infer<typeof EventoSchema>;
 
 export const EventoImportRowSchema = z.object({
     nombre: z.string().min(1, 'El nombre es requerido'),
@@ -25,7 +24,6 @@ export const EventoImportRowSchema = z.object({
     grado: z.coerce.number().int().min(1, 'Grado mínimo es 1').max(3, 'Grado máximo es 3'),
 });
 
-export type EventoImportRow = z.infer<typeof EventoImportRowSchema>;
 
 export type ImportResult = {
     imported: number;

@@ -219,36 +219,6 @@ export async function getSalidas(
     };
 }
 
-export async function getEntradaById(id: number) {
-    const session = await auth();
-    if (!session || !isTesorero(session)) throw new Error('No autorizado');
-
-    const row = await prisma.entradaDinero.findUnique({
-        where: { id },
-        include: {
-            user: { select: { id: true, name: true, lastName: true, email: true } },
-            motivo: true,
-        },
-    });
-    if (!row) return null;
-    return { ...row, monto: Number(row.monto ?? 0) };
-}
-
-export async function getSalidaById(id: number) {
-    const session = await auth();
-    if (!session || !isTesorero(session)) throw new Error('No autorizado');
-
-    const row = await prisma.salidaDinero.findUnique({
-        where: { id },
-        include: {
-            user: { select: { id: true, name: true, lastName: true } },
-            motivo: true,
-        },
-    });
-    if (!row) return null;
-    return { ...row, monto: Number(row.monto ?? 0) };
-}
-
 export const getMotivoEntradas = cache(async function getMotivoEntradas() {
     return prisma.entradaMotivo.findMany({ orderBy: { id: 'asc' } });
 });
