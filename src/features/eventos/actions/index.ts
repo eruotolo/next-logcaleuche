@@ -5,6 +5,7 @@ import { cache } from 'react';
 import { revalidatePath, revalidateTag } from 'next/cache';
 
 import { ACTIVITY_ACTION, ACTIVITY_ENTITY } from '@/shared/constants/activity-log';
+import { TIPO_ACTIVIDAD } from '@/shared/constants/domain';
 import { auth } from '@/shared/lib/auth';
 import { logActivity } from '@/shared/lib/activity-log';
 import { requireAdmin } from '@/shared/lib/auth-guards';
@@ -59,6 +60,18 @@ export const getEventosCalendario = cache(async function getEventosCalendario(gr
 export const getProximoEvento = cache(async function getProximoEvento() {
     return prisma.evento.findFirst({
         where: { active: 1, fecha: { gte: new Date() } },
+        include: { grado: true, tipoActividad: true },
+        orderBy: { fecha: 'asc' },
+    });
+});
+
+export const getProximaTenida = cache(async function getProximaTenida() {
+    return prisma.evento.findFirst({
+        where: {
+            active: 1,
+            fecha: { gte: new Date() },
+            tipoActividadId: TIPO_ACTIVIDAD.TENIDA,
+        },
         include: { grado: true, tipoActividad: true },
         orderBy: { fecha: 'asc' },
     });
@@ -121,10 +134,10 @@ export async function createEvento(
         const gradoId = parsed.data.grado;
         const gradoWhere =
             gradoId === 1
-                ? { gradoId: 1 }
+                ? {}
                 : gradoId === 2
-                  ? { gradoId: { in: [1, 2] } }
-                  : {};
+                  ? { gradoId: { in: [2, 3] } }
+                  : { gradoId: 3 };
 
         const targetUsers = await prisma.user.findMany({
             where: { active: true, ...gradoWhere },

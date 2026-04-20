@@ -13,6 +13,11 @@ export const OFICIALIDAD = {
     TESORERO: 7,
 } as const;
 
+export const TIPO_ACTIVIDAD = {
+    TENIDA: 1,
+    CAMARA: 2,
+} as const;
+
 export const MOTIVO_ENTRADA = {
     CUOTA_MENSUAL: 1,
     CAJA_HOSPITALARIA: 6,

@@ -6,6 +6,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 import {
+    Bell,
     ChevronDown,
     Eye,
     EyeOff,
@@ -218,6 +219,15 @@ export function Topbar({ onToggleSidebar, onToggleMobileSidebar, userName, userI
                                     >
                                         <UserIcon className="h-4 w-4 text-[#9a9ab0]" />
                                         Mi Perfil
+                                    </Link>
+
+                                    <Link
+                                        href="/perfil/notificaciones"
+                                        onClick={() => setUserDropdownOpen(false)}
+                                        className="flex items-center gap-3 px-4 py-2 text-sm text-[#aaa9be] transition-colors hover:bg-white/5 hover:text-[#e7e6fc]"
+                                    >
+                                        <Bell className="h-4 w-4 text-[#9a9ab0]" />
+                                        Notificaciones
                                     </Link>
 
                                     {/* Cambiar Contraseña: abre modal inline */}

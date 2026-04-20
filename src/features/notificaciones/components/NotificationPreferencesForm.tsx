@@ -2,9 +2,10 @@
 
 import { useTransition } from 'react';
 
+import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { updateNotificationPreference } from '@/features/notificaciones/actions';
+import { disableAllNotifications, enableAllNotifications, updateNotificationPreference } from '@/features/notificaciones/actions';
 
 const NOTIFICATION_TYPES = [
     { key: 'feed', label: 'Publicaciones del Feed', desc: 'Cuando alguien publica en el feed' },
@@ -51,9 +52,23 @@ export function NotificationPreferencesForm({ preferences }: NotificationPrefere
     function handleToggle(type: string, field: 'inApp' | 'email', currentValue: boolean) {
         startTransition(async () => {
             const result = await updateNotificationPreference(type, field, !currentValue);
-            if (!result.success) {
-                toast.error('No se pudo guardar el cambio.');
-            }
+            if (!result.success) toast.error('No se pudo guardar el cambio.');
+        });
+    }
+
+    function handleEnableAll() {
+        startTransition(async () => {
+            const result = await enableAllNotifications();
+            if (result.success) toast.success('Todas las notificaciones activadas.');
+            else toast.error('No se pudo aplicar el cambio.');
+        });
+    }
+
+    function handleDisableAll() {
+        startTransition(async () => {
+            const result = await disableAllNotifications();
+            if (result.success) toast.success('Todas las notificaciones desactivadas.');
+            else toast.error('No se pudo aplicar el cambio.');
         });
     }
 
@@ -61,7 +76,26 @@ export function NotificationPreferencesForm({ preferences }: NotificationPrefere
         <div className="divide-y divide-white/[0.05]">
             {/* Cabecera de columnas */}
             <div className="mb-2 grid grid-cols-[1fr_80px_80px] items-center px-1 pb-3">
-                <span className="text-xs font-medium text-[#9a9ab0]" />
+                <div className="flex items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={handleEnableAll}
+                        disabled={isPending}
+                        className="flex items-center gap-1.5 rounded-lg border border-[rgba(90,103,216,0.4)] bg-[rgba(90,103,216,0.12)] px-3 py-1 text-[11px] font-semibold text-[#9ea7ff] transition-colors hover:bg-[rgba(90,103,216,0.25)] disabled:opacity-50"
+                    >
+                        {isPending && <Loader2 className="h-3 w-3 animate-spin" />}
+                        Todas
+                    </button>
+                    <button
+                        type="button"
+                        onClick={handleDisableAll}
+                        disabled={isPending}
+                        className="flex items-center gap-1.5 rounded-lg border border-white/[0.1] bg-white/[0.04] px-3 py-1 text-[11px] font-semibold text-[#9a9ab0] transition-colors hover:bg-white/[0.08] disabled:opacity-50"
+                    >
+                        {isPending && <Loader2 className="h-3 w-3 animate-spin" />}
+                        Ninguna
+                    </button>
+                </div>
                 <span className="text-center text-xs font-medium text-[#9a9ab0]">Intranet</span>
                 <span className="text-center text-xs font-medium text-[#9a9ab0]">Email</span>
             </div>

@@ -1,4 +1,4 @@
-import { getProximoEvento, getUsuariosParaEvento } from '@/features/eventos/actions';
+import { getProximaTenida, getUsuariosParaEvento } from '@/features/eventos/actions';
 
 import { OFICIALIDAD } from '@/shared/constants/domain';
 import { prisma } from '@/shared/lib/db';
@@ -10,7 +10,7 @@ export async function GET(request: Request) {
         return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const evento = await getProximoEvento();
+    const evento = await getProximaTenida();
 
     if (!evento || !evento.gradoId || !evento.grado || !evento.fecha) {
         return Response.json({ message: 'No hay próximo evento programado' });

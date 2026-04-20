@@ -169,3 +169,47 @@ export async function updateNotificationPreference(
     revalidatePath('/perfil/notificaciones');
     return { success: true, data: null };
 }
+
+const ALL_NOTIFICATION_TYPES = [
+    'feed', 'comment', 'evento', 'biblioteca', 'trazado', 'cumpleanos', 'aniversario',
+] as const;
+
+export async function enableAllNotifications(): Promise<ActionResult<null>> {
+    const session = await auth();
+    if (!session) return { success: false, error: 'No autorizado' };
+
+    const userId = Number.parseInt(session.user.id, 10);
+
+    await prisma.$transaction(
+        ALL_NOTIFICATION_TYPES.map((type) =>
+            prisma.notificationPreference.upsert({
+                where: { userId_type: { userId, type } },
+                create: { userId, type, inApp: true, email: true },
+                update: { inApp: true, email: true },
+            }),
+        ),
+    );
+
+    revalidatePath('/perfil/notificaciones');
+    return { success: true, data: null };
+}
+
+export async function disableAllNotifications(): Promise<ActionResult<null>> {
+    const session = await auth();
+    if (!session) return { success: false, error: 'No autorizado' };
+
+    const userId = Number.parseInt(session.user.id, 10);
+
+    await prisma.$transaction(
+        ALL_NOTIFICATION_TYPES.map((type) =>
+            prisma.notificationPreference.upsert({
+                where: { userId_type: { userId, type } },
+                create: { userId, type, inApp: false, email: false },
+                update: { inApp: false, email: false },
+            }),
+        ),
+    );
+
+    revalidatePath('/perfil/notificaciones');
+    return { success: true, data: null };
+}

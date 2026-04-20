@@ -10,7 +10,7 @@ export interface SearchResult {
     href: string;
 }
 
-const LIMIT_PER_TYPE = 5;
+const LIMIT_PER_TYPE = 4;
 
 export async function globalSearch(query: string): Promise<SearchResult[]> {
     const session = await auth();
@@ -19,8 +19,9 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
     const q = query.trim();
     if (q.length < 2) return [];
 
-    // Búsqueda en paralelo para los 4 tipos de entidad
-    const [usuarios, feedPosts, documentos, eventos] = await Promise.all([
+    const userGrado = session.user.grado;
+
+    const [usuarios, feedPosts, biblioteca, trazados, documentos, eventos] = await Promise.all([
         prisma.user.findMany({
             where: {
                 active: true,
@@ -29,31 +30,37 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
                     { lastName: { contains: q, mode: 'insensitive' } },
                 ],
             },
-            select: { id: true, name: true, lastName: true, gradoId: true },
+            select: { id: true, name: true, lastName: true },
             take: LIMIT_PER_TYPE,
         }),
         prisma.feed.findMany({
-            where: {
-                active: 1,
-                titulo: { contains: q, mode: 'insensitive' },
-            },
-            select: { slug: true, titulo: true, categoryId: true },
+            where: { active: 1, titulo: { contains: q, mode: 'insensitive' } },
+            select: { slug: true, titulo: true },
             take: LIMIT_PER_TYPE,
         }),
         prisma.biblioteca.findMany({
             where: {
                 nombre: { contains: q, mode: 'insensitive' },
-                // Filtrar por grado del usuario
-                gradoId: { lte: session.user.grado },
+                gradoId: { lte: userGrado },
             },
-            select: { id: true, nombre: true },
+            select: { id: true, nombre: true, autor: true, fileName: true },
+            take: LIMIT_PER_TYPE,
+        }),
+        prisma.trazado.findMany({
+            where: {
+                nombre: { contains: q, mode: 'insensitive' },
+                gradoId: { lte: userGrado },
+            },
+            select: { id: true, nombre: true, fileName: true },
+            take: LIMIT_PER_TYPE,
+        }),
+        prisma.document.findMany({
+            where: { nombre: { contains: q, mode: 'insensitive' } },
+            select: { id: true, nombre: true, fileName: true },
             take: LIMIT_PER_TYPE,
         }),
         prisma.evento.findMany({
-            where: {
-                active: 1,
-                nombre: { contains: q, mode: 'insensitive' },
-            },
+            where: { active: 1, nombre: { contains: q, mode: 'insensitive' } },
             select: { id: true, nombre: true, fecha: true },
             take: LIMIT_PER_TYPE,
         }),
@@ -70,11 +77,27 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
             label: f.titulo ?? 'Sin título',
             href: `/feed/${f.slug ?? ''}`,
         })),
+        ...biblioteca.map((d) => ({
+            type: 'documento' as const,
+            label: d.nombre ?? 'Documento sin nombre',
+            sublabel: d.autor ? `Biblioteca · ${d.autor}` : 'Biblioteca',
+            href: d.fileName
+                ? `/documentos/preview?fileName=${encodeURIComponent(d.fileName)}&nombre=${encodeURIComponent(d.nombre ?? '')}`
+                : '/documentos',
+        })),
+        ...trazados.map((t) => ({
+            type: 'documento' as const,
+            label: t.nombre ?? 'Trazado sin nombre',
+            sublabel: 'Trazados',
+            href: `/documentos/preview?fileName=${encodeURIComponent(t.fileName)}&nombre=${encodeURIComponent(t.nombre ?? '')}`,
+        })),
         ...documentos.map((d) => ({
             type: 'documento' as const,
             label: d.nombre ?? 'Documento sin nombre',
-            sublabel: 'Biblioteca',
-            href: '/documentos',
+            sublabel: 'Documentos Generales',
+            href: d.fileName
+                ? `/documentos/preview?fileName=${encodeURIComponent(d.fileName)}&nombre=${encodeURIComponent(d.nombre ?? '')}`
+                : '/documentos',
         })),
         ...eventos.map((e) => ({
             type: 'evento' as const,

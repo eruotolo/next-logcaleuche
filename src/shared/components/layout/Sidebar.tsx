@@ -2,28 +2,56 @@
 
 import { useEffect, useState } from 'react';
 
+
+
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-import {
-    BookOpen,
-    Calendar,
-    ChevronRight,
-    Compass,
-    DollarSign,
-    FileText,
-    FolderOpen,
-    HelpCircle,
-    Home,
-    Settings,
-    Shield,
-    Sun,
-    Users,
-} from 'lucide-react';
+
+
+import { Bell, BookOpen, Calendar, ChevronRight, Compass, DollarSign, FileText, FolderOpen, HelpCircle, Home, Settings, Shield, Sun, Users } from 'lucide-react';
+
+
 
 import { CATEGORIA, OFICIALIDAD } from '@/shared/constants/domain';
 import { cn } from '@/shared/lib/utils';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 interface SidebarProps {
     collapsed: boolean;
@@ -68,9 +96,23 @@ export function Sidebar({ collapsed, mobileOpen, onMobileClose, grado, oficialid
             icon: <Home className="h-4 w-4 shrink-0" />,
         },
         {
-            label: 'Documentos Generales',
-            href: '/documentos',
+            label: 'Noticias',
+            href: '/feed',
+            icon: <FileText className="h-4 w-4 shrink-0" />,
+        },
+        {
+            label: 'Documentos',
             icon: <FolderOpen className="h-4 w-4 shrink-0" />,
+            children: [
+                { label: 'Todos', href: '/documentos' },
+                { label: 'Favoritos', href: '/documentos/favoritos' },
+                { label: 'Buscar', href: '/documentos/buscar' },
+            ],
+        },
+        {
+            label: 'Calendario',
+            href: '/eventos',
+            icon: <Calendar className="h-4 w-4 shrink-0" />,
         },
         {
             label: 'Tesorería',
@@ -81,16 +123,6 @@ export function Sidebar({ collapsed, mobileOpen, onMobileClose, grado, oficialid
                 { label: 'Egresos', href: '/tesoreria/egresos' },
                 { label: 'Informe', href: '/tesoreria/informe' },
             ],
-        },
-        {
-            label: 'Noticias',
-            href: '/feed',
-            icon: <FileText className="h-4 w-4 shrink-0" />,
-        },
-        {
-            label: 'Calendario',
-            href: '/eventos',
-            icon: <Calendar className="h-4 w-4 shrink-0" />,
         },
         {
             label: 'Usuarios',
@@ -104,6 +136,11 @@ export function Sidebar({ collapsed, mobileOpen, onMobileClose, grado, oficialid
             label: 'Ayuda',
             href: '/ayuda',
             icon: <HelpCircle className="h-4 w-4 shrink-0" />,
+        },
+        {
+            label: 'Notificaciones',
+            href: '/perfil/notificaciones',
+            icon: <Bell className="h-4 w-4 shrink-0" />,
         },
         {
             label: 'Seguridad',
